@@ -34,7 +34,7 @@
     
     <div class="scanner-status">
       <div id="loading-badge" class="status-badge" style="border-color: #f1c40f; color: #f1c40f;">ЗАГРУЗКА БАЗЫ AR...</div>
-      <div id="loading-title" class="status-title">ИНИЦИАЛИЗАЦИЯ 17 ГЕРОЕВ</div>
+      <div id="loading-title" class="status-title">ИНИЦИАЛИЗАЦИЯ 18 ГЕРОЕВ</div>
       
       <div id="load-progress-container" class="load-progress-box">
         <div class="load-bar-track">
@@ -45,7 +45,7 @@
       </div>
 
       <div id="ready-status-sub" class="status-sub" style="display: none; margin-top: 8px;">
-        15 легенд готовы • Наведите камеру на карту
+        Легенды готовы • Наведите камеру на карту
       </div>
     </div>
   </div>
@@ -56,7 +56,7 @@
       <span>🤖</span> Тактикус Финч
     </a>
     <button id="passport-btn" class="hud-btn" onclick="openPassportModal()">
-      <span></span> Коллекция <span id="passport-counter">(0/15)</span>
+      <span></span> Коллекция <span id="passport-counter">(0/18)</span>
     </button>
     <button id="sound-toggle" class="hud-btn" style="display: none;">
       <span>🔇</span> ЗВУК: ВЫКЛ
@@ -129,32 +129,32 @@
 
   <!-- MindAR Сцена -->
   <a-scene
-    mindar-image="imageTargetSrc: ./cards.mind?v=999; autoStart: false; maxTrack: 1; uiLoading: no; uiScanning: no;"
+    mindar-image="imageTargetSrc: ./cards.mind?v=999; autoStart: false; maxTrack: 1; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 0.001;"
     color-space="sRGB"
     renderer="colorManagement: true; precision: medium;"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false">
 
-<a-assets timeout="4000">
-  <video id="vid-0" src="./assets/videos/steinitz.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-1" src="./assets/videos/lasker.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-2" src="./assets/videos/capablanca.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-3" src="./assets/videos/carlsen.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-4" src="./assets/videos/enigma.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-5" src="./assets/videos/tal.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-6" src="./assets/videos/stockfish.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-7" src="./assets/videos/botvinnik.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-8" src="./assets/videos/fischer.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-9" src="./assets/videos/caruana.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-10" src="./assets/videos/nakamura.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-11" src="./assets/videos/gukesh.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-12" src="./assets/videos/rubinstein.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-13" src="./assets/videos/petrosyan.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-14" src="./assets/videos/smyslov.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-15" src="./assets/videos/kasparov.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-16" src="./assets/videos/liren.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-  <video id="vid-17" src="./assets/videos/school.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
-</a-assets>
+    <a-assets>
+      <video id="vid-0" src="./assets/videos/steinitz.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-1" src="./assets/videos/lasker.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-2" src="./assets/videos/capablanca.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-3" src="./assets/videos/carlsen.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-4" src="./assets/videos/enigma.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-5" src="./assets/videos/tal.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-6" src="./assets/videos/stockfish.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-7" src="./assets/videos/botvinnik.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-8" src="./assets/videos/fischer.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-9" src="./assets/videos/caruana.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-10" src="./assets/videos/nakamura.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-11" src="./assets/videos/gukesh.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-12" src="./assets/videos/rubinstein.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-13" src="./assets/videos/petrosyan.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-14" src="./assets/videos/smyslov.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-15" src="./assets/videos/kasparov.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-16" src="./assets/videos/liren.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-17" src="./assets/videos/school.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+    </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
@@ -179,7 +179,7 @@
     <a-entity id="target-17" mindar-image-target="targetIndex: 17"><a-video src="#vid-17" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
   </a-scene>
 
-  <!-- Подключение скриптов в строгой последовательности зависимостей -->
+  <!-- Скрипты -->
   <script src="js/heroes-data.js"></script>
   <script src="js/sound.js"></script>
   <script src="js/passport.js"></script>

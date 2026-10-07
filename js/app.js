@@ -1,3 +1,6 @@
+// ==========================================
+// 1. ИНИЦИАЛИЗАЦИЯ И СТАРТ AR ДВИЖКА
+// ==========================================
 document.addEventListener("DOMContentLoaded", async () => {
   const sceneEl = document.querySelector('a-scene');
   const barFill = document.getElementById('load-bar-fill');
@@ -8,63 +11,73 @@ document.addEventListener("DOMContentLoaded", async () => {
   const readySub = document.getElementById('ready-status-sub');
 
   try {
-    percentText.innerText = "Инициализация движка...";
-    barFill.style.width = "40%";
+    if (percentText) percentText.innerText = "Инициализация движка...";
+    if (barFill) barFill.style.width = "40%";
 
     if (!sceneEl.hasLoaded) {
       await new Promise(res => sceneEl.addEventListener('loaded', res, { once: true }));
     }
 
-    percentText.innerText = "Запуск камеры и поиск целей...";
-    barFill.style.width = "75%";
+    if (percentText) percentText.innerText = "Запуск камеры и поиск целей...";
+    if (barFill) barFill.style.width = "75%";
 
     const arSystem = sceneEl.systems["mindar-image-system"];
     if (!arSystem) {
-      throw new Error("MindAR система не найдена");
+      throw new Error("MindAR система не найдена на сцене");
     }
 
     await arSystem.start();
 
-    barFill.style.width = "100%";
-    percentText.innerText = "Готово!";
+    if (barFill) barFill.style.width = "100%";
+    if (percentText) percentText.innerText = "Готово!";
 
     setTimeout(() => {
-      loadBox.style.display = "none";
-      readySub.style.display = "block";
-      badge.innerText = "AR СКАНЕР АКТИВЕН";
-      badge.style.borderColor = "var(--accent-color)";
-      badge.style.color = "var(--accent-color)";
-      title.innerText = "НАВЕДИТЕ НА КАРТОЧКУ";
+      if (loadBox) loadBox.style.display = "none";
+      if (readySub) readySub.style.display = "block";
+      if (badge) {
+        badge.innerText = "AR СКАНЕР АКТИВЕН";
+        badge.style.borderColor = "var(--accent-color)";
+        badge.style.color = "var(--accent-color)";
+      }
+      if (title) title.innerText = "НАВЕДИТЕ НА КАРТОЧКУ";
     }, 200);
 
   } catch (err) {
     console.error("Ошибка инициализации AR:", err);
-    badge.innerText = "ОШИБКА";
-    badge.style.borderColor = "#ff4d6d";
-    badge.style.color = "#ff4d6d";
-    title.innerText = "СБОЙ ЗАПУСКА";
-    percentText.innerText = err.message || "Ошибка камеры или файла таргетов";
-    barFill.style.background = "#ff4d6d";
+    if (badge) {
+      badge.innerText = "ОШИБКА";
+      badge.style.borderColor = "#ff4d6d";
+      badge.style.color = "#ff4d6d";
+    }
+    if (title) title.innerText = "СБОЙ ЗАПУСКА";
+    if (percentText) percentText.innerText = err.message || "Ошибка камеры или файла таргетов";
+    if (barFill) barFill.style.background = "#ff4d6d";
   }
 
   sceneEl.addEventListener("arError", (ev) => {
     console.error("Событие arError:", ev);
-    badge.innerText = "ОШИБКА КАМЕРЫ";
-    badge.style.borderColor = "#ff4d6d";
-    badge.style.color = "#ff4d6d";
-    title.innerText = "ДОСТУП ЗАПРЕЩЕН";
-    percentText.innerText = "Разрешите браузеру доступ к камере";
+    if (badge) {
+      badge.innerText = "ОШИБКА КАМЕРЫ";
+      badge.style.borderColor = "#ff4d6d";
+      badge.style.color = "#ff4d6d";
+    }
+    if (title) title.innerText = "ДОСТУП ЗАПРЕЩЕН";
+    if (percentText) percentText.innerText = "Разрешите браузеру доступ к камере";
   });
 
-  updatePassportCounter();
+  if (typeof updatePassportCounter === "function") {
+    updatePassportCounter();
+  }
 });
 
-    let currentHeroId = null;
+// ==========================================
+// 2. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ==========================================
+let currentHeroId = null;
 let isMuted = true;
-
-// Переменные состояния теста
 let currentPuzzleIndex = 0;
 let testScore = 0;
+let userHasInteracted = false;
 
 const hint = document.getElementById("scanner-hint");
 const dock = document.getElementById("interactive-dock");
@@ -72,114 +85,151 @@ const soundBtn = document.getElementById("sound-toggle");
 const modal = document.getElementById("modal-container");
 const modalContent = document.getElementById("modal-content");
 
-// Слушатели таргетов MindAR
-// Индекс общей рубашки школы
+// Рубашка школы идет 18-м таргетом (индекс 17)
 const SCHOOL_TARGET_ID = 17;
 
-// Слушатели для всех 13 таргетов (0-11 чемпионы, 12 школа)
-const ALL_TARGET_IDS = [...Object.keys(HEROES).map(Number), SCHOOL_TARGET_ID];
+// Собираем массив всех таргетов от 0 до 17
+const ALL_TARGET_IDS = typeof HEROES !== "undefined"
+  ? [...Object.keys(HEROES).map(Number), SCHOOL_TARGET_ID]
+  : Array.from({ length: 18 }, (_, i) => i);
 
-document.querySelectorAll('a-scene a-video').forEach(aVid => {
-  aVid.setAttribute('visible', 'false');
-});
+// ==========================================
+// 3. РАЗБЛОКИРОВКА АВТОПРОИГРЫВАНИЯ (ПОЛЬЗОВАТЕЛЬСКИЙ ЖЕСТ)
+// ==========================================
+function handleFirstInteraction() {
+  if (userHasInteracted) return;
+  userHasInteracted = true;
 
-// === Разогрев видео при первом касании экрана ===
-let videosWarmedUp = false;
+  // Разблокировка WebAudio контекста для звуковых эффектов (SFX)
+  if (typeof sfx !== "undefined" && sfx.ctx && sfx.ctx.state === "suspended") {
+    sfx.ctx.resume();
+  }
 
-// Замените warmUpAllVideos на точечный запуск:
+  // Если таргет уже находится в фокусе камеры к первому клику
+  if (currentHeroId !== null) {
+    playTargetVideo(currentHeroId);
+  }
+}
+
+document.addEventListener("touchstart", handleFirstInteraction, { once: true, passive: true });
+document.addEventListener("click", handleFirstInteraction, { once: true });
+
+// ==========================================
+// 4. УПРАВЛЕНИЕ ВИДЕО ТАРГЕТА
+// ==========================================
 function playTargetVideo(id) {
   const vid = document.getElementById(`vid-${id}`);
   if (!vid) return;
 
-  vid.muted = isMuted; // соблюдаем состояние звука
+  vid.muted = isMuted;
+  vid.defaultMuted = isMuted;
   vid.playsInline = true;
-  
+  vid.setAttribute("playsinline", "");
+  vid.setAttribute("webkit-playsinline", "");
+
+  // Если видео еще не загружалось из-за preload="none", подгружаем
+  if (vid.readyState === 0) {
+    vid.load();
+  }
+
   const playPromise = vid.play();
   if (playPromise !== undefined) {
     playPromise.catch(err => {
-      console.warn(`[vid-${id}] Автовоспроизведение отклонено, проигрываем muted:`, err);
+      console.warn(`[vid-${id}] Автовоспроизведение отклонено политикой браузера. Переключаем в muted:`, err);
       vid.muted = true;
-      vid.play().catch(() => {});
+      isMuted = true;
+      if (soundBtn) soundBtn.innerHTML = "<span>🔇</span> ЗВУК: ВЫКЛ";
+      vid.play().catch(e => console.error(`[vid-${id}] Ошибка старта видео:`, e));
     });
   }
 }
 
-document.addEventListener("touchstart", warmUpAllVideos, { once: true });
-document.addEventListener("click", warmUpAllVideos, { once: true });
+function stopTargetVideo(id) {
+  const vid = document.getElementById(`vid-${id}`);
+  if (vid) {
+    vid.pause();
+    vid.currentTime = 0;
+  }
+}
 
-// === Слушатели таргетов ===
+// ==========================================
+// 5. СЛУШАТЕЛИ СОБЫТИЙ ТАРГЕТОВ (MINDAR)
+// ==========================================
 ALL_TARGET_IDS.forEach(id => {
   const targetEl = document.getElementById(`target-${id}`);
   const videoEl = document.getElementById(`vid-${id}`);
   if (!targetEl) return;
 
-  const aVideo = targetEl.querySelector('a-video');
-
-  // Отладочные логи для диагностики
+  // Логирование видеопотока для отладки
   if (videoEl) {
-    videoEl.addEventListener('error', () => console.error(`[vid-${id}] ERROR:`, videoEl.error));
-    videoEl.addEventListener('playing', () => console.log(`[vid-${id}] ▶ PLAYING`));
-    videoEl.addEventListener('stalled', () => console.warn(`[vid-${id}] ⏸ STALLED`));
+    videoEl.addEventListener('error', () => console.error(`[vid-${id}] Ошибка видео:`, videoEl.error));
+    videoEl.addEventListener('playing', () => console.log(`[vid-${id}] ▶ Воспроизведение`));
+    videoEl.addEventListener('stalled', () => console.warn(`[vid-${id}] ⏸ Ожидание буферизации (STALLED)`));
   }
 
-targetEl.addEventListener("targetFound", () => {
-  console.warn(`!!! ТАРГЕТ ${id} ОБНАРУЖЕН КАМЕРОЙ !!!`);
-  sfx.playTargetFound();
-  hint.classList.add("hidden");
-  dock.style.display = "flex";
-  soundBtn.style.display = "inline-flex";
+  // Срабатывает при обнаружении карты в камере
+  targetEl.addEventListener("targetFound", () => {
+    console.warn(`[MindAR] Таргет ${id} обнаружен!`);
+    if (typeof sfx !== "undefined" && sfx.playTargetFound) sfx.playTargetFound();
 
-  if (id === SCHOOL_TARGET_ID) {
-    currentHeroId = null;
-    showSchoolUI();
-  } else {
-    currentHeroId = id;
-    applyHeroTheme(HEROES[id]);
-    showChampionUI();
-  }
+    if (hint) hint.classList.add("hidden");
+    if (dock) dock.style.display = "flex";
+    if (soundBtn) soundBtn.style.display = "inline-flex";
 
-  if (aVideo) aVideo.setAttribute('visible', 'true');
-  playTargetVideo(id);
-});
+    if (id === SCHOOL_TARGET_ID) {
+      currentHeroId = null;
+      showSchoolUI();
+    } else if (typeof HEROES !== "undefined" && HEROES[id]) {
+      currentHeroId = id;
+      applyHeroTheme(HEROES[id]);
+      showChampionUI();
+    }
 
+    playTargetVideo(id);
+  });
+
+  // Срабатывает при потере карты из вида
   targetEl.addEventListener("targetLost", () => {
-    if (aVideo) {
-      aVideo.setAttribute('visible', 'false');
-    }
-
-    if (videoEl) {
-      videoEl.pause();
-      videoEl.currentTime = 0;
-    }
+    console.log(`[MindAR] Таргет ${id} потерян`);
+    stopTargetVideo(id);
   });
 });
 
-// Динамическая смена темы
+// ==========================================
+// 6. ТЕМЫ И ПЕРЕКЛЮЧЕНИЕ ЗВУКА
+// ==========================================
 function applyHeroTheme(hero) {
+  if (!hero) return;
   document.documentElement.style.setProperty('--accent-color', hero.color);
   document.documentElement.style.setProperty('--accent-glow', hero.colorGlow);
-  soundBtn.style.borderColor = hero.color;
+  if (soundBtn) soundBtn.style.borderColor = hero.color;
 }
 
-soundBtn.addEventListener("click", () => {
-  const isEnabled = sfx.toggle();
-  isMuted = !isEnabled;
-  
-  const activeTargetId = currentHeroId !== null ? currentHeroId : SCHOOL_TARGET_ID;
-  const vid = document.getElementById(`vid-${activeTargetId}`);
-  if (vid) {
-    vid.muted = isMuted;
-    vid.volume = 1;
-  }
-  
-  soundBtn.innerHTML = isEnabled ? "<span>🔊</span> ЗВУК: ВКЛ" : "<span>🔇</span> ЗВУК: ВЫКЛ";
-  if (isEnabled) sfx.playMove();
-});
+if (soundBtn) {
+  soundBtn.addEventListener("click", () => {
+    const isEnabled = (typeof sfx !== "undefined" && sfx.toggle) ? sfx.toggle() : !isMuted;
+    isMuted = !isEnabled;
+    
+    const activeTargetId = currentHeroId !== null ? currentHeroId : SCHOOL_TARGET_ID;
+    const vid = document.getElementById(`vid-${activeTargetId}`);
+    if (vid) {
+      vid.muted = isMuted;
+      vid.volume = 1.0;
+    }
+    
+    soundBtn.innerHTML = isEnabled ? "<span>🔊</span> ЗВУК: ВКЛ" : "<span>🔇</span> ЗВУК: ВЫКЛ";
+    if (isEnabled && typeof sfx !== "undefined" && sfx.playMove) {
+      sfx.playMove();
+    }
+  });
+}
 
-// Модальные окна
+// ==========================================
+// 7. МОДАЛЬНЫЕ ОКНА И МЕНЮ
+// ==========================================
 function openModal(type) {
-  sfx.playMove();
-  if (currentHeroId === null) return;
+  if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
+  if (currentHeroId === null || typeof HEROES === "undefined") return;
   const hero = HEROES[currentHeroId];
 
   const activeVideo = document.getElementById(`vid-${currentHeroId}`);
@@ -232,17 +282,17 @@ function openModal(type) {
   modal.classList.add("active");
 }
 
-// Меню для обратной стороны (Школа)
 function showSchoolUI() {
   document.documentElement.style.setProperty('--accent-color', '#00e5ff');
   document.documentElement.style.setProperty('--accent-glow', 'rgba(0, 229, 255, 0.4)');
 
+  if (!dock) return;
   dock.style.display = "flex";
   dock.innerHTML = `
-    <a class="dock-btn" href="https://tacticusfinch.ru/" target="_blank" onclick="sfx.playMove()">
+    <a class="dock-btn" href="https://tacticusfinch.ru/" target="_blank" onclick="if(typeof sfx!=='undefined'&&sfx.playMove)sfx.playMove()">
       <span>Сайт школы</span>
     </a>
-    <a class="dock-btn" href="https://max.ru/se14097294_bot" target="_blank" onclick="sfx.playMove()" style="border-color: #00ffcc; box-shadow: 0 0 15px rgba(0,255,204,0.4);">
+    <a class="dock-btn" href="https://max.ru/se14097294_bot" target="_blank" onclick="if(typeof sfx!=='undefined'&&sfx.playMove)sfx.playMove()" style="border-color: #00ffcc; box-shadow: 0 0 15px rgba(0,255,204,0.4);">
       <span style="color: #00ffcc;">Запись (Бот)</span>
     </a>
     <button class="dock-btn" onclick="openSchoolModal()">
@@ -251,26 +301,25 @@ function showSchoolUI() {
   `;
 }
 
-// Возврат стандартного меню чемпионов
 function showChampionUI() {
+  if (!dock) return;
   dock.style.display = "flex";
   dock.innerHTML = `
     <button class="dock-btn" onclick="openModal('bio')"><span>Биография</span></button>
     <button class="dock-btn" onclick="openModal('test')"><span>Тест</span></button>
-    <button class="dock-btn" onclick="openAIChatModal()" style="border-color: #00e5ff; box-shadow: 0 0 15px rgba(0,229,255,0.4);">
+    <button class="dock-btn" onclick="if(typeof openAIChatModal==='function')openAIChatModal()" style="border-color: #00e5ff; box-shadow: 0 0 15px rgba(0,229,255,0.4);">
       <span style="color: #00e5ff;">🎙️ Спроси</span>
     </button>
-    <button class="dock-btn" onclick="startHotseatDuel()" style="border-color: #ff0055; box-shadow: 0 0 15px rgba(255,0,85,0.4);">
+    <button class="dock-btn" onclick="if(typeof startHotseatDuel==='function')startHotseatDuel()" style="border-color: #ff0055; box-shadow: 0 0 15px rgba(255,0,85,0.4);">
       <span style="color: #ff0055;">Дуэль</span>
     </button>
   `;
 }
 
-// Окно реквизитов школы
 function openSchoolModal() {
-  sfx.playMove();
-  const vid12 = document.getElementById('vid-12');
-  if (vid12) vid12.pause();
+  if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
+  const vidSchool = document.getElementById(`vid-${SCHOOL_TARGET_ID}`);
+  if (vidSchool) vidSchool.pause();
 
   modalContent.innerHTML = `
     <div class="modal-title">Тактикус Финч</div>
@@ -297,13 +346,22 @@ function openSchoolModal() {
   modal.classList.add("active");
 }
 
-    
+function closeModal() {
+  if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
+  modal.classList.remove("active");
+  if (currentHeroId !== null) {
+    const activeVideo = document.getElementById(`vid-${currentHeroId}`);
+    if (activeVideo) activeVideo.play().catch(() => {});
+  }
+}
 
+// ==========================================
+// 8. ВИКТОРИНЫ И ТЕСТЫ
+// ==========================================
 function renderPuzzleQuestion() {
   const hero = HEROES[currentHeroId];
   const p = hero.puzzles[currentPuzzleIndex];
 
-  // Перемешиваем варианты случайным образом при каждом показе
   if (!p._shuffledOptions) {
     p._shuffledOptions = [...p.options].sort(() => Math.random() - 0.5);
   }
@@ -340,8 +398,6 @@ function renderPuzzleQuestion() {
 function checkAnswer(index) {
   const hero = HEROES[currentHeroId];
   const p = hero.puzzles[currentPuzzleIndex];
-  
-  // Берем вариант именно из перемешанного списка:
   const opt = (p._shuffledOptions || p.options)[index];
   
   const fb = document.getElementById("puzzle-feedback");
@@ -358,7 +414,7 @@ function checkAnswer(index) {
   fb.style.display = "block";
 
   if (opt.correct) {
-    sfx.playCorrect();
+    if (typeof sfx !== "undefined" && sfx.playCorrect) sfx.playCorrect();
     testScore++;
     if (navigator.vibrate) navigator.vibrate([70, 50, 70]);
     fb.style.background = "rgba(46, 204, 113, 0.2)";
@@ -366,7 +422,7 @@ function checkAnswer(index) {
     fb.style.border = "1px solid #2ecc71";
     fb.innerHTML = `<b>ВЕРНО!</b> ${opt.comment}`;
   } else {
-    sfx.playWrong();
+    if (typeof sfx !== "undefined" && sfx.playWrong) sfx.playWrong();
     if (navigator.vibrate) navigator.vibrate(180);
     fb.style.background = "rgba(231, 76, 60, 0.2)";
     fb.style.color = "#e74c3c";
@@ -389,30 +445,25 @@ function nextPuzzle() {
 
 function renderTestResult() {
   const hero = HEROES[currentHeroId];
-  
-  // Порог сдачи теста: минимум 80% правильных ответов
-  // (для 7 вопросов это 6 баллов, для 3 вопросов — 3 балла)
   const passThreshold = Math.ceil(hero.puzzles.length * 0.8);
   const isPassed = testScore >= passThreshold;
 
   let evaluation = "";
 
   if (isPassed) {
-    // Карточка и сдача теста засчитываются в паспорт ТОЛЬКО ПРИ ПОБЕДЕ!
-    sfx.playFanfare(); // 🎺 ТРИУМФАЛЬНЫЙ ЗВУК ПОБЕДЫ!
-    if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 250]); // Праздничная вибрация
-    registerCardDiscovery(currentHeroId);
-    registerTestPassed(currentHeroId);
+    if (typeof sfx !== "undefined" && sfx.playFanfare) sfx.playFanfare();
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 250]);
+    if (typeof registerCardDiscovery === "function") registerCardDiscovery(currentHeroId);
+    if (typeof registerTestPassed === "function") registerTestPassed(currentHeroId);
 
     if (testScore === hero.puzzles.length) {
-      evaluation = `🏆 <b>Абсолютный триумф!</b><br>${hero.name} безоговорочно признал ваше мастерство и добавлен в Паспорт Гроссмейстера!`;
+      evaluation = `🏆 <b>Абсолютный триумф!</b><br>${hero.name} признал ваше мастерство и добавлен в Паспорт!`;
     } else {
-      evaluation = `🎉 <b>Экзамен успешно сдан!</b><br>Отличная тактика и знание истории. ${hero.name} открыт в вашей Коллекции!`;
+      evaluation = `🎉 <b>Экзамен успешно сдан!</b><br>Отличная тактика. ${hero.name} открыт в вашей Коллекции!`;
     }
   } else {
-    // Тест не сдан — карточка НЕ добавляется в коллекцию
-    sfx.playWrong();
-    evaluation = `❌ <b>Экзамен не сдан.</b><br>Для добавления легенды в Коллекцию нужно набрать минимум <b>${passThreshold} из ${hero.puzzles.length}</b>.<br>Изучите биографию чемпиона и попробуйте снова!`;
+    if (typeof sfx !== "undefined" && sfx.playWrong) sfx.playWrong();
+    evaluation = `❌ <b>Экзамен не сдан.</b><br>Для зачета нужно набрать минимум <b>${passThreshold} из ${hero.puzzles.length}</b>.<br>Изучите биографию и попробуйте снова!`;
   }
 
   const resultColor = isPassed ? "var(--accent-color)" : "#ff4d6d";
@@ -427,7 +478,6 @@ function renderTestResult() {
     </div>
 
     ${!isPassed ? `
-      <!-- Кнопка быстрой отправки в биографию для подготовки -->
       <button class="action-link-btn" style="background: rgba(255,255,255,0.08); border: 1px solid var(--accent-color); color: #fff; margin-bottom: 8px;" onclick="openModal('bio')">
         📖 Изучить биографию ${hero.name.split(' ')[0]}
       </button>
@@ -448,13 +498,4 @@ function renderTestResult() {
       ${isPassed ? 'Пройти еще раз' : 'Попробовать снова 🔄'}
     </button>
   `;
-}
-
-function closeModal() {
-  sfx.playMove();
-  modal.classList.remove("active");
-  if (currentHeroId !== null) {
-    const activeVideo = document.getElementById(`vid-${currentHeroId}`);
-    if (activeVideo) activeVideo.play().catch(() => {});
-  }
 }
