@@ -119,9 +119,43 @@ document.addEventListener("touchstart", handleFirstInteraction, { once: true, pa
 document.addEventListener("click", handleFirstInteraction, { once: true });
 
 // ==========================================
-// 4. БЕСШОВНОЕ УПРАВЛЕНИЕ ВИДЕО (БЕЗ ЧЕРНЫХ ПРЯМОУГОЛЬНИКОВ)
+// 4. ЖЕСТКОЕ УПРАВЛЕНИЕ ВИДЕО (ИСКЛЮЧАЕТ НАЛОЖЕНИЕ)
 // ==========================================
+
+// Глобальная функция остановки ВСЕХ видео, кроме текущего
+function stopAllVideosExcept(activeId = null) {
+  ALL_TARGET_IDS.forEach(id => {
+    if (id !== activeId) {
+      const vid = document.getElementById(`vid-${id}`);
+      const targetEl = document.getElementById(`target-${id}`);
+
+      // 1. Моментально глушим звук и останавливаем поток
+      if (vid) {
+        vid.pause();
+        vid.currentTime = 0;
+        // Удаляем висящий слушатель, если видео не успело открыться
+        if (vid._revealHandler) {
+          vid.removeEventListener('timeupdate', vid._revealHandler);
+          vid._revealHandler = null;
+        }
+      }
+
+      // 2. Мгновенно убираем 3D-плоскость из рендера
+      if (targetEl) {
+        const aVideo = targetEl.querySelector('a-video');
+        if (aVideo) {
+          aVideo.setAttribute('scale', '0 0 0');
+          aVideo.setAttribute('material', 'transparent: true; opacity: 0;');
+        }
+      }
+    }
+  });
+}
+
 function playTargetVideo(id) {
+  // ПЕРВЫМ ДЕЛОМ глушим абсолютно все остальные видео на сцене
+  stopAllVideosExcept(id);
+
   const vid = document.getElementById(`vid-${id}`);
   const targetEl = document.getElementById(`target-${id}`);
   if (!vid || !targetEl) return;
@@ -132,16 +166,23 @@ function playTargetVideo(id) {
   vid.defaultMuted = isMuted;
   vid.playsInline = true;
 
-  // Показываем видео строго тогда, когда пошел реальный видеопоток
-  const revealVideo = () => {
-    if (aVideo && vid.currentTime > 0) {
+  // Очищаем старый обработчик, если был
+  if (vid._revealHandler) {
+    vid.removeEventListener('timeupdate', vid._revealHandler);
+  }
+
+  // Новый обработчик показа первого кадра
+  vid._revealHandler = () => {
+    // Показываем видео ТОЛЬКО если этот таргет до сих пор является активным!
+    if (aVideo && vid.currentTime > 0 && currentHeroId === id) {
       aVideo.setAttribute('scale', '1 1 1');
       aVideo.setAttribute('material', 'transparent: false; opacity: 1;');
-      vid.removeEventListener('timeupdate', revealVideo);
+      vid.removeEventListener('timeupdate', vid._revealHandler);
+      vid._revealHandler = null;
     }
   };
 
-  vid.addEventListener('timeupdate', revealVideo);
+  vid.addEventListener('timeupdate', vid._revealHandler);
 
   if (vid.readyState === 0) {
     vid.load();
@@ -162,7 +203,11 @@ function stopTargetVideo(id) {
   const vid = document.getElementById(`vid-${id}`);
   const targetEl = document.getElementById(`target-${id}`);
 
-  // Мгновенно схлопываем полигон при потере таргета
+  if (vid && vid._revealHandler) {
+    vid.removeEventListener('timeupdate', vid._revealHandler);
+    vid._revealHandler = null;
+  }
+
   if (targetEl) {
     const aVideo = targetEl.querySelector('a-video');
     if (aVideo) {
@@ -185,6 +230,9 @@ ALL_TARGET_IDS.forEach(id => {
   if (!targetEl) return;
 
   targetEl.addEventListener("targetFound", () => {
+    // Запоминаем текущий ID до старта видео
+    currentHeroId = (id === SCHOOL_TARGET_ID) ? null : id;
+
     if (typeof sfx !== "undefined" && sfx.playTargetFound) sfx.playTargetFound();
 
     if (hint) hint.classList.add("hidden");
@@ -192,19 +240,21 @@ ALL_TARGET_IDS.forEach(id => {
     if (soundBtn) soundBtn.style.display = "inline-flex";
 
     if (id === SCHOOL_TARGET_ID) {
-      currentHeroId = null;
       showSchoolUI();
     } else if (typeof HEROES !== "undefined" && HEROES[id]) {
-      currentHeroId = id;
       applyHeroTheme(HEROES[id]);
       showChampionUI();
     }
 
+    // Запускаем только одно видео, жестко погасив все остальные
     playTargetVideo(id);
   });
 
   targetEl.addEventListener("targetLost", () => {
     stopTargetVideo(id);
+    if (currentHeroId === id) {
+      currentHeroId = null;
+    }
   });
 });
 
