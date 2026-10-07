@@ -1,44 +1,4 @@
 // ==========================================
-// 0. ЭКРАННЫЙ ЛОГГЕР (DEBUG ON-SCREEN CONSOLE)
-// ==========================================
-const debugConsole = document.createElement('div');
-debugConsole.id = 'ar-debug-console';
-debugConsole.style.cssText = `
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  right: 10px;
-  max-height: 180px;
-  overflow-y: auto;
-  background: rgba(0, 0, 0, 0.85);
-  color: #00ffcc;
-  font-family: monospace;
-  font-size: 11px;
-  line-height: 1.3;
-  padding: 8px;
-  border-radius: 6px;
-  z-index: 99999;
-  border: 1px solid #00ffcc;
-  pointer-events: auto;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-`;
-document.body.appendChild(debugConsole);
-
-function logMsg(msg, color = '#00ffcc') {
-  const line = document.createElement('div');
-  line.style.color = color;
-  line.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
-  line.style.padding = '2px 0';
-  const time = new Date().toTimeString().split(' ')[0].substring(3);
-  line.innerText = `[${time}] ${msg}`;
-  debugConsole.appendChild(line);
-  debugConsole.scrollTop = debugConsole.scrollHeight;
-  console.log(`[AR_LOG] ${msg}`);
-}
-
-logMsg("🚀 Инициализация скрипта app.js...");
-
-// ==========================================
 // 1. ИНИЦИАЛИЗАЦИЯ И СТАРТ AR ДВИЖКА
 // ==========================================
 document.addEventListener("DOMContentLoaded", async () => {
@@ -51,35 +11,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   const readySub = document.getElementById('ready-status-sub');
 
   try {
-    logMsg("DOM загружен. Ожидание a-scene...");
-    if (percentText) percentText.innerText = "Инициализация сцены...";
-    if (barFill) barFill.style.width = "25%";
+    if (percentText) percentText.innerText = "Инициализация...";
+    if (barFill) barFill.style.width = "40%";
 
     if (!sceneEl.hasLoaded) {
       await new Promise(res => sceneEl.addEventListener('loaded', res, { once: true }));
     }
-    logMsg("a-scene загружена успешно.");
 
-    if (percentText) percentText.innerText = "Запуск MindAR и камеры...";
-    if (barFill) barFill.style.width = "50%";
+    if (percentText) percentText.innerText = "Запуск камеры...";
+    if (barFill) barFill.style.width = "75%";
 
     const arSystem = sceneEl.systems["mindar-image-system"];
     if (!arSystem) {
-      throw new Error("MindAR система не найдена на сцене!");
+      throw new Error("MindAR система не найдена");
     }
 
-    logMsg("Старт системы MindAR...");
     await arSystem.start();
-    logMsg("MindAR успешно запущен!", "#2ecc71");
-
-    // Диагностика скомпилированного .mind файла
-    if (arSystem.controller && arSystem.controller.inputImageTargetList) {
-      const targetsLoaded = arSystem.controller.inputImageTargetList.length;
-      logMsg(`Файл cards.mind загружен. Таргетов в базе: ${targetsLoaded}`, "#f1c40f");
-      if (targetsLoaded < 18) {
-        logMsg(`ВНИМАНИЕ! В файле ${targetsLoaded} таргетов, а в коде ожидается 18!`, "#ff4d6d");
-      }
-    }
 
     if (barFill) barFill.style.width = "100%";
     if (percentText) percentText.innerText = "Готово!";
@@ -88,7 +35,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (loadBox) loadBox.style.display = "none";
       if (readySub) readySub.style.display = "block";
       if (badge) {
-        badge.innerText = "СКАНЕР АКТИВЕН";
+        badge.innerText = "AR СКАНЕР АКТИВЕН";
         badge.style.borderColor = "var(--accent-color)";
         badge.style.color = "var(--accent-color)";
       }
@@ -96,25 +43,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     }, 200);
 
   } catch (err) {
-    logMsg(`КРИТИЧЕСКАЯ ОШИБКА: ${err.message}`, "#ff4d6d");
-    console.error("Ошибка инициализации AR:", err);
+    console.error("Ошибка AR:", err);
     if (badge) {
       badge.innerText = "ОШИБКА";
       badge.style.borderColor = "#ff4d6d";
       badge.style.color = "#ff4d6d";
     }
-    if (title) title.innerText = "СБОЙ ЗАПУСКА";
-    if (percentText) percentText.innerText = err.message || "Ошибка камеры/таргетов";
+    if (title) title.innerText = "СБОЙ КАМЕРЫ";
+    if (percentText) percentText.innerText = "Закройте другие вкладки и обновите страницу";
     if (barFill) barFill.style.background = "#ff4d6d";
   }
 
-  sceneEl.addEventListener("arError", (ev) => {
-    logMsg(`Событие arError: ${JSON.stringify(ev.detail || ev)}`, "#ff4d6d");
+  sceneEl.addEventListener("arError", () => {
     if (badge) {
-      badge.innerText = "ОШИБКА КАМЕРЫ";
+      badge.innerText = "ДОСТУП ЗАПРЕЩЕН";
       badge.style.borderColor = "#ff4d6d";
       badge.style.color = "#ff4d6d";
     }
+    if (title) title.innerText = "КАМЕРА НЕДОСТУПНА";
+    if (percentText) percentText.innerText = "Закройте дубликаты вкладки и дайте доступ к камере";
   });
 
   if (typeof updatePassportCounter === "function") {
@@ -138,15 +85,21 @@ const modal = document.getElementById("modal-container");
 const modalContent = document.getElementById("modal-content");
 
 const SCHOOL_TARGET_ID = 17;
-const ALL_TARGET_IDS = Array.from({ length: 18 }, (_, i) => i);
+const ALL_TARGET_IDS = typeof HEROES !== "undefined"
+  ? [...Object.keys(HEROES).map(Number), SCHOOL_TARGET_ID]
+  : Array.from({ length: 18 }, (_, i) => i);
+
+// Скрываем все a-video на старте, чтобы не было черных вспышек
+document.querySelectorAll('a-scene a-video').forEach(aVid => {
+  aVid.setAttribute('visible', 'false');
+});
 
 // ==========================================
-// 3. РАЗБЛОКИРОВКА АВТОПРОИГРЫВАНИЯ
+// 3. РАЗБЛОКИРОВКА МЕДИА ПРИ ПЕРВОМ КАСАНИИ
 // ==========================================
 function handleFirstInteraction() {
   if (userHasInteracted) return;
   userHasInteracted = true;
-  logMsg("Тап по экрану: медиа-контекст разблокирован");
 
   if (typeof sfx !== "undefined" && sfx.ctx && sfx.ctx.state === "suspended") {
     sfx.ctx.resume();
@@ -161,43 +114,50 @@ document.addEventListener("touchstart", handleFirstInteraction, { once: true, pa
 document.addEventListener("click", handleFirstInteraction, { once: true });
 
 // ==========================================
-// 4. УПРАВЛЕНИЕ ВИДЕО
+// 4. БЕСШОВНОЕ УПРАВЛЕНИЕ ВИДЕО (БЕЗ ЧЕРНЫХ ПРЯМОУГОЛЬНИКОВ)
 // ==========================================
 function playTargetVideo(id) {
   const vid = document.getElementById(`vid-${id}`);
-  if (!vid) {
-    logMsg(`Элемент #vid-${id} не найден в DOM!`, "#ff4d6d");
-    return;
-  }
+  const targetEl = document.getElementById(`target-${id}`);
+  if (!vid) return;
 
-  logMsg(`Попытка пуска #vid-${id} (muted=${isMuted})`);
+  const aVideo = targetEl ? targetEl.querySelector('a-video') : null;
+
   vid.muted = isMuted;
   vid.defaultMuted = isMuted;
   vid.playsInline = true;
 
+  // Показываем плоскость ТОЛЬКО когда пошли реальные кадры
+  const showVideoMesh = () => {
+    if (aVideo) aVideo.setAttribute('visible', 'true');
+    vid.removeEventListener('timeupdate', showVideoMesh);
+  };
+  vid.addEventListener('timeupdate', showVideoMesh);
+
   if (vid.readyState === 0) {
-    logMsg(`Подгрузка #vid-${id}...`);
     vid.load();
   }
 
   const playPromise = vid.play();
   if (playPromise !== undefined) {
-    playPromise.then(() => {
-      logMsg(`▶ Видео #vid-${id} успешно играет!`, "#2ecc71");
-    }).catch(err => {
-      logMsg(`⚠ Автоплей со звуком заблокирован: ${err.name}. Пробуем muted...`, "#f1c40f");
+    playPromise.catch(() => {
+      // Автоплей со звуком не разрешен — тихо откатываемся на mute
       vid.muted = true;
       isMuted = true;
       if (soundBtn) soundBtn.innerHTML = "<span>🔇</span> ЗВУК: ВЫКЛ";
-      vid.play()
-        .then(() => logMsg(`▶ Видео #vid-${id} запущено в MUTED режиме!`, "#2ecc71"))
-        .catch(e => logMsg(`❌ Ошибка даже в muted: ${e.message}`, "#ff4d6d"));
+      vid.play().catch(() => {});
     });
   }
 }
 
 function stopTargetVideo(id) {
   const vid = document.getElementById(`vid-${id}`);
+  const targetEl = document.getElementById(`target-${id}`);
+  if (targetEl) {
+    const aVideo = targetEl.querySelector('a-video');
+    if (aVideo) aVideo.setAttribute('visible', 'false');
+  }
+
   if (vid) {
     vid.pause();
     vid.currentTime = 0;
@@ -205,28 +165,15 @@ function stopTargetVideo(id) {
 }
 
 // ==========================================
-// 5. ДИАГНОСТИЧЕСКИЕ СЛУШАТЕЛИ ТАРГЕТОВ
+// 5. СЛУШАТЕЛИ СОБЫТИЙ ТАРГЕТОВ
 // ==========================================
 ALL_TARGET_IDS.forEach(id => {
   const targetEl = document.getElementById(`target-${id}`);
-  const videoEl = document.getElementById(`vid-${id}`);
-
-  if (!targetEl) {
-    logMsg(`Тег #target-${id} отсутствует в HTML!`, "#ff4d6d");
-    return;
-  }
-
-  if (videoEl) {
-    videoEl.addEventListener('error', () => {
-      const err = videoEl.error;
-      logMsg(`❌ Ошибка видеофайла #vid-${id}: code ${err ? err.code : 'unknown'}`, "#ff4d6d");
-    });
-  }
+  if (!targetEl) return;
 
   targetEl.addEventListener("targetFound", () => {
-    logMsg(`🎯 ТАРГЕТ #${id} НАЙДЕН В КАДРЕ!`, "#2ecc71");
-
     if (typeof sfx !== "undefined" && sfx.playTargetFound) sfx.playTargetFound();
+
     if (hint) hint.classList.add("hidden");
     if (dock) dock.style.display = "flex";
     if (soundBtn) soundBtn.style.display = "inline-flex";
@@ -238,15 +185,12 @@ ALL_TARGET_IDS.forEach(id => {
       currentHeroId = id;
       applyHeroTheme(HEROES[id]);
       showChampionUI();
-    } else {
-      logMsg(`Предупреждение: HEROES[${id}] не описан в heroes-data.js`, "#f1c40f");
     }
 
     playTargetVideo(id);
   });
 
   targetEl.addEventListener("targetLost", () => {
-    logMsg(`Таргет #${id} потерян из вида`, "#888");
     stopTargetVideo(id);
   });
 });
@@ -281,7 +225,7 @@ if (soundBtn) {
 }
 
 // ==========================================
-// 7. МОДАЛЬНЫЕ ОКНА
+// 7. МОДАЛЬНЫЕ ОКНА И МЕНЮ
 // ==========================================
 function openModal(type) {
   if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
@@ -382,7 +326,7 @@ function closeModal() {
 }
 
 // ==========================================
-// 8. ВИКТОРИНЫ
+// 8. ВИКТОРИНЫ И ТЕСТЫ
 // ==========================================
 function renderPuzzleQuestion() {
   const hero = HEROES[currentHeroId];
