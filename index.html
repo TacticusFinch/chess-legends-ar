@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Тактикус Финч — Чемпионы мира по шахматам</title>
+
+  <!-- Внешние библиотеки -->
+  <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.4/dist/mindar-image-aframe.prod.js"></script>
+
+  <!-- Подключение стилей -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+  <!-- Прелоадер -->
+  <div id="scanner-hint">
+    <div class="ar-reticle">
+      <div class="reticle-corner top-left"></div>
+      <div class="reticle-corner top-right"></div>
+      <div class="reticle-corner bottom-left"></div>
+      <div class="reticle-corner bottom-right"></div>
+      <div class="laser-beam"></div>
+      <div class="hud-circle ring-outer"></div>
+      <div class="hud-circle ring-inner"></div>
+      <div class="hud-chess-core">♚</div>
+    </div>
+
+    <div id="unlock-toast">
+      <span>🏆</span>
+      <span id="unlock-toast-text">НОВАЯ ЛЕГЕНДА В КОЛЛЕКЦИИ!</span>
+    </div>
+    
+    <div class="scanner-status">
+      <div id="loading-badge" class="status-badge" style="border-color: #f1c40f; color: #f1c40f;">ЗАГРУЗКА БАЗЫ AR...</div>
+      <div id="loading-title" class="status-title">ИНИЦИАЛИЗАЦИЯ 17 ГЕРОЕВ</div>
+      
+      <div id="load-progress-container" class="load-progress-box">
+        <div class="load-bar-track">
+          <div id="load-bar-fill" class="load-bar-fill"></div>
+        </div>
+        <div id="load-percent" style="font-size: 11px; font-weight: 800;">0%</div>
+        <div class="load-subtext">Идет подготовка базы данных чемпионов.<br>Пожалуйста, не закрывайте страницу.</div>
+      </div>
+
+      <div id="ready-status-sub" class="status-sub" style="display: none; margin-top: 8px;">
+        15 легенд готовы • Наведите камеру на карту
+      </div>
+    </div>
+  </div>
+
+  <!-- Верхний HUD -->
+  <div class="top-hud">
+    <a id="bot-link-btn" class="hud-btn" href="https://max.ru/se14097294_bot" target="_blank">
+      <span>🤖</span> Тактикус Финч
+    </a>
+    <button id="passport-btn" class="hud-btn" onclick="openPassportModal()">
+      <span></span> Коллекция <span id="passport-counter">(0/15)</span>
+    </button>
+    <button id="sound-toggle" class="hud-btn" style="display: none;">
+      <span>🔇</span> ЗВУК: ВЫКЛ
+    </button>
+  </div>
+
+  <!-- Нижний док -->
+  <div id="interactive-dock"></div>
+
+  <!-- Модальное окно -->
+  <div id="modal-container" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal()">Закрыть ✕</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <!-- Арена Hotseat -->
+  <div id="hotseat-arena">
+    <div id="zone-p2" class="hs-zone top-player">
+      <div>
+        <div class="hs-header">
+          <span id="p2-name" class="hs-hero-name">Игрок 2</span>
+          <span id="p2-hp-num" class="hs-hp-val">100%</span>
+        </div>
+        <div class="hs-hp-track">
+          <div id="p2-hp-bar" class="hs-hp-fill" style="width: 100%;"></div>
+        </div>
+      </div>
+      <div class="hs-content-row">
+        <img id="p2-board-img" class="hs-board-img" src="" alt="Доска" style="display: none;">
+        <div class="hs-interactive-col">
+          <div id="p2-prompt" class="hs-prompt-badge">РАУНД 1</div>
+          <div id="p2-options" class="hs-options-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hs-divider">
+      <div id="hs-round-info" class="hs-round-badge">БОЙ ДО ПОБЕДНОГО МАТА</div>
+      <button class="hs-exit-btn" onclick="exitDuel()">СДАТЬСЯ ✕</button>
+    </div>
+
+    <div id="zone-p1" class="hs-zone">
+      <div class="hs-content-row">
+        <img id="p1-board-img" class="hs-board-img" src="" alt="Доска" style="display: none;">
+        <div class="hs-interactive-col">
+          <div id="p1-prompt" class="hs-prompt-badge">РАУНД 1</div>
+          <div id="p1-options" class="hs-options-list"></div>
+        </div>
+      </div>
+      <div>
+        <div class="hs-hp-track">
+          <div id="p1-hp-bar" class="hs-hp-fill" style="width: 100%;"></div>
+        </div>
+        <div class="hs-header" style="margin-top: 3px;">
+          <span id="p1-name" class="hs-hero-name">Игрок 1</span>
+          <span id="p1-hp-num" class="hs-hp-val">100%</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="hs-gameover" class="hs-feedback-toast">
+      <div id="hs-winner-title" style="font-size: 26px; font-weight: 900; margin-bottom: 6px;">ШАХ И МАТ!</div>
+      <div id="hs-winner-desc" style="font-size: 13px; color: #ccc; margin-bottom: 20px;"></div>
+      <button class="action-link-btn" style="max-width: 220px; cursor: pointer;" onclick="startHotseatDuel()">Реванш 🔄</button>
+      <button class="action-link-btn secondary" style="max-width: 220px; margin-top: 8px; cursor: pointer;" onclick="exitDuel()">В меню</button>
+    </div>
+  </div>
+
+  <!-- MindAR Сцена -->
+  <a-scene
+    mindar-image="imageTargetSrc: ./cards.mind?v=999; autoStart: false; maxTrack: 1; uiLoading: no; uiScanning: no;"
+    color-space="sRGB"
+    renderer="colorManagement: true; precision: medium;"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
+
+<a-assets timeout="4000">
+  <video id="vid-0" src="./assets/videos/steinitz.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-1" src="./assets/videos/lasker.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-2" src="./assets/videos/capablanca.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-3" src="./assets/videos/carlsen.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-4" src="./assets/videos/enigma.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-5" src="./assets/videos/tal.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-6" src="./assets/videos/stockfish.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-7" src="./assets/videos/botvinnik.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-8" src="./assets/videos/fischer.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-9" src="./assets/videos/caruana.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-10" src="./assets/videos/nakamura.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-11" src="./assets/videos/gukesh.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-12" src="./assets/videos/rubinstein.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-13" src="./assets/videos/petrosyan.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-14" src="./assets/videos/smyslov.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-15" src="./assets/videos/kasparov.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-16" src="./assets/videos/liren.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+  <video id="vid-17" src="./assets/videos/school.mp4" loop="true" playsinline webkit-playsinline muted preload="metadata"></video>
+</a-assets>
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <!-- Таргеты 0-17 -->
+    <a-entity id="target-0" mindar-image-target="targetIndex: 0"><a-video src="#vid-0" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-1" mindar-image-target="targetIndex: 1"><a-video src="#vid-1" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-2" mindar-image-target="targetIndex: 2"><a-video src="#vid-2" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-3" mindar-image-target="targetIndex: 3"><a-video src="#vid-3" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-4" mindar-image-target="targetIndex: 4"><a-video src="#vid-4" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-5" mindar-image-target="targetIndex: 5"><a-video src="#vid-5" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-6" mindar-image-target="targetIndex: 6"><a-video src="#vid-6" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-7" mindar-image-target="targetIndex: 7"><a-video src="#vid-7" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-8" mindar-image-target="targetIndex: 8"><a-video src="#vid-8" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-9" mindar-image-target="targetIndex: 9"><a-video src="#vid-9" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-10" mindar-image-target="targetIndex: 10"><a-video src="#vid-10" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-11" mindar-image-target="targetIndex: 11"><a-video src="#vid-11" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-12" mindar-image-target="targetIndex: 12"><a-video src="#vid-12" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-13" mindar-image-target="targetIndex: 13"><a-video src="#vid-13" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-14" mindar-image-target="targetIndex: 14"><a-video src="#vid-14" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-15" mindar-image-target="targetIndex: 15"><a-video src="#vid-15" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-16" mindar-image-target="targetIndex: 16"><a-video src="#vid-16" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+    <a-entity id="target-17" mindar-image-target="targetIndex: 17"><a-video src="#vid-17" width="1" height="1.54" position="0 0 0"></a-video></a-entity>
+  </a-scene>
+
+  <!-- Подключение скриптов в строгой последовательности зависимостей -->
+  <script src="js/heroes-data.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/passport.js"></script>
+  <script src="js/duel.js"></script>
+  <script src="js/ai-chat.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

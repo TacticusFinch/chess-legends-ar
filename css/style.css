@@ -1,0 +1,450 @@
+:root {
+  --accent-color: #00ffcc;
+  --accent-glow: rgba(0, 255, 204, 0.4);
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  background-color: #000;
+}
+
+/* Прелоадер */
+#scanner-hint {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(10, 15, 24, 0.35) 0%, rgba(0,0,0,0.55) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-color);
+  z-index: 100;
+  text-align: center;
+  padding: 24px;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+#scanner-hint.hidden { opacity: 0; }
+
+/* Контейнер прицела */
+.ar-reticle {
+  position: relative;
+  width: 72vw;
+  max-width: 320px;
+  aspect-ratio: 1 / 1.54;
+  border: 1px solid rgba(0, 255, 204, 0.15);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  overflow: hidden;
+  box-shadow: inset 0 0 35px rgba(0, 255, 204, 0.06);
+}
+
+/* Уголки */
+.reticle-corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-color: var(--accent-color);
+  border-style: solid;
+  border-width: 0;
+  filter: drop-shadow(0 0 8px var(--accent-color));
+}
+.reticle-corner.top-left { top: 10px; left: 10px; border-top-width: 3.5px; border-left-width: 3.5px; border-top-left-radius: 8px; }
+.reticle-corner.top-right { top: 10px; right: 10px; border-top-width: 3.5px; border-right-width: 3.5px; border-top-right-radius: 8px; }
+.reticle-corner.bottom-left { bottom: 10px; left: 10px; border-bottom-width: 3.5px; border-left-width: 3.5px; border-bottom-left-radius: 8px; }
+.reticle-corner.bottom-right { bottom: 10px; right: 10px; border-bottom-width: 3.5px; border-right-width: 3.5px; border-bottom-right-radius: 8px; }
+
+/* Лазер */
+.laser-beam {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, var(--accent-color) 50%, transparent 100%);
+  box-shadow: 0 0 15px var(--accent-color), 0 0 30px var(--accent-color);
+  animation: scanLaser 2.2s ease-in-out infinite alternate;
+}
+@keyframes scanLaser {
+  0% { transform: translateY(10px); opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { transform: translateY(300px); opacity: 0.3; }
+}
+
+/* Вращающиеся кольца */
+.hud-circle { position: absolute; border-radius: 50%; box-sizing: border-box; }
+.ring-outer {
+  width: 110px; height: 110px;
+  border: 2px dashed var(--accent-color);
+  opacity: 0.7;
+  animation: rotateCW 8s linear infinite;
+  filter: drop-shadow(0 0 8px var(--accent-glow));
+}
+.ring-inner {
+  width: 80px; height: 80px;
+  border: 3px solid transparent;
+  border-top: 3px solid var(--accent-color);
+  border-bottom: 3px solid var(--accent-color);
+  animation: rotateCCW 2.5s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+@keyframes rotateCW { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes rotateCCW { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+
+/* Шахматный символ */
+.hud-chess-core {
+  font-size: 38px;
+  color: var(--accent-color);
+  text-shadow: 0 0 15px var(--accent-color), 0 0 25px var(--accent-glow);
+  animation: pulseCore 1.6s ease-in-out infinite;
+  z-index: 2;
+}
+@keyframes pulseCore {
+  0%, 100% { transform: scale(0.92); opacity: 0.75; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+.scanner-status { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.status-badge {
+  font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
+  padding: 3px 8px; border-radius: 4px;
+  background: rgba(0, 255, 204, 0.12);
+  border: 1px solid var(--accent-color);
+  color: var(--accent-color);
+  margin-bottom: 4px;
+}
+.status-title { font-size: 15px; font-weight: 800; letter-spacing: 1px; color: #fff; }
+.status-sub { font-size: 12px; color: #7a8b9e; }
+
+  /* Прогресс загрузки AR */
+.load-progress-box {
+  width: 220px;
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.load-bar-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 255, 204, 0.2);
+}
+.load-bar-fill {
+  width: 0%;
+  height: 100%;
+  background: var(--accent-color);
+  box-shadow: 0 0 10px var(--accent-color);
+  transition: width 0.2s ease;
+}
+.load-subtext {
+  font-size: 10px;
+  color: #8a99ad;
+  text-align: center;
+  line-height: 1.3;
+}
+  
+/* HUD и кнопки */
+.top-hud {
+  position: absolute; top: 16px; left: 16px; right: 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  z-index: 120; pointer-events: none;
+}
+.hud-btn {
+  pointer-events: auto;
+  background: rgba(12, 16, 26, 0.75);
+  border: 1px solid var(--accent-color);
+  color: #fff; border-radius: 12px; padding: 8px 14px;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  text-transform: uppercase; text-decoration: none;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), 0 0 10px var(--accent-glow);
+  cursor: pointer; transition: transform 0.15s;
+}
+.hud-btn:active { transform: scale(0.95); }
+#bot-link-btn { border-color: #00e5ff; }
+
+#interactive-dock {
+  position: absolute; bottom: 24px; left: 14px; right: 14px;
+  display: none; justify-content: space-between; gap: 10px; z-index: 110;
+  animation: dockRise 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+@keyframes dockRise {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.dock-btn {
+  flex: 1; padding: 12px 6px; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(25, 32, 48, 0.85) 0%, rgba(10, 14, 22, 0.95) 100%);
+  border: 1.5px solid var(--accent-color);
+  color: #fff; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
+  text-transform: uppercase; backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 15px var(--accent-glow);
+  cursor: pointer; text-align: center; display: flex; flex-direction: column;
+  align-items: center; gap: 4px; transition: all 0.2s ease;
+}
+.dock-btn:active {
+  transform: scale(0.92);
+  box-shadow: 0 2px 8px var(--accent-glow);
+  background: var(--accent-color); color: #000;
+}
+
+/* Модальные окна */
+.modal-overlay {
+  position: absolute; inset: 0; background: rgba(4, 6, 12, 0.85);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease; padding: 16px; box-sizing: border-box;
+  backdrop-filter: blur(8px);
+}
+.modal-overlay.active { opacity: 1; pointer-events: auto; }
+.modal-card {
+  background: linear-gradient(160deg, #121824 0%, #080b11 100%);
+  border: 1px solid var(--accent-color); border-radius: 18px;
+  width: 100%; max-width: 420px; padding: 22px; color: #fff;
+  position: relative; box-shadow: 0 0 35px var(--accent-glow);
+  max-height: 85vh; overflow-y: auto; box-sizing: border-box;
+}
+.modal-close {
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #aaa; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  border-radius: 8px; padding: 7px 12px; cursor: pointer;
+}
+.modal-close:active { background: rgba(255, 255, 255, 0.2); color: #fff; }
+.modal-title { font-size: 18px; font-weight: 800; color: var(--accent-color); margin-bottom: 4px; padding-right: 65px; }
+.modal-subtitle { font-size: 11px; color: #8a99ad; text-transform: uppercase; margin-bottom: 14px; }
+.bio-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--accent-color); margin-top: 14px; margin-bottom: 4px; }
+.bio-paragraph { font-size: 13px; line-height: 1.5; color: #ccc; margin-bottom: 8px; text-align: justify; }
+.modal-quote {
+  font-style: italic; color: #ddd; font-size: 12px; line-height: 1.45;
+  border-left: 3px solid var(--accent-color); padding: 8px 12px; margin: 12px 0;
+  background: rgba(255, 255, 255, 0.03); border-radius: 0 8px 8px 0;
+}
+.diagram-container { width: 100%; margin: 12px 0; display: flex; justify-content: center; }
+.diagram-img {
+  max-width: 250px; width: 100%; height: auto;
+  border: 2px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
+  background-color: #1a1e28; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+.difficulty-badge {
+  display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase;
+  padding: 4px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.08);
+  color: var(--accent-color); margin-bottom: 8px;
+}
+.puzzle-option-btn {
+  width: 100%; text-align: left; padding: 12px; font-size: 12px; margin-bottom: 8px;
+  border-radius: 10px; background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12); color: #fff; cursor: pointer; box-sizing: border-box;
+}
+.puzzle-option-btn:active { background: rgba(255, 255, 255, 0.15); border-color: var(--accent-color); }
+.stat-row { margin-bottom: 12px; }
+.stat-header { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; margin-bottom: 4px; color: #ccc; }
+.stat-track { height: 7px; background: rgba(255, 255, 255, 0.08); border-radius: 4px; overflow: hidden; }
+.stat-fill { height: 100%; background: var(--accent-color); box-shadow: 0 0 8px var(--accent-glow); border-radius: 4px; }
+.skill-box { margin-top: 16px; padding: 14px; background: rgba(255, 255, 255, 0.03); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08); }
+.external-promo-box { margin-top: 15px; padding: 12px; background: rgba(255, 255, 255, 0.04); border-radius: 10px; border: 1px dashed rgba(255, 255, 255, 0.15); text-align: center; }
+.action-link-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 8px; padding: 11px 16px; width: 100%; box-sizing: border-box;
+  border-radius: 10px; background: var(--accent-color); color: #000;
+  font-size: 11px; font-weight: 800; text-decoration: none; text-transform: uppercase;
+  letter-spacing: 0.4px; box-shadow: 0 4px 12px var(--accent-glow); cursor: pointer;
+}
+.action-link-btn:active { transform: scale(0.97); }
+.action-link-btn.secondary { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; box-shadow: none; }
+
+/* Hotseat Арена */
+#hotseat-arena {
+  position: absolute; inset: 0; background: #080c14; z-index: 250;
+  display: none; flex-direction: column; overflow: hidden; user-select: none;
+}
+#hotseat-arena.active { display: flex; }
+.hs-zone { flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 8px 12px; box-sizing: border-box; position: relative; }
+.hs-zone.top-player { transform: rotate(180deg); border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+.hs-divider {
+  height: 32px; background: #0e1422;
+  border-top: 1px solid rgba(255, 255, 255, 0.15); border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 14px; z-index: 10;
+}
+.hs-round-badge { font-size: 11px; font-weight: 800; color: #ff0055; letter-spacing: 1px; }
+.hs-exit-btn { background: rgba(255, 50, 50, 0.15); border: 1px solid #ff4d6d; color: #ff4d6d; padding: 2px 8px; border-radius: 6px; font-size: 9px; font-weight: 800; cursor: pointer; }
+.hs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.hs-hero-name { font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.hs-hp-val { font-size: 11px; font-weight: 800; }
+.hs-hp-track { height: 5px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+.hs-hp-fill { height: 100%; transition: width 0.3s ease; }
+.hs-content-row { flex: 1; display: flex; align-items: center; gap: 10px; margin: 4px 0; min-height: 0; }
+.hs-board-img {
+  height: 100%; max-height: 165px; aspect-ratio: 1 / 1; object-fit: contain;
+  border-radius: 8px; border: 1.5px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8); background: #111622;
+}
+.hs-interactive-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.hs-prompt-badge { font-size: 9px; font-weight: 800; color: #00ffcc; text-transform: uppercase; line-height: 1.2; }
+.hs-options-list { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.hs-opt-btn {
+  background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff; padding: 7px 8px; border-radius: 6px; font-size: 10px; font-weight: 700;
+  cursor: pointer; text-align: left; line-height: 1.2;
+}
+.hs-opt-btn:active { transform: scale(0.96); background: rgba(255, 255, 255, 0.25); }
+.hs-feedback-toast {
+  position: absolute; inset: 0; background: rgba(4, 6, 12, 0.95);
+  display: none; align-items: center; justify-content: center; flex-direction: column;
+  z-index: 20; text-align: center; padding: 20px;
+}
+.hs-feedback-toast.active { display: flex; }
+
+
+
+  /* Кнопка паспорта в верхнем HUD */
+#passport-btn {
+  border-color: #f1c40f;
+  color: #f1c40f;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), 0 0 10px rgba(241, 196, 15, 0.3);
+}
+
+/* Компактная сетка на 4 колонки (идеально для 15 карт: 4+4+4+3) */
+.passport-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 12px 0;
+}
+
+/* Карточка чемпиона */
+.passport-slot {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 5px 3px 6px 3px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  transition: transform 0.15s ease, border-color 0.2s ease;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.passport-slot.unlocked {
+  background: #0f1420;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.passport-slot.unlocked:active {
+  transform: scale(0.96);
+}
+
+.passport-slot.locked {
+  filter: grayscale(1);
+  opacity: 0.28;
+}
+
+/* Фиксированный компактный размер под картинки 100x100px */
+.passport-avatar-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+/* Фото с аппаратным сглаживанием резкости */
+.passport-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  /* Заставляет браузер аккуратно интерполировать пиксели при уменьшении */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
+}
+
+/* Имя чемпиона под иконкой */
+.passport-hero-name {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #ddd;
+  line-height: 1.1;
+  width: 100%;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Миниатюрная аккуратная галочка сданного теста */
+.passport-badge-test {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  font-size: 7px;
+  background: #2ecc71;
+  color: #000;
+  border-radius: 50%;
+  width: 13px;
+  height: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  z-index: 5;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+
+/* Замок для закрытых слотов */
+.passport-lock-icon {
+  font-size: 16px;
+  opacity: 0.4;
+}
+
+.passport-monogram {
+  font-size: 11px;
+  font-weight: 800;
+  color: #666;
+}
+
+/* Всплывающее уведомление о новой открытой карте */
+#unlock-toast {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: linear-gradient(135deg, #1f2937, #111827);
+  border: 1.5px solid #f1c40f;
+  box-shadow: 0 0 20px rgba(241, 196, 15, 0.5);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 800;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+#unlock-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
