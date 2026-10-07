@@ -119,28 +119,23 @@ document.addEventListener("touchstart", handleFirstInteraction, { once: true, pa
 document.addEventListener("click", handleFirstInteraction, { once: true });
 
 // ==========================================
-// 4. ЖЕСТКОЕ УПРАВЛЕНИЕ ВИДЕО (ИСКЛЮЧАЕТ НАЛОЖЕНИЕ)
+// 4. ЖЕСТКОЕ УПРАВЛЕНИЕ ВИДЕО (БЕЗ НАЛОЖЕНИЙ)
 // ==========================================
-
-// Глобальная функция остановки ВСЕХ видео, кроме текущего
 function stopAllVideosExcept(activeId = null) {
   ALL_TARGET_IDS.forEach(id => {
     if (id !== activeId) {
       const vid = document.getElementById(`vid-${id}`);
       const targetEl = document.getElementById(`target-${id}`);
 
-      // 1. Моментально глушим звук и останавливаем поток
       if (vid) {
         vid.pause();
         vid.currentTime = 0;
-        // Удаляем висящий слушатель, если видео не успело открыться
         if (vid._revealHandler) {
           vid.removeEventListener('timeupdate', vid._revealHandler);
           vid._revealHandler = null;
         }
       }
 
-      // 2. Мгновенно убираем 3D-плоскость из рендера
       if (targetEl) {
         const aVideo = targetEl.querySelector('a-video');
         if (aVideo) {
@@ -153,7 +148,6 @@ function stopAllVideosExcept(activeId = null) {
 }
 
 function playTargetVideo(id) {
-  // ПЕРВЫМ ДЕЛОМ глушим абсолютно все остальные видео на сцене
   stopAllVideosExcept(id);
 
   const vid = document.getElementById(`vid-${id}`);
@@ -166,14 +160,12 @@ function playTargetVideo(id) {
   vid.defaultMuted = isMuted;
   vid.playsInline = true;
 
-  // Очищаем старый обработчик, если был
   if (vid._revealHandler) {
     vid.removeEventListener('timeupdate', vid._revealHandler);
   }
 
-  // Новый обработчик показа первого кадра
   vid._revealHandler = () => {
-    // Показываем видео ТОЛЬКО если этот таргет до сих пор является активным!
+    // Видео проявляется, если оно ещё соответствует текущему герою
     if (aVideo && vid.currentTime > 0 && currentHeroId === id) {
       aVideo.setAttribute('scale', '1 1 1');
       aVideo.setAttribute('material', 'transparent: false; opacity: 1;');
@@ -223,18 +215,19 @@ function stopTargetVideo(id) {
 }
 
 // ==========================================
-// 5. СЛУШАТЕЛИ ТАРГЕТОВ
+// 5. СЛУШАТЕЛИ ТАРГЕТОВ (С СОХРАНЕНИЕМ ИНТЕРФЕЙСА)
 // ==========================================
 ALL_TARGET_IDS.forEach(id => {
   const targetEl = document.getElementById(`target-${id}`);
   if (!targetEl) return;
 
   targetEl.addEventListener("targetFound", () => {
-    // Запоминаем текущий ID до старта видео
+    // Фиксируем героя
     currentHeroId = (id === SCHOOL_TARGET_ID) ? null : id;
 
     if (typeof sfx !== "undefined" && sfx.playTargetFound) sfx.playTargetFound();
 
+    // Прячем рамку сканера и показываем меню действий
     if (hint) hint.classList.add("hidden");
     if (dock) dock.style.display = "flex";
     if (soundBtn) soundBtn.style.display = "inline-flex";
@@ -246,17 +239,19 @@ ALL_TARGET_IDS.forEach(id => {
       showChampionUI();
     }
 
-    // Запускаем только одно видео, жестко погасив все остальные
     playTargetVideo(id);
   });
 
   targetEl.addEventListener("targetLost", () => {
+    // 1. Останавливаем только видео карточки
     stopTargetVideo(id);
-    if (currentHeroId === id) {
-      currentHeroId = null;
-    }
+
+    // 2. ВАЖНО: мы НЕ прячем dock и НЕ обнуляем currentHeroId!
+    // Кнопки остаются активными, герой остается выбранным,
+    // пользователь может спокойно положить карту на стол и проходить тест.
   });
 });
+
 
 // ==========================================
 // 6. ТЕМЫ И ЗВУК
