@@ -1,5 +1,5 @@
 // ==========================================
-// 1. ИНИЦИАЛИЗАЦИЯ И СТАРТ AR ДВИЖКА
+// 1. ЧЕСТНАЯ ИНИЦИАЛИЗАЦИЯ И СТАРТ AR ДВИЖКА
 // ==========================================
 document.addEventListener("DOMContentLoaded", async () => {
   const sceneEl = document.querySelector('a-scene');
@@ -11,22 +11,32 @@ document.addEventListener("DOMContentLoaded", async () => {
   const readySub = document.getElementById('ready-status-sub');
 
   try {
-    if (percentText) percentText.innerText = "Инициализация...";
-    if (barFill) barFill.style.width = "40%";
+    if (percentText) percentText.innerText = "Подключение A-Frame...";
+    if (barFill) barFill.style.width = "25%";
 
     if (!sceneEl.hasLoaded) {
       await new Promise(res => sceneEl.addEventListener('loaded', res, { once: true }));
     }
 
-    if (percentText) percentText.innerText = "Запуск камеры...";
-    if (barFill) barFill.style.width = "75%";
+    if (percentText) percentText.innerText = "Загрузка базы cards.mind...";
+    if (barFill) barFill.style.width = "60%";
 
     const arSystem = sceneEl.systems["mindar-image-system"];
     if (!arSystem) {
-      throw new Error("MindAR система не найдена");
+      throw new Error("MindAR система не найдена на сцене");
     }
 
+    // Слушаем реальную готовность таргетов от самого движка MindAR
+    const onARReady = new Promise((resolve, reject) => {
+      sceneEl.addEventListener("arReady", () => resolve(), { once: true });
+      sceneEl.addEventListener("arError", (err) => reject(err), { once: true });
+    });
+
+    // Запускаем камеру и чтение файла таргетов
     await arSystem.start();
+
+    // ЖДЕМ, пока браузер действительно скачает и скомпилирует cards.mind
+    await onARReady;
 
     if (barFill) barFill.style.width = "100%";
     if (percentText) percentText.innerText = "Готово!";
@@ -40,10 +50,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         badge.style.color = "var(--accent-color)";
       }
       if (title) title.innerText = "НАВЕДИТЕ НА КАРТОЧКУ";
-    }, 200);
+    }, 250);
 
   } catch (err) {
-    console.error("Ошибка AR:", err);
+    console.error("Ошибка инициализации AR:", err);
     if (badge) {
       badge.innerText = "ОШИБКА";
       badge.style.borderColor = "#ff4d6d";
@@ -60,8 +70,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       badge.style.borderColor = "#ff4d6d";
       badge.style.color = "#ff4d6d";
     }
-    if (title) title.innerText = "КАМЕРА НЕДОСТУПНА";
-    if (percentText) percentText.innerText = "Закройте дубликаты вкладки и дайте доступ к камере";
+    if (title) title.innerText = "КАМЕРА ЗАНЯТА";
+    if (percentText) percentText.innerText = "Закройте дубликаты вкладки и разрешите камеру";
   });
 
   if (typeof updatePassportCounter === "function") {
@@ -89,13 +99,8 @@ const ALL_TARGET_IDS = typeof HEROES !== "undefined"
   ? [...Object.keys(HEROES).map(Number), SCHOOL_TARGET_ID]
   : Array.from({ length: 18 }, (_, i) => i);
 
-// Скрываем все a-video на старте, чтобы не было черных вспышек
-document.querySelectorAll('a-scene a-video').forEach(aVid => {
-  aVid.setAttribute('visible', 'false');
-});
-
 // ==========================================
-// 3. РАЗБЛОКИРОВКА МЕДИА ПРИ ПЕРВОМ КАСАНИИ
+// 3. РАЗБЛОКИРОВКА АУДИОКОНТЕКСТА (ЖЕСТ ПОЛЬЗОВАТЕЛЯ)
 // ==========================================
 function handleFirstInteraction() {
   if (userHasInteracted) return;
@@ -119,20 +124,24 @@ document.addEventListener("click", handleFirstInteraction, { once: true });
 function playTargetVideo(id) {
   const vid = document.getElementById(`vid-${id}`);
   const targetEl = document.getElementById(`target-${id}`);
-  if (!vid) return;
+  if (!vid || !targetEl) return;
 
-  const aVideo = targetEl ? targetEl.querySelector('a-video') : null;
+  const aVideo = targetEl.querySelector('a-video');
 
   vid.muted = isMuted;
   vid.defaultMuted = isMuted;
   vid.playsInline = true;
 
-  // Показываем плоскость ТОЛЬКО когда пошли реальные кадры
-  const showVideoMesh = () => {
-    if (aVideo) aVideo.setAttribute('visible', 'true');
-    vid.removeEventListener('timeupdate', showVideoMesh);
+  // Показываем видео строго тогда, когда пошел реальный видеопоток
+  const revealVideo = () => {
+    if (aVideo && vid.currentTime > 0) {
+      aVideo.setAttribute('scale', '1 1 1');
+      aVideo.setAttribute('material', 'transparent: false; opacity: 1;');
+      vid.removeEventListener('timeupdate', revealVideo);
+    }
   };
-  vid.addEventListener('timeupdate', showVideoMesh);
+
+  vid.addEventListener('timeupdate', revealVideo);
 
   if (vid.readyState === 0) {
     vid.load();
@@ -141,7 +150,6 @@ function playTargetVideo(id) {
   const playPromise = vid.play();
   if (playPromise !== undefined) {
     playPromise.catch(() => {
-      // Автоплей со звуком не разрешен — тихо откатываемся на mute
       vid.muted = true;
       isMuted = true;
       if (soundBtn) soundBtn.innerHTML = "<span>🔇</span> ЗВУК: ВЫКЛ";
@@ -153,9 +161,14 @@ function playTargetVideo(id) {
 function stopTargetVideo(id) {
   const vid = document.getElementById(`vid-${id}`);
   const targetEl = document.getElementById(`target-${id}`);
+
+  // Мгновенно схлопываем полигон при потере таргета
   if (targetEl) {
     const aVideo = targetEl.querySelector('a-video');
-    if (aVideo) aVideo.setAttribute('visible', 'false');
+    if (aVideo) {
+      aVideo.setAttribute('scale', '0 0 0');
+      aVideo.setAttribute('material', 'transparent: true; opacity: 0;');
+    }
   }
 
   if (vid) {
@@ -165,7 +178,7 @@ function stopTargetVideo(id) {
 }
 
 // ==========================================
-// 5. СЛУШАТЕЛИ СОБЫТИЙ ТАРГЕТОВ
+// 5. СЛУШАТЕЛИ ТАРГЕТОВ
 // ==========================================
 ALL_TARGET_IDS.forEach(id => {
   const targetEl = document.getElementById(`target-${id}`);
@@ -251,7 +264,34 @@ function openModal(type) {
     currentPuzzleIndex = 0;
     testScore = 0;
     renderPuzzleQuestion();
+  } else if (type === 'stats') {
+    modalContent.innerHTML = `
+      <div class="modal-title">Характеристики</div>
+      <div class="modal-subtitle">${hero.name}</div>
+      ${hero.stats.map(s => `
+        <div class="stat-row">
+          <div class="stat-header"><span>${s.name}</span><span>${s.val}%</span></div>
+          <div class="stat-track"><div class="stat-fill" style="width: ${s.val}%"></div></div>
+        </div>
+      `).join('')}
+      <div class="skill-box">
+        <div style="font-size: 11px; color: var(--accent-color); font-weight: 700; text-transform: uppercase;">Ключевой навык:</div>
+        <div style="font-size: 14px; font-weight: bold; margin-top: 3px;">${hero.skillName}</div>
+        <div style="font-size: 12px; color: #aaa; margin-top: 5px; line-height: 1.4;">${hero.skillDesc}</div>
+      </div>
+      <div class="external-promo-box">
+        <div style="font-size: 12px; font-weight: 600;">Хотите записаться на занятия?</div>
+        <div style="font-size: 11px; color: #aaa; margin-top: 3px;">Узнайте расписание и подробности о школе:</div>
+        <a href="https://max.ru/se14097294_bot" target="_blank" class="action-link-btn">
+          🤖 Тактикус Финч
+        </a>
+        <a href="https://tacticusfinch.ru/" target="_blank" class="action-link-btn">
+          Официальный сайт шахматной школы
+        </a>
+      </div>
+    `;
   }
+
   modal.classList.add("active");
 }
 
@@ -452,6 +492,17 @@ function renderTestResult() {
         📖 Изучить биографию ${hero.name.split(' ')[0]}
       </button>
     ` : ''}
+
+    <div class="external-promo-box">
+      <div style="font-size: 12px; font-weight: 700; margin-bottom: 2px;">Шахматная школа</div>
+      <div style="font-size: 11px; color: #aaa; margin-bottom: 8px;">Запись на занятия и информация:</div>
+      <a href="https://max.ru/se14097294_bot" target="_blank" class="action-link-btn">
+        🤖 Записаться на занятия (Бот Финч)
+      </a>
+      <a href="https://lichess.org/learn" target="_blank" class="action-link-btn secondary" style="margin-top: 6px;">
+        Изучить базовые механики
+      </a>
+    </div>
 
     <button class="action-link-btn secondary" style="width: 100%; margin-top: 10px; cursor: pointer;" onclick="openModal('test')">
       ${isPassed ? 'Пройти еще раз' : 'Попробовать снова 🔄'}
