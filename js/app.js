@@ -380,8 +380,8 @@ function showChampionUI() {
     <button class="dock-btn" onclick="if(typeof openAIChatModal==='function')openAIChatModal()" style="border-color: #00e5ff; box-shadow: 0 0 15px rgba(0,229,255,0.4);">
       <span style="color: #00e5ff;">🎙️ Спроси</span>
     </button>
-    <button class="dock-btn" onclick="if(typeof startHotseatDuel==='function')startHotseatDuel()" style="border-color: #ff0055; box-shadow: 0 0 15px rgba(255,0,85,0.4);">
-      <span style="color: #ff0055;">Дуэль</span>
+    <button class="dock-btn" onclick="NetDuel.openLobby()" style="border-color: #ff0055; box-shadow: 0 0 15px rgba(255,0,85,0.4);">
+      <span style="color: #ff0055;">⚔️ Дуэль</span>
     </button>
   `;
 }
