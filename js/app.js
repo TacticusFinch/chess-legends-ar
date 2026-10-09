@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       await new Promise(res => sceneEl.addEventListener('loaded', res, { once: true }));
     }
 
-    if (percentText) percentText.innerText = "Загрузка базы cards.mind...";
+    if (percentText) percentText.innerText = "Загрузка базы героев...";
     if (barFill) barFill.style.width = "60%";
 
     const arSystem = sceneEl.systems["mindar-image-system"];
