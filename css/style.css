@@ -851,8 +851,3 @@ body {
   transform: scale(0.95);
   background: rgba(255, 255, 255, 0.15) !important;
 }
-
-/* Гарантированное скрытие боевого оверлея до дуэли */
-#net-battle-overlay {
-  display: none !important;
-}
