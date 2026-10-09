@@ -165,8 +165,10 @@ function playTargetVideo(id) {
   }
 
   vid._revealHandler = () => {
-    // Видео проявляется, если оно ещё соответствует текущему герою
-    if (aVideo && vid.currentTime > 0 && currentHeroId === id) {
+    // Учитываем, что для карточки школы (17) currentHeroId равен null
+    const isCurrentActive = (id === SCHOOL_TARGET_ID && currentHeroId === null) || (currentHeroId === id);
+
+    if (aVideo && vid.currentTime > 0 && isCurrentActive) {
       aVideo.setAttribute('scale', '1 1 1');
       aVideo.setAttribute('material', 'transparent: false; opacity: 1;');
       vid.removeEventListener('timeupdate', vid._revealHandler);
