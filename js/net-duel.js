@@ -4,7 +4,7 @@
 
 const NetDuel = {
 
-  WS_URL: "chesslegendsai-tacticusfinch.mia0.amvera.tech",
+  WS_URL: "wss://chesslegendsai-tacticusfinch.mia0.amvera.tech/ws/duel/",
 
   socket: null,
   roomCode: null,
