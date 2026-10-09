@@ -143,8 +143,12 @@ function stopAllVideosExcept(activeId = null) {
   });
 }
 
+// Хранилище активных в данный момент маркеров
+const visibleTargets = new Set();
+
 function playTargetVideo(id) {
   stopAllVideosExcept(id);
+  visibleTargets.add(id); // Запоминаем, что маркер сейчас в кадре
 
   const vid = document.getElementById(`vid-${id}`);
   const targetEl = document.getElementById(`target-${id}`);
@@ -161,10 +165,8 @@ function playTargetVideo(id) {
   }
 
   vid._revealHandler = () => {
-    // Учитываем, что для карточки школы (17) currentHeroId равен null
     const isCurrentActive = (id === SCHOOL_TARGET_ID && currentHeroId === null) || (currentHeroId === id);
-
-    if (aVideo && vid.currentTime > 0 && isCurrentActive) {
+    if (aVideo && vid.currentTime > 0 && isCurrentActive && visibleTargets.has(id)) {
       aVideo.setAttribute('scale', '1 1 1');
       aVideo.setAttribute('material', 'transparent: false; opacity: 1;');
       vid.removeEventListener('timeupdate', vid._revealHandler);
@@ -174,32 +176,45 @@ function playTargetVideo(id) {
 
   vid.addEventListener('timeupdate', vid._revealHandler);
 
-  if (vid.readyState === 0) {
-    vid.load();
-  }
-
-const playPromise = vid.play();
+  const playPromise = vid.play();
   if (playPromise !== undefined) {
-    playPromise.catch((err) => {
-      // Если воспроизведение было прервано паузой (AbortError) — ничего не делаем!
-      if (err && err.name === "AbortError") {
-        return;
-      }
-
-      vid.muted = true;
-      isMuted = true;
-      if (soundBtn) soundBtn.innerHTML = "<span>🔇</span> ЗВУК: ВЫКЛ";
-      vid.play().catch(() => {});
-    });
+    playPromise
+      .then(() => {
+        // Если пока видео запускалось, карточку уже убрали — резко глушим и останавливаем!
+        if (!visibleTargets.has(id)) {
+          vid.pause();
+          vid.muted = true;
+          vid.currentTime = 0;
+        }
+      })
+      .catch((err) => {
+        if (err && err.name === "AbortError") return;
+        vid.muted = true;
+        isMuted = true;
+        if (soundBtn) soundBtn.innerHTML = "<span>🔇</span> ЗВУК: ВЫКЛ";
+        if (visibleTargets.has(id)) {
+          vid.play().catch(() => {});
+        }
+      });
   }
+}
 
 function stopTargetVideo(id) {
+  visibleTargets.delete(id); // Маркер ушел из кадра
+
   const vid = document.getElementById(`vid-${id}`);
   const targetEl = document.getElementById(`target-${id}`);
 
-  if (vid && vid._revealHandler) {
-    vid.removeEventListener('timeupdate', vid._revealHandler);
-    vid._revealHandler = null;
+  // Мгновенно глушим звук и сбрасываем картинку без ожидания
+  if (vid) {
+    vid.muted = true; // Сразу выключаем звук
+    vid.pause();
+    vid.currentTime = 0;
+
+    if (vid._revealHandler) {
+      vid.removeEventListener('timeupdate', vid._revealHandler);
+      vid._revealHandler = null;
+    }
   }
 
   if (targetEl) {
@@ -208,11 +223,6 @@ function stopTargetVideo(id) {
       aVideo.setAttribute('scale', '0 0 0');
       aVideo.setAttribute('material', 'transparent: true; opacity: 0;');
     }
-  }
-
-  if (vid) {
-    vid.pause();
-    vid.currentTime = 0;
   }
 }
 
