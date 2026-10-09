@@ -3,8 +3,8 @@
 // ==========================================================
 
 const NetDuel = {
-  // Замените адрес на фактический домен вашего сервиса на Amvera
-  WS_URL: "wss://inference.waw0.amvera.ru/ws/duel/",
+
+  WS_URL: "chesslegendsai-tacticusfinch.mia0.amvera.tech",
 
   socket: null,
   roomCode: null,
