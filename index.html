@@ -8,6 +8,7 @@
   <!-- Внешние библиотеки -->
   <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.4/dist/mindar-image-aframe.prod.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <!-- Подключение стилей -->
   <link rel="stylesheet" href="css/style.css">
@@ -63,10 +64,10 @@
     </button>
   </div>
 
-  <!-- Нижний док -->
+  <!-- Нижний док карточки -->
   <div id="interactive-dock"></div>
 
-  <!-- Модальное окно -->
+  <!-- Модальное окно биографии/тестов -->
   <div id="modal-container" class="modal-overlay">
     <div class="modal-card">
       <button class="modal-close" onclick="closeModal()">Закрыть ✕</button>
@@ -74,56 +75,78 @@
     </div>
   </div>
 
-  <!-- Арена Hotseat -->
-  <div id="hotseat-arena">
-    <div id="zone-p2" class="hs-zone top-player">
-      <div>
-        <div class="hs-header">
-          <span id="p2-name" class="hs-hero-name">Игрок 2</span>
-          <span id="p2-hp-num" class="hs-hp-val">100%</span>
-        </div>
-        <div class="hs-hp-track">
-          <div id="p2-hp-bar" class="hs-hp-fill" style="width: 100%;"></div>
-        </div>
+  <!-- МОДАЛЬНОЕ ОКНО СЕТЕВОГО ЛОББИ -->
+  <div id="duel-lobby-modal" class="modal-overlay">
+    <div class="modal-card" style="text-align: center;">
+      <button class="modal-close" onclick="NetDuel.closeLobby()">✕</button>
+      <div class="modal-title" style="color: #ff0055;">Сетевая AR-Дуэль</div>
+      
+      <div id="lobby-step-select">
+        <p style="font-size: 13px; color: #aaa; margin: 15px 0;">
+          Сразитесь с карточкой соперника в реальном времени!
+        </p>
+        <button class="action-link-btn" onclick="NetDuel.createRoom()" style="border-color: #ff0055;">
+          👑 Создать бой (Показать QR)
+        </button>
+        <button class="action-link-btn secondary" style="margin-top: 10px;" onclick="NetDuel.showJoinInput()">
+          ⚔️ Войти по коду
+        </button>
       </div>
-      <div class="hs-content-row">
-        <img id="p2-board-img" class="hs-board-img" src="" alt="Доска" style="display: none;">
-        <div class="hs-interactive-col">
-          <div id="p2-prompt" class="hs-prompt-badge">РАУНД 1</div>
-          <div id="p2-options" class="hs-options-list"></div>
-        </div>
+
+      <div id="lobby-step-host" style="display: none;">
+        <div style="font-size: 13px; color: #ccc; margin-bottom: 10px;">Второй игрок должен навести камеру на этот QR:</div>
+        <div id="duel-qrcode" style="display: flex; justify-content: center; margin: 15px auto; background: #fff; padding: 10px; border-radius: 10px; width: fit-content;"></div>
+        <div style="font-size: 12px; color: #888;">Или код комнаты: <b id="host-room-id" style="color: #00e5ff; font-size: 16px;">....</b></div>
+        <div style="margin-top: 15px; font-size: 12px; color: #f1c40f;">⏳ Ожидание сканирования карточки соперника...</div>
+      </div>
+
+      <div id="lobby-step-join" style="display: none;">
+        <input type="number" id="join-room-input" placeholder="Код из 4 цифр" style="width: 80%; padding: 12px; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; text-align: center; font-size: 18px; margin: 15px 0;">
+        <button class="action-link-btn" onclick="NetDuel.joinRoomById()">Вступить в дуэль</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- БОЕВОЙ ОНЛАЙН HUD ПОВЕРХ AR -->
+  <div id="net-battle-overlay" style="display: none; position: fixed; inset: 0; pointer-events: none; z-index: 999; flex-direction: column; justify-content: space-between; padding: 25px 15px;">
+    <!-- Оппонент (Верх) -->
+    <div style="background: rgba(10, 10, 15, 0.85); backdrop-filter: blur(10px); padding: 12px 16px; border-radius: 12px; border: 1px solid #444; pointer-events: auto;">
+      <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 13px;">
+        <span id="enemy-hero-name" style="color: #ff4d6d;">Оппонент</span>
+        <span id="enemy-hp-text">100 / 100</span>
+      </div>
+      <div style="background: #222; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 6px;">
+        <div id="enemy-hp-bar" style="width: 100%; height: 100%; background: #ff4d6d; transition: width 0.3s ease;"></div>
       </div>
     </div>
 
-    <div class="hs-divider">
-      <div id="hs-round-info" class="hs-round-badge">БОЙ ДО ПОБЕДНОГО МАТА</div>
-      <button class="hs-exit-btn" onclick="exitDuel()">СДАТЬСЯ ✕</button>
+    <!-- Центр (Таймер цейтнота и журнал) -->
+    <div style="text-align: center; pointer-events: auto;">
+      <div id="battle-timer" style="font-size: 40px; font-weight: 900; color: #f1c40f; text-shadow: 0 0 15px rgba(241,196,15,0.6);">10</div>
+      <div id="battle-log" style="font-size: 13px; color: #fff; background: rgba(0,0,0,0.6); padding: 6px 14px; border-radius: 20px; display: inline-block; margin-top: 5px;">Сделайте тактический ход!</div>
     </div>
 
-    <div id="zone-p1" class="hs-zone">
-      <div class="hs-content-row">
-        <img id="p1-board-img" class="hs-board-img" src="" alt="Доска" style="display: none;">
-        <div class="hs-interactive-col">
-          <div id="p1-prompt" class="hs-prompt-badge">РАУНД 1</div>
-          <div id="p1-options" class="hs-options-list"></div>
-        </div>
+    <!-- Игрок (Низ) -->
+    <div style="background: rgba(10, 10, 15, 0.9); backdrop-filter: blur(10px); padding: 16px; border-radius: 16px; border: 1.5px solid var(--accent-color); pointer-events: auto;">
+      <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; margin-bottom: 6px;">
+        <span id="my-hero-name" style="color: var(--accent-color);">Ваш Гроссмейстер</span>
+        <span id="my-hp-text">100 / 100</span>
       </div>
-      <div>
-        <div class="hs-hp-track">
-          <div id="p1-hp-bar" class="hs-hp-fill" style="width: 100%;"></div>
-        </div>
-        <div class="hs-header" style="margin-top: 3px;">
-          <span id="p1-name" class="hs-hero-name">Игрок 1</span>
-          <span id="p1-hp-num" class="hs-hp-val">100%</span>
-        </div>
+      <div style="background: #222; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 12px;">
+        <div id="my-hp-bar" style="width: 100%; height: 100%; background: var(--accent-color); transition: width 0.3s ease;"></div>
       </div>
-    </div>
 
-    <div id="hs-gameover" class="hs-feedback-toast">
-      <div id="hs-winner-title" style="font-size: 26px; font-weight: 900; margin-bottom: 6px;">ШАХ И МАТ!</div>
-      <div id="hs-winner-desc" style="font-size: 13px; color: #ccc; margin-bottom: 20px;"></div>
-      <button class="action-link-btn" style="max-width: 220px; cursor: pointer;" onclick="startHotseatDuel()">Реванш 🔄</button>
-      <button class="action-link-btn secondary" style="max-width: 220px; margin-top: 8px; cursor: pointer;" onclick="exitDuel()">В меню</button>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 8px;">
+        <button id="btn-action-atk" class="action-link-btn" style="padding: 12px 5px; font-size: 12px; margin: 0;" onclick="NetDuel.chooseAction('attack')">
+          ⚔️ Штурм
+        </button>
+        <button id="btn-action-def" class="action-link-btn" style="padding: 12px 5px; font-size: 12px; margin: 0; background: rgba(255,255,255,0.08);" onclick="NetDuel.chooseAction('defend')">
+          🛡️ Защита
+        </button>
+        <button id="btn-action-spc" class="action-link-btn" style="padding: 12px 5px; font-size: 11px; margin: 0; border-color: #f1c40f; color: #f1c40f;" onclick="NetDuel.chooseAction('skill')">
+          ⚡ Навык (<span id="skill-cd">1/2</span>)
+        </button>
+      </div>
     </div>
   </div>
 
@@ -158,7 +181,6 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Таргеты: scale="0 0 0" и прозрачный материал защищают от черного квадрата -->
     <a-entity id="target-0" mindar-image-target="targetIndex: 0"><a-video src="#vid-0" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;"></a-video></a-entity>
     <a-entity id="target-1" mindar-image-target="targetIndex: 1"><a-video src="#vid-1" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;"></a-video></a-entity>
     <a-entity id="target-2" mindar-image-target="targetIndex: 2"><a-video src="#vid-2" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;"></a-video></a-entity>
@@ -183,8 +205,8 @@
   <script src="js/heroes-data.js"></script>
   <script src="js/sound.js"></script>
   <script src="js/passport.js"></script>
-  <script src="js/duel.js"></script>
   <script src="js/ai-chat.js"></script>
+  <script src="js/net-duel.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
