@@ -1,5 +1,5 @@
 // ==========================================================
-// СЕТЕВАЯ ДУЭЛЬ ЧЕМПИОНОВ (WebSocket через Amvera FastAPI)
+// СЕТЕВАЯ ДУЭЛЬ ГРОССМЕЙСТЕРОВ (TACTICUS FINCH PRO AR)
 // ==========================================================
 
 const NetDuel = {
@@ -15,6 +15,7 @@ const NetDuel = {
   myHp: 100,
   enemyHp: 100,
 
+  // Инициализация при загрузке страницы (проверка URL ?duel=XXXX)
   init() {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("duel");
@@ -26,9 +27,10 @@ const NetDuel = {
     }
   },
 
+  // Открытие лобби и привязка параметров распознанной карты
   openLobby() {
     if (currentHeroId === null || typeof HEROES === "undefined" || !HEROES[currentHeroId]) {
-      alert("Сначала наведите камеру на свою карточку гроссмейстера!");
+      alert("Наведите камеру на карту гроссмейстера для инициализации дуэли.");
       return;
     }
     this.myHero = HEROES[currentHeroId];
@@ -39,7 +41,7 @@ const NetDuel = {
     document.getElementById("duel-lobby-modal").classList.add("active");
   },
 
-  // disconnect = true только при ручном закрытии или выходе
+  // Закрытие лобби. disconnect = false при старте матча, чтобы не убить WebSocket
   closeLobby(disconnect = true) {
     document.getElementById("duel-lobby-modal").classList.remove("active");
     if (disconnect && this.socket && this.socket.readyState === WebSocket.OPEN) {
@@ -53,6 +55,7 @@ const NetDuel = {
     document.getElementById("lobby-step-join").style.display = "block";
   },
 
+  // 1. Создание сессии (Хост)
   createRoom() {
     this.roomCode = Math.floor(1000 + Math.random() * 9000).toString();
 
@@ -60,27 +63,33 @@ const NetDuel = {
     document.getElementById("lobby-step-host").style.display = "block";
     document.getElementById("host-room-id").innerText = this.roomCode;
 
+    // Генерация строгого монохромного QR-кода
     const joinUrl = `${window.location.origin}${window.location.pathname}?duel=${this.roomCode}`;
     const qrBox = document.getElementById("duel-qrcode");
     qrBox.innerHTML = "";
-    new QRCode(qrBox, {
-      text: joinUrl,
-      width: 140,
-      height: 140,
-      colorDark: "#111111",
-      colorLight: "#ffffff",
-      correctLevel: QRCode.CorrectLevel.M,
-    });
+    
+    if (typeof QRCode !== "undefined") {
+      new QRCode(qrBox, {
+        text: joinUrl,
+        width: 140,
+        height: 140,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M,
+      });
+    }
 
     this.connectWebSocket(this.roomCode);
   },
 
+  // 2. Подключение к сессии (Гость)
   joinRoomById() {
-    const code = document.getElementById("join-room-input").value.trim();
+    const input = document.getElementById("join-room-input");
+    const code = input ? input.value.trim() : "";
     if (code.length === 4) {
       this.joinDuel(code);
     } else {
-      alert("Введите 4 цифры кода комнаты!");
+      alert("Введите 4 цифры идентификатора стола.");
     }
   },
 
@@ -89,6 +98,7 @@ const NetDuel = {
     this.connectWebSocket(code);
   },
 
+  // 3. Сетевое подключение
   connectWebSocket(code) {
     if (this.socket) {
       this.socket.close();
@@ -97,11 +107,16 @@ const NetDuel = {
     this.socket = new WebSocket(`${this.WS_URL}${code}`);
 
     this.socket.onopen = () => {
+      // Отправляем серверу боевые характеристики из heroes-data.js
       this.socket.send(
         JSON.stringify({
           type: "READY",
           hero_id: currentHeroId,
-          hero: this.myHero,
+          hero: {
+            name: this.myHero.name,
+            stats: this.myHero.stats,
+            skillName: this.myHero.skillName
+          }
         })
       );
     };
@@ -111,24 +126,25 @@ const NetDuel = {
         const data = JSON.parse(event.data);
         this.handleServerMessage(data);
       } catch (err) {
-        console.error("Ошибка парсинга WS:", err);
+        console.error("Ошибка парсинга пакета дуэли:", err);
       }
     };
 
     this.socket.onerror = (err) => {
-      console.error("WS Ошибка:", err);
+      console.error("Сбой соединения дуэли:", err);
     };
 
     this.socket.onclose = () => {
-      console.log("WebSocket отключен");
+      console.log("Сессия дуэли деактивирована");
     };
   },
 
+  // Диспетчер турнирных событий
   handleServerMessage(data) {
     switch (data.type) {
       case "MATCH_START":
         this.enemyHero = data.enemy;
-        this.closeLobby(false); // НЕ разрываем сокет при начале матча!
+        this.closeLobby(false); // Закрываем модалку БЕЗ закрытия сокета
         this.startBattle();
         break;
 
@@ -137,7 +153,7 @@ const NetDuel = {
         break;
 
       case "OPPONENT_DISCONNECTED":
-        alert("Оппонент покинул бой!");
+        alert("Оппонент покинул партию.");
         this.endBattle();
         break;
 
@@ -149,7 +165,7 @@ const NetDuel = {
   },
 
   // ==========================================
-  // БОЕВАЯ АРЕНА И ВИЗУАЛИЗАЦИЯ
+  // БОЕВАЯ АРЕНА И РАСЧЕТ ТАКТИКИ
   // ==========================================
   startBattle() {
     this.myHp = 100;
@@ -158,17 +174,26 @@ const NetDuel = {
 
     const overlay = document.getElementById("net-battle-overlay");
     overlay.style.display = "flex";
+
+    // Установка имен гроссмейстеров
     document.getElementById("my-hero-name").innerText = this.myHero.name;
-    document.getElementById("enemy-hero-name").innerText = this.enemyHero.name;
+    document.getElementById("enemy-hero-name").innerText = this.enemyHero.name || "ГРОССМЕЙСТЕР";
+
+    // Привязка названия коронного навыка конкретной карты
+    const skillTitleEl = document.getElementById("skill-action-title");
+    if (skillTitleEl && this.myHero.skillName) {
+      skillTitleEl.innerText = this.myHero.skillName.toUpperCase();
+    }
 
     this.updateHUD(100, 100, 1);
+    this.updateEvalBar(100, 100);
     this.startRound();
   },
 
   startRound() {
     this.myChoice = null;
     this.enableButtons(true);
-    document.getElementById("battle-log").innerHTML = "⚡ Раунд начался! Выберите тактику:";
+    document.getElementById("battle-log").innerText = "ОЦЕНКА ПОЗИЦИИ: СДЕЛАЙТЕ ХОД";
 
     let sec = 10;
     const timerEl = document.getElementById("battle-timer");
@@ -183,7 +208,7 @@ const NetDuel = {
       if (sec <= 0) {
         clearInterval(this.timerInterval);
         if (!this.myChoice) {
-          this.chooseAction("defend"); // Автозащита при цейтноте
+          this.chooseAction("defend"); // Автоматический позиционный блок в цейтноте
         }
       }
     }, 1000);
@@ -193,7 +218,7 @@ const NetDuel = {
     if (this.myChoice) return;
 
     if (action === "skill" && this.currentEnergy < 2) {
-      alert("Навык заряжается успешной Защитой!");
+      alert("Секретный навык не заряжен. Успешная Защита накапливает заряд.");
       return;
     }
 
@@ -201,7 +226,7 @@ const NetDuel = {
     this.myChoice = action;
     this.enableButtons(false);
 
-    document.getElementById("battle-log").innerHTML = "⏳ Ход сделан! Ожидание оппонента...";
+    document.getElementById("battle-log").innerText = "ХОД ЗАФИКСИРОВАН. ОЖИДАНИЕ СОПЕРНИКА...";
 
     if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
 
@@ -219,34 +244,34 @@ const NetDuel = {
     this.myHp = res.my_hp;
     this.enemyHp = res.enemy_hp;
 
-    const overlay = document.getElementById("net-battle-overlay");
-
-    // 1. Анимации урона и тряски экрана
+    // Кинематографичный отклик при уроне
     if (res.dmg_taken > 0) {
-      overlay.classList.add("battle-hit-shake");
-      this.triggerFlash("red");
-      this.showDamage("my", res.dmg_taken);
-      if (navigator.vibrate) navigator.vibrate(180);
+      this.triggerImpact();
+      this.showDamageStrike("my", res.dmg_taken);
+      if (navigator.vibrate) navigator.vibrate(120);
     }
 
     if (res.dmg_dealt > 0) {
-      this.showDamage("enemy", res.dmg_dealt);
+      this.showDamageStrike("enemy", res.dmg_dealt);
       if (typeof sfx !== "undefined" && sfx.playCorrect) sfx.playCorrect();
     }
 
-    setTimeout(() => overlay.classList.remove("battle-hit-shake"), 500);
-
-    // 2. Обновление шкал HP
+    // Обновление шкал HP и Stockfish Eval-Bar
     this.updateHUD(this.myHp, this.enemyHp, res.energy);
+    this.updateEvalBar(this.myHp, this.enemyHp);
 
-    // 3. Журнал хода с иконками
-    const actionIcons = { attack: "⚔️ Штурм", defend: "🛡️ Защита", skill: "⚡ НАВЫК" };
-    document.getElementById("battle-log").innerHTML = `
-      Оппонент выбрал: <b>${actionIcons[res.enemy_action] || "..."}</b><br>
-      Вы: <span style="color:#00e5ff">-${res.dmg_dealt} HP</span> | Вам: <span style="color:#ff4d6d">-${res.dmg_taken} HP</span>
-    `;
+    // Гроссмейстерская сводка раунда
+    const actionNames = {
+      attack: "АТАКА",
+      defend: "ЗАЩИТА",
+      skill: (this.enemyHero.skillName || "НАВЫК").toUpperCase()
+    };
 
-    // 4. Проверка окончания боя или запуск следующего раунда
+    const enemyAct = actionNames[res.enemy_action] || "ХОД";
+    document.getElementById("battle-log").innerText = 
+      `ОТВЕТ: ${enemyAct} | УРОН: -${res.dmg_dealt} HP | ПРИНЯТО: -${res.dmg_taken} HP`;
+
+    // Завершение партии или переход к следующему тактическому рубежу
     if (this.myHp <= 0 || this.enemyHp <= 0) {
       setTimeout(() => {
         const isWin = this.myHp > this.enemyHp;
@@ -254,47 +279,76 @@ const NetDuel = {
           if (isWin && sfx.playFanfare) sfx.playFanfare();
           else if (!isWin && sfx.playWrong) sfx.playWrong();
         }
-        alert(isWin ? "🏆 ШАХ И МАТ! Вы сокрушили оппонента!" : "💀 ВАШ КОРОЛЬ ПАЛ! Поражение.");
+        alert(isWin ? "ШАХ И МАТ. Победа по итогам тактического противостояния." : "ПОРАЖЕНИЕ. Ваш король капитулировал.");
         this.endBattle();
       }, 1200);
     } else {
-      setTimeout(() => this.startRound(), 2500);
+      setTimeout(() => this.startRound(), 2600);
     }
   },
 
-  triggerFlash(color) {
-    const flash = document.createElement("div");
-    flash.className = `battle-screen-flash flash-${color}`;
-    document.body.appendChild(flash);
-    setTimeout(() => flash.remove(), 400);
+  // Мягкая виньетка удара
+  triggerImpact() {
+    const v = document.createElement("div");
+    v.className = "flash-impact-vignette";
+    document.body.appendChild(v);
+    setTimeout(() => v.remove(), 400);
   },
 
-  showDamage(target, val) {
-    const parent = target === "my" ? document.getElementById("my-hp-bar") : document.getElementById("enemy-hp-bar");
-    if (!parent) return;
+  // Числовая нотация урона
+  showDamageStrike(target, val) {
+    const bar = target === "my" ? document.getElementById("my-hp-bar") : document.getElementById("enemy-hp-bar");
+    if (!bar) return;
 
-    const dmgEl = document.createElement("div");
-    dmgEl.className = "floating-dmg";
-    dmgEl.innerText = `-${val}`;
-    parent.parentElement.appendChild(dmgEl);
-    setTimeout(() => dmgEl.remove(), 900);
+    const el = document.createElement("div");
+    el.className = "floating-strike-num";
+    el.innerText = `-${val}`;
+    bar.parentElement.appendChild(el);
+    setTimeout(() => el.remove(), 800);
+  },
+
+  // Расчет перевеса позиции (Eval Bar)
+  updateEvalBar(myHp, enemyHp) {
+    const total = myHp + enemyHp;
+    const myPercent = total > 0 ? (myHp / total) * 100 : 50;
+
+    const fill = document.getElementById("duel-eval-fill");
+    const score = document.getElementById("duel-eval-score");
+
+    if (fill) fill.style.height = `${myPercent}%`;
+    if (score) {
+      const diff = ((myHp - enemyHp) / 10).toFixed(1);
+      score.innerText = diff > 0 ? `+${diff}` : `${diff}`;
+      score.style.color = diff >= 0 ? "#ffffff" : "#ef4444";
+    }
   },
 
   updateHUD(myHp, enemyHp, energy) {
     document.getElementById("my-hp-bar").style.width = `${myHp}%`;
-    document.getElementById("my-hp-text").innerText = `${myHp} / 100`;
+    document.getElementById("my-hp-text").innerText = `${myHp} / 100 HP`;
     document.getElementById("enemy-hp-bar").style.width = `${enemyHp}%`;
-    document.getElementById("enemy-hp-text").innerText = `${enemyHp} / 100`;
-    document.getElementById("skill-cd").innerText = `${energy}/2`;
+    document.getElementById("enemy-hp-text").innerText = `${enemyHp} / 100 HP`;
+
+    const cdBadge = document.getElementById("skill-cd-badge");
+    const skillBtn = document.getElementById("btn-action-spc");
+
+    if (cdBadge) cdBadge.innerText = `${energy}/2`;
+    if (skillBtn) {
+      if (energy >= 2) {
+        skillBtn.classList.add("ready");
+      } else {
+        skillBtn.classList.remove("ready");
+      }
+    }
   },
 
   enableButtons(enable) {
     ["btn-action-atk", "btn-action-def", "btn-action-spc"].forEach((id) => {
-      const b = document.getElementById(id);
-      if (b) {
-        b.disabled = !enable;
-        b.style.pointerEvents = enable ? "auto" : "none";
-        b.style.opacity = enable ? "1" : "0.45";
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.disabled = !enable;
+        btn.style.pointerEvents = enable ? "auto" : "none";
+        btn.style.opacity = enable ? "1" : "0.35";
       }
     });
   },
@@ -309,4 +363,5 @@ const NetDuel = {
   },
 };
 
+// Запуск прослушивания при старте
 document.addEventListener("DOMContentLoaded", () => NetDuel.init());
