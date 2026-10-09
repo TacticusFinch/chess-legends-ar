@@ -50,34 +50,23 @@ const NetDuel = {
     }
   },
 
-  showJoinInput() {
+showJoinInput() {
     document.getElementById("lobby-step-select").style.display = "none";
     document.getElementById("lobby-step-join").style.display = "block";
+    const input = document.getElementById("join-room-input");
+    if (input) {
+      input.value = "";
+      setTimeout(() => input.focus(), 100);
+    }
   },
 
-  // 1. Создание сессии (Хост)
+ // 1. Создание сессии (Хост)
   createRoom() {
     this.roomCode = Math.floor(1000 + Math.random() * 9000).toString();
 
     document.getElementById("lobby-step-select").style.display = "none";
     document.getElementById("lobby-step-host").style.display = "block";
     document.getElementById("host-room-id").innerText = this.roomCode;
-
-    // Генерация строгого монохромного QR-кода
-    const joinUrl = `${window.location.origin}${window.location.pathname}?duel=${this.roomCode}`;
-    const qrBox = document.getElementById("duel-qrcode");
-    qrBox.innerHTML = "";
-    
-    if (typeof QRCode !== "undefined") {
-      new QRCode(qrBox, {
-        text: joinUrl,
-        width: 140,
-        height: 140,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M,
-      });
-    }
 
     this.connectWebSocket(this.roomCode);
   },

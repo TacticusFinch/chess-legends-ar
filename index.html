@@ -75,49 +75,47 @@
     </div>
   </div>
 
-<!-- ПРЕМИАЛЬНОЕ СЕТЕВОЕ ЛОББИ -->
+<!-- ЛАКОНИЧНОЕ ЛОББИ ДУЭЛИ -->
   <div id="duel-lobby-modal" class="modal-overlay">
     <div class="modal-card duel-card">
-      <button class="modal-close" onclick="NetDuel.closeLobby()">ЗАКРЫТЬ</button>
-      
-      <div class="duel-brand-tag">TACTICUS FINCH • GRANDMASTER AR PROTOCOL</div>
-      <div class="modal-title duel-headline">Турнирная дуэль</div>
-      <div class="modal-subtitle">Синхронизация тактических карточек</div>
+      <button class="modal-close" onclick="NetDuel.closeLobby()">✕</button>
 
-      <!-- Шаг 1: Выбор сессии -->
+      <!-- Шаг 1: Выбор действия -->
       <div id="lobby-step-select">
-        <p class="duel-desc">
-          Синхронизируйте боевые параметры вашей карточки с картой соперника для запуска пошаговой партии в дополненной реальности.
-        </p>
-        <button class="action-link-btn premium-btn" onclick="NetDuel.createRoom()">
-          СОЗДАТЬ СТОЛ (QR-ДОСТУП)
-        </button>
-        <button class="action-link-btn secondary" style="margin-top: 10px;" onclick="NetDuel.showJoinInput()">
-          ВОЙТИ ПО КОДУ СТОЛА
-        </button>
+        <div class="modal-title">Сетевая дуэль</div>
+        <div class="modal-subtitle">Битва карточек гроссмейстеров</div>
+
+        <div class="duel-actions-stack">
+          <button class="duel-primary-btn" onclick="NetDuel.createRoom()">
+            Создать бой
+          </button>
+          <button class="duel-secondary-btn" onclick="NetDuel.showJoinInput()">
+            Войти по коду
+          </button>
+        </div>
       </div>
 
-      <!-- Шаг 2: Хост (QR) -->
+      <!-- Шаг 2: Создатель (Показ кода) -->
       <div id="lobby-step-host" style="display: none;">
-        <div class="duel-step-caption">Наведите камеру оппонента на QR-код стола:</div>
-        <div class="qr-frame">
-          <div id="duel-qrcode"></div>
-        </div>
-        <div class="duel-code-display">
-          <span>СЕССИЯ:</span>
-          <b id="host-room-id">0000</b>
-        </div>
-        <div class="duel-status-bar">
-          <span class="status-pulse-dot"></span> Ожидание считывания карты соперника...
+        <div class="modal-title">Код стола</div>
+        <div class="modal-subtitle">Назовите его второму игроку</div>
+
+        <div class="duel-big-code" id="host-room-id">----</div>
+
+        <div class="duel-wait-status">
+          <span class="wait-dot"></span> Ожидание соперника
         </div>
       </div>
 
       <!-- Шаг 3: Вход по коду -->
       <div id="lobby-step-join" style="display: none;">
-        <div class="duel-step-caption">Введите 4-значный номер сессии:</div>
-        <input type="number" id="join-room-input" placeholder="0000" maxlength="4" class="duel-input-code">
-        <button class="action-link-btn premium-btn" onclick="NetDuel.joinRoomById()">
-          ПОДКЛЮЧИТЬСЯ К СТОЛУ
+        <div class="modal-title">Вход в бой</div>
+        <div class="modal-subtitle">Введите 4 цифры стола</div>
+
+        <input type="tel" id="join-room-input" placeholder="••••" maxlength="4" class="duel-pin-input" inputmode="numeric">
+
+        <button class="duel-primary-btn" onclick="NetDuel.joinRoomById()">
+          Начать
         </button>
       </div>
     </div>

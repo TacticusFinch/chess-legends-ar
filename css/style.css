@@ -451,420 +451,133 @@ body {
 
 
 /* ==========================================================
-   ПРЕМИАЛЬНЫЙ ТУРНИРНЫЙ ИНТЕРФЕЙС И ДУЭЛИ (TACTICUS FINCH PRO)
+   МИНИМАЛИСТИЧНОЕ ЛОББИ ДУЭЛИ (TACTICUS FINCH)
    ========================================================== */
 
-/* Оформление карточки лобби */
 .duel-card {
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95), 0 0 1px 1px rgba(255, 255, 255, 0.1) !important;
-  background: linear-gradient(175deg, #121620 0%, #090b10 100%) !important;
-}
-.duel-brand-tag {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 2.5px;
-  color: var(--accent-color);
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-.duel-headline {
-  color: #ffffff !important;
-  font-size: 20px !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.5px;
-  margin-bottom: 2px !important;
-}
-.duel-desc {
-  font-size: 13px;
-  color: #94a3b8;
-  line-height: 1.55;
-  margin: 18px 0;
-  font-weight: 400;
-}
-.duel-step-caption {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin: 14px 0 8px 0;
+  max-width: 340px !important;
+  padding: 32px 24px !important;
+  text-align: center;
+  background: #0d1117 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8) !important;
 }
 
-/* Элегантная рамка QR */
-.qr-frame {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 16px auto;
-  background: #ffffff;
-  padding: 10px;
-  border-radius: 8px;
-  width: fit-content;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-}
-.duel-code-display {
-  font-family: monospace;
-  font-size: 12px;
-  color: #64748b;
-  letter-spacing: 1.5px;
-}
-.duel-code-display b {
-  color: #ffffff;
+.duel-card .modal-title {
   font-size: 20px;
-  margin-left: 8px;
-  letter-spacing: 4px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: #fff;
+  margin-bottom: 4px;
+  padding-right: 0;
 }
-.duel-status-bar {
+
+.duel-card .modal-subtitle {
+  font-size: 13px;
+  color: #6e7681;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-bottom: 28px;
+}
+
+/* Вертикальный стек кнопок */
+.duel-actions-stack {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 11px;
-  color: #94a3b8;
-  margin-top: 16px;
-  letter-spacing: 0.3px;
+  flex-direction: column;
+  gap: 10px;
 }
-.status-pulse-dot {
+
+.duel-primary-btn {
+  width: 100%;
+  padding: 14px;
+  background: #fff;
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.duel-primary-btn:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+.duel-secondary-btn {
+  width: 100%;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #c9d1d9;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.duel-secondary-btn:active {
+  transform: scale(0.97);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Крупный номер стола */
+.duel-big-code {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", monospace;
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: 10px;
+  color: #fff;
+  padding: 16px 0;
+  margin: 8px 0 20px 0;
+  text-indent: 10px; /* компенсация letter-spacing */
+}
+
+/* Статус ожидания */
+.duel-wait-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #8b949e;
+}
+.wait-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--accent-color);
-  box-shadow: 0 0 10px var(--accent-color);
-  animation: pulseFine 1.8s infinite ease-in-out;
+  background: #d4af37;
+  animation: pulseWait 1.4s ease-in-out infinite;
 }
-@keyframes pulseFine {
-  0%, 100% { opacity: 0.25; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.2); }
-}
-
-.duel-input-code {
-  width: 150px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: 8px;
-  text-align: center;
-  border-radius: 8px;
-  font-family: monospace;
-  margin: 12px 0 18px 0;
-  box-sizing: border-box;
-}
-.duel-input-code:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  background: rgba(255, 255, 255, 0.06);
+@keyframes pulseWait {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
 }
 
-.action-link-btn.premium-btn {
-  background: #ffffff;
-  color: #000000;
-  font-weight: 800;
+/* Поле ввода пин-кода */
+.duel-pin-input {
+  width: 160px;
+  padding: 12px 0;
+  background: transparent;
   border: none;
-  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.15);
-  letter-spacing: 1px;
-}
-.action-link-btn.premium-btn:active {
-  transform: scale(0.98);
-}
-
-/* ================= БОЕВОЙ ОВЕРЛЕЙ (AR ARENA) ================= */
-#net-battle-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 16px 14px;
-  box-sizing: border-box;
-  pointer-events: none;
-}
-
-/* Панели бойцов */
-.duel-actor-panel {
-  pointer-events: auto;
-  background: rgba(10, 13, 20, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 12px;
-  padding: 12px 14px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
-  position: relative;
-  transition: transform 0.2s ease;
-}
-.actor-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-.actor-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.actor-side-badge {
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: 1.5px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  text-transform: uppercase;
-}
-.actor-side-badge.side-black {
-  background: #1e2533;
-  color: #cbd5e1;
-  border: 1px solid #334155;
-}
-.actor-side-badge.side-white {
-  background: #ffffff;
-  color: #000000;
-  border: 1px solid #ffffff;
-}
-.actor-name {
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  color: #ffffff;
-  text-transform: uppercase;
-}
-.actor-points {
-  font-family: monospace;
-  font-size: 12px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 32px;
   font-weight: 700;
-  color: #64748b;
-  letter-spacing: 0.5px;
-}
-
-/* Шкалы HP */
-.meter-track {
-  width: 100%;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 2px;
-  overflow: hidden;
-  position: relative;
-}
-.meter-fill {
-  height: 100%;
-  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.meter-fill.enemy-fill {
-  background: #ef4444;
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
-}
-.meter-fill.player-fill {
-  background: #ffffff;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
-}
-
-/* ЦЕНТР АРЕНЫ: ОЦЕНКА И ТАКТИЧЕСКИЙ ЖУРНАЛ */
-.duel-center-stage {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  pointer-events: auto;
-  position: relative;
-  width: 100%;
-}
-
-/* Вертикальный шахматный бар оценки позиции (Stockfish) */
-.eval-meter-container {
-  position: absolute;
-  left: 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-.eval-bar-track {
-  width: 4px;
-  height: 90px;
-  background: #181b24;
-  border-radius: 2px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  display: flex;
-  flex-direction: column-reverse;
-  overflow: hidden;
-}
-.eval-bar-fill {
-  width: 100%;
-  background: #ffffff;
-  transition: height 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.eval-score-text {
-  font-family: monospace;
-  font-size: 9px;
-  font-weight: 800;
-  color: #94a3b8;
-}
-
-/* Хронометр цейтнота и журнал событий */
-.duel-telemetry-console {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  letter-spacing: 12px;
   text-align: center;
-}
-.chess-timer {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
-  font-size: 38px;
-  font-weight: 800;
-  letter-spacing: -1.5px;
-  color: #ffffff;
-  line-height: 1;
-  margin-bottom: 6px;
-}
-.chess-timer.urgent {
-  color: #ef4444 !important;
-  animation: timerBlink 0.6s infinite alternate ease-in-out;
-}
-@keyframes timerBlink {
-  from { opacity: 1; }
-  to { opacity: 0.4; }
-}
-
-.tactical-teletype {
+  text-indent: 12px;
   font-family: monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: #cbd5e1;
-  background: rgba(10, 13, 20, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 7px 16px;
-  border-radius: 20px;
-  backdrop-filter: blur(8px);
-  max-width: 290px;
-  line-height: 1.4;
-  text-transform: uppercase;
+  border-radius: 0;
+  margin-bottom: 28px;
+  outline: none;
+  transition: border-color 0.2s ease;
 }
-
-/* ПРЕМИАЛЬНЫЕ КНОПКИ ДЕЙСТВИЙ */
-.tactical-deck {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.25fr;
-  gap: 8px;
-  margin-top: 12px;
+.duel-pin-input:focus {
+  border-color: #fff;
 }
-.tactical-card-btn {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 10px 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #ffffff;
-  min-height: 60px;
-  box-sizing: border-box;
-}
-.tactical-card-btn:active {
-  transform: scale(0.96);
-  background: rgba(255, 255, 255, 0.08);
-}
-.action-top-row {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  margin-bottom: 4px;
-}
-.action-index {
-  font-family: monospace;
-  font-size: 8px;
-  color: #64748b;
-  font-weight: 700;
-}
-.action-type-code {
-  font-family: monospace;
-  font-size: 8px;
-  color: #94a3b8;
-  font-weight: 800;
-  letter-spacing: 1px;
-}
-.action-name {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  color: #ffffff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
-  text-align: left;
-}
-.action-sub {
-  font-size: 8px;
-  color: #64748b;
-  letter-spacing: 0.2px;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-
-/* Секретный навык с карточки */
-.tactical-card-btn.skill-card {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.05);
-}
-.tactical-card-btn.skill-card.ready {
-  border-color: var(--accent-color);
-  background: rgba(0, 255, 204, 0.08);
-  box-shadow: 0 0 15px rgba(0, 255, 204, 0.15);
-}
-.action-energy-badge {
-  font-family: monospace;
-  font-size: 8px;
-  padding: 1px 4px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #cbd5e1;
-}
-.tactical-card-btn.skill-card.ready .action-energy-badge {
-  background: var(--accent-color);
-  color: #000000;
-  font-weight: 900;
-}
-
-/* ЭФФЕКТЫ ПОЛУЧЕНИЯ УРОНА (АККУРАТНЫЙ КИНЕМАТОГРАФИЧНЫЙ ОТКЛИК) */
-.flash-impact-vignette {
-  position: fixed;
-  inset: 0;
-  z-index: 998;
-  pointer-events: none;
-  background: radial-gradient(circle, transparent 50%, rgba(239, 68, 68, 0.4) 100%);
-  animation: vignetteOut 0.4s ease-out forwards;
-}
-@keyframes vignetteOut {
-  0% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-/* Всплывающий урон в стиле шахматной нотации */
-.floating-strike-num {
-  position: absolute;
-  right: 0;
-  top: -18px;
-  font-family: monospace;
-  font-size: 14px;
-  font-weight: 900;
-  color: #ef4444;
-  letter-spacing: 0.5px;
-  animation: strikeFloat 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  pointer-events: none;
-}
-@keyframes strikeFloat {
-  0% { opacity: 0; transform: translateY(4px); }
-  25% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-14px); }
+.duel-pin-input::placeholder {
+  color: #30363d;
+  letter-spacing: 12px;
 }
