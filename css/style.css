@@ -581,3 +581,229 @@ body {
   color: #30363d;
   letter-spacing: 12px;
 }
+
+
+ss /* ==========================================================
+   БОЕВОЙ ОВЕРЛЕЙ (СКРЫТ ДО СТАРТА ДУЭЛИ)
+   ========================================================== */
+
+#net-battle-overlay {
+  display: none; /* Скрыт по умолчанию! */
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 14px;
+  box-sizing: border-box;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(10, 14, 22, 0.75) 0%, rgba(5, 7, 10, 0.92) 100%);
+}
+
+/* Панели игроков */
+.duel-actor-panel {
+  pointer-events: auto;
+  background: rgba(13, 17, 23, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+}
+
+.actor-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.actor-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.actor-side-badge {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.actor-side-badge.side-black {
+  background: #21262d;
+  color: #8b949e;
+  border: 1px solid #30363d;
+}
+.actor-side-badge.side-white {
+  background: #ffffff;
+  color: #000000;
+}
+.actor-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+.actor-points {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8b949e;
+}
+
+/* Полоски HP */
+.meter-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.meter-fill {
+  height: 100%;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.meter-fill.enemy-fill { background: #ef4444; }
+.meter-fill.player-fill { background: #ffffff; }
+
+/* Центр арены: Хронометр и Eval Bar */
+.duel-center-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  pointer-events: auto;
+  position: relative;
+  width: 100%;
+}
+.eval-meter-container {
+  position: absolute;
+  left: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.eval-bar-track {
+  width: 4px;
+  height: 80px;
+  background: #181b24;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column-reverse;
+  overflow: hidden;
+}
+.eval-bar-fill {
+  width: 100%;
+  background: #ffffff;
+  transition: height 0.5s ease;
+}
+.eval-score-text {
+  font-family: monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: #8b949e;
+}
+
+.duel-telemetry-console {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.chess-timer {
+  font-family: -apple-system, BlinkMacSystemFont, monospace;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  color: #ffffff;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.chess-timer.urgent {
+  color: #ef4444;
+}
+.tactical-teletype {
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: #c9d1d9;
+  background: rgba(13, 17, 23, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 6px 14px;
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+  text-transform: uppercase;
+}
+
+/* Нижние кнопки (Атака, Защита, Навык) */
+.tactical-deck {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.tactical-card-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  cursor: pointer;
+  color: #ffffff;
+  min-height: 60px;
+  box-sizing: border-box;
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+.tactical-card-btn:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.08);
+}
+.action-top-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+.action-index {
+  font-family: monospace;
+  font-size: 8px;
+  color: #6e7681;
+}
+.action-type-code {
+  font-family: monospace;
+  font-size: 8px;
+  color: #8b949e;
+  font-weight: 700;
+}
+.action-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #ffffff;
+  margin-top: 2px;
+}
+.action-sub {
+  font-size: 8px;
+  color: #6e7681;
+  text-transform: uppercase;
+}
+.action-energy-badge {
+  font-family: monospace;
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #c9d1d9;
+}
+.tactical-card-btn.skill-card.ready {
+  border-color: #00ffcc;
+  background: rgba(0, 255, 204, 0.06);
+}
+.tactical-card-btn.skill-card.ready .action-energy-badge {
+  background: #00ffcc;
+  color: #000000;
+  font-weight: 800;
+}
