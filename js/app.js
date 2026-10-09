@@ -109,10 +109,6 @@ function handleFirstInteraction() {
   if (typeof sfx !== "undefined" && sfx.ctx && sfx.ctx.state === "suspended") {
     sfx.ctx.resume();
   }
-
-  if (currentHeroId !== null) {
-    playTargetVideo(currentHeroId);
-  }
 }
 
 document.addEventListener("touchstart", handleFirstInteraction, { once: true, passive: true });
@@ -182,16 +178,20 @@ function playTargetVideo(id) {
     vid.load();
   }
 
-  const playPromise = vid.play();
+const playPromise = vid.play();
   if (playPromise !== undefined) {
-    playPromise.catch(() => {
+    playPromise.catch((err) => {
+      // Если воспроизведение было прервано паузой (AbortError) — ничего не делаем!
+      if (err && err.name === "AbortError") {
+        return;
+      }
+
       vid.muted = true;
       isMuted = true;
       if (soundBtn) soundBtn.innerHTML = "<span>🔇</span> ЗВУК: ВЫКЛ";
       vid.play().catch(() => {});
     });
   }
-}
 
 function stopTargetVideo(id) {
   const vid = document.getElementById(`vid-${id}`);
