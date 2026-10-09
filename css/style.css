@@ -807,3 +807,52 @@ ss /* ==========================================================
   color: #000000;
   font-weight: 800;
 }
+
+/* ==========================================================
+   ФИКС ВИДИМОСТИ И ПОЗИЦИИ НИЖНЕГО ДОКА КНОПОК
+   ========================================================== */
+
+#interactive-dock {
+  position: fixed !important;
+  bottom: 24px !important;
+  left: 14px !important;
+  right: 14px !important;
+  z-index: 150 !important; /* Выше прелоадера и камеры */
+  display: none; /* Управляется из app.js: flex при распознавании карты */
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dock-btn {
+  flex: 1;
+  padding: 12px 6px !important;
+  border-radius: 12px !important;
+  background: rgba(13, 17, 23, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+  cursor: pointer;
+  text-align: center;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-decoration: none;
+}
+
+.dock-btn:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Гарантированное скрытие боевого оверлея до дуэли */
+#net-battle-overlay {
+  display: none !important;
+}
