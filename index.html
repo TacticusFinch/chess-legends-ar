@@ -5,12 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Тактикус Финч — Чемпионы мира по шахматам</title>
 
-  <!-- Внешние библиотеки -->
   <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.4/dist/mindar-image-aframe.prod.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-  <!-- Подключение стилей -->
   <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -75,56 +73,42 @@
     </div>
   </div>
 
-<!-- ЛАКОНИЧНОЕ ЛОББИ ДУЭЛИ -->
+  <!-- ЛОББИ ДУЭЛИ -->
   <div id="duel-lobby-modal" class="modal-overlay">
     <div class="modal-card duel-card">
       <button class="modal-close" onclick="NetDuel.closeLobby()">✕</button>
 
-      <!-- Шаг 1: Выбор действия -->
       <div id="lobby-step-select">
         <div class="modal-title">Сетевая дуэль</div>
         <div class="modal-subtitle">Битва карточек гроссмейстеров</div>
 
         <div class="duel-actions-stack">
-          <button class="duel-primary-btn" onclick="NetDuel.createRoom()">
-            Создать бой
-          </button>
-          <button class="duel-secondary-btn" onclick="NetDuel.showJoinInput()">
-            Войти по коду
-          </button>
+          <button class="duel-primary-btn" onclick="NetDuel.createRoom()">Создать бой</button>
+          <button class="duel-secondary-btn" onclick="NetDuel.showJoinInput()">Войти по коду</button>
         </div>
       </div>
 
-      <!-- Шаг 2: Создатель (Показ кода) -->
       <div id="lobby-step-host" style="display: none;">
         <div class="modal-title">Код стола</div>
         <div class="modal-subtitle">Назовите его второму игроку</div>
-
         <div class="duel-big-code" id="host-room-id">----</div>
-
         <div class="duel-wait-status">
-          <span class="wait-dot"></span> Ожидание соперника
+          <span class="wait-dot"></span> Ожидание соперника...
         </div>
       </div>
 
-      <!-- Шаг 3: Вход по коду -->
       <div id="lobby-step-join" style="display: none;">
         <div class="modal-title">Вход в бой</div>
         <div class="modal-subtitle">Введите 4 цифры стола</div>
-
         <input type="tel" id="join-room-input" placeholder="••••" maxlength="4" class="duel-pin-input" inputmode="numeric">
-
-        <button class="duel-primary-btn" onclick="NetDuel.joinRoomById()">
-          Начать
-        </button>
+        <button class="duel-primary-btn" onclick="NetDuel.joinRoomById()">Начать бой</button>
       </div>
     </div>
   </div>
 
-<!-- БОЕВОЙ ТУРНИРНЫЙ HUD -->
+  <!-- БОЕВОЙ ТУРНИРНЫЙ HUD -->
   <div id="net-battle-overlay" style="display: none;">
-    
-    <!-- Оппонент (Верх) -->
+    <!-- Оппонент -->
     <div class="duel-actor-panel enemy-panel">
       <div class="actor-card-row">
         <div class="actor-avatar enemy-avatar-frame" id="enemy-card-anchor">
@@ -151,9 +135,8 @@
       </div>
     </div>
 
-    <!-- ЦЕНТР: Stockfish + Арена разбора и статус хода -->
+    <!-- Центр -->
     <div class="duel-center-stage">
-      <!-- Оценка позиции Stockfish -->
       <div class="eval-meter-container">
         <div class="eval-bar-track">
           <div id="duel-eval-fill" class="eval-bar-fill" style="height: 50%;"></div>
@@ -161,34 +144,26 @@
         <div id="duel-eval-score" class="eval-score-text">0.0</div>
       </div>
 
-      <!-- Центральная зона: Ход партии -->
       <div class="duel-center-content">
         <div class="round-status-badge" id="round-title-badge">РАУНД 1</div>
         <div id="battle-log" class="tactical-teletype">ВЫБЕРИТЕ ДЕЙСТВИЕ</div>
 
-        <!-- ПРЕМИАЛЬНАЯ ТАКТИЧЕСКАЯ АРЕНА LICHESS С ТАЙМЕРОМ И ЗАЩИТОЙ ОТ ЗАВИСАНИЯ -->
-<div id="tactic-board-modal" class="premium-tactic-modal" style="display: none;">
-  <div class="tactic-glass-card">
-    <div class="tactic-header">
-      <div class="tactic-badge-row">
-        <span class="live-pulse-dot"></span>
-        <span class="tactic-badge" id="tactic-source-tag">ШАХМАТНЫЙ КРИТ</span>
-        <span class="tactic-timer-badge" id="tactic-timer-num">⏳ 10с</span>
-      </div>
-      <div class="tactic-task-title">МАТ В 1 ХОД БЕЛЫМИ!</div>
-    </div>
+        <!-- АРЕНА QTE: «ФОКУС ГРОССМЕЙСТЕРА» -->
+        <div id="qte-focus-modal" class="qte-strike-modal" style="display: none;">
+          <div class="qte-card">
+            <div class="qte-title">ФОКУС ГРОССМЕЙСТЕРА</div>
+            <div class="qte-sub">Тапните в зоне CRIT для сокрушительного удара!</div>
+            
+            <div class="qte-track-container" id="qte-tap-area">
+              <div class="qte-track">
+                <div class="qte-zone-crit"></div>
+                <div id="qte-cursor" class="qte-cursor"></div>
+              </div>
+            </div>
 
-    <!-- Интерактивная доска -->
-    <div class="board-frame-outer">
-      <div id="chess-interactive-board" class="luxury-chessboard"></div>
-    </div>
-
-    <div class="tactic-footer-status">
-      <span id="tactic-sub-status" class="tactic-sub-hint">Коснитесь белой фигуры для хода</span>
-      <button class="tactic-skip-btn" onclick="NetDuel.skipPuzzle()">Обычная атака ✕</button>
-    </div>
-  </div>
-</div>
+            <button class="duel-primary-btn qte-strike-btn" onclick="NetDuel.resolveQTE()">УДАР!</button>
+          </div>
+        </div>
 
         <div id="battle-hint" class="tactical-hint">
           ⚔️ Атака дает шанс на Крит • 🛡️ Защита копит энергию
@@ -196,11 +171,11 @@
       </div>
     </div>
 
-    <!-- Игрок (Низ) -->
+    <!-- Игрок -->
     <div class="duel-actor-panel player-panel">
       <div class="actor-card-row">
         <div class="actor-avatar player-avatar-frame" id="player-card-anchor">
-          <img id="my-avatar-img" class="actor-avatar-img" src="" alt="Ваш герой">
+          <img id="my-avatar-img" class="actor-avatar-img" src="" alt="Герой">
           <div id="player-shield-fx" class="shield-barrier-fx">🛡️</div>
         </div>
         <div class="actor-details">
@@ -222,15 +197,14 @@
         </div>
       </div>
 
-      <!-- Кнопки действий -->
       <div class="tactical-deck">
         <button id="btn-action-atk" class="tactical-card-btn" onclick="NetDuel.chooseAction('attack')">
           <div class="action-top-row">
             <span class="action-icon">⚔️</span>
-            <span id="atk-stat-badge" class="action-dmg-badge">~25 УРОНА</span>
+            <span id="atk-stat-badge" class="action-dmg-badge">~25 УРОН</span>
           </div>
           <div class="action-name">АТАКА</div>
-          <div class="action-sub">Прямой урон</div>
+          <div class="action-sub">Фокус удара</div>
         </button>
 
         <button id="btn-action-def" class="tactical-card-btn" onclick="NetDuel.chooseAction('defend')">
@@ -305,7 +279,6 @@
     <a-entity id="target-17" mindar-image-target="targetIndex: 17"><a-video src="#vid-17" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;"></a-video></a-entity>
   </a-scene>
 
-  <!-- Скрипты -->
   <script src="js/heroes-data.js"></script>
   <script src="js/sound.js"></script>
   <script src="js/passport.js"></script>

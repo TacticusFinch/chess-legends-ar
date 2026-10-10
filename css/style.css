@@ -882,174 +882,90 @@ body {
   font-weight: 700;
 }
 
-/* ==========================================================
-   6. PREMIUM TACTIC MODAL & LUXURY CHESSBOARD
+ss /* ==========================================================
+   6. QTE FOCUS ARENA STYLES
    ========================================================== */
-.premium-tactic-modal {
+.qte-strike-modal {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(4, 7, 15, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(5, 8, 15, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 1000;
-  animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: modalFadeIn 0.25s ease-out;
 }
 
-.tactic-glass-card {
-  width: 92%;
-  max-width: 380px;
-  background: linear-gradient(145deg, rgba(30, 36, 50, 0.95), rgba(15, 18, 28, 0.98));
-  border: 1px solid rgba(241, 196, 15, 0.35);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(241, 196, 15, 0.15);
-  border-radius: 20px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.qte-card {
+  width: 90%;
+  max-width: 320px;
+  background: linear-gradient(145deg, #161d2b, #0d121c);
+  border: 1px solid rgba(241, 196, 15, 0.4);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(241, 196, 15, 0.2);
+  border-radius: 18px;
+  padding: 20px 16px;
+  text-align: center;
   box-sizing: border-box;
 }
 
-.tactic-header {
-  width: 100%;
-  text-align: center;
-  margin-bottom: 12px;
-}
-
-.tactic-badge-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.live-pulse-dot {
-  width: 7px;
-  height: 7px;
-  background: #10b981;
-  border-radius: 50%;
-  box-shadow: 0 0 8px #10b981;
-  animation: pulseLive 1.5s infinite;
-}
-
-.tactic-badge {
-  font-size: 10px;
+.qte-title {
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 1.5px;
   color: #f1c40f;
-  text-transform: uppercase;
+  margin-bottom: 4px;
 }
 
-.tactic-timer-badge {
+.qte-sub {
   font-size: 11px;
-  font-weight: 800;
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  padding: 2px 7px;
+  color: #8b949e;
+  margin-bottom: 22px;
+}
+
+.qte-track-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.qte-track {
+  width: 260px;
+  height: 16px;
+  background: #21262d;
   border-radius: 8px;
-}
-
-.tactic-task-title {
-  font-size: 13px;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: 0.5px;
-}
-
-.board-frame-outer {
-  padding: 6px;
-  background: #11141c;
-  border-radius: 12px;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8), 0 4px 15px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.luxury-chessboard {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  grid-template-rows: repeat(8, 1fr);
-  width: 296px;
-  height: 296px;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-  user-select: none;
-}
-
-.sq {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.sq.white { background-color: #dee3e6; }
-.sq.black { background-color: #8ca2ad; }
-
-.sq.selected {
-  background-color: #f6e05e !important;
-  box-shadow: inset 0 0 12px rgba(217, 119, 6, 0.8);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.piece {
-  width: 84%;
-  height: 84%;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  pointer-events: none;
-  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.35));
-  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.sq.selected .piece {
-  transform: scale(1.18) translateY(-3px);
-}
-.piece.white-p {
-  color: #fff;
-  text-shadow: 0 0 2px #000, 0 1px 3px rgba(0, 0, 0, 0.8);
-}
-.piece.black-p {
-  color: #1a1a1a;
-  text-shadow: 0 0 1px #fff;
+.qte-zone-crit {
+  position: absolute;
+  left: 110px;
+  width: 40px;
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
 }
 
-.tactic-footer-status {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.tactic-sub-hint {
-  font-size: 11px;
-  color: #94a3b8;
-  font-weight: 600;
+.qte-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 100%;
+  background: #00ffcc;
+  box-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc;
+  border-radius: 4px;
 }
 
-.tactic-skip-btn {
-  margin-top: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #94a3b8;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 6px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.tactic-skip-btn:active {
-  background: rgba(239, 68, 68, 0.25);
-  color: #ef4444;
-  border-color: #ef4444;
+.qte-strike-btn {
+  background: #f1c40f !important;
+  color: #000 !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
 }
 
 /* ==========================================================
