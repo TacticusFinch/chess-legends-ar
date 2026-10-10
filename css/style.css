@@ -12,7 +12,9 @@ body {
   background-color: #000;
 }
 
-/* Прелоадер */
+/* ==========================================================
+   1. ПРЕЛОАДЕР И AR-СЕТКА
+   ========================================================== */
 #scanner-hint {
   position: absolute;
   inset: 0;
@@ -30,7 +32,6 @@ body {
 }
 #scanner-hint.hidden { opacity: 0; }
 
-/* Контейнер прицела */
 .ar-reticle {
   position: relative;
   width: 72vw;
@@ -46,7 +47,6 @@ body {
   box-shadow: inset 0 0 35px rgba(0, 255, 204, 0.06);
 }
 
-/* Уголки */
 .reticle-corner {
   position: absolute;
   width: 28px;
@@ -61,7 +61,6 @@ body {
 .reticle-corner.bottom-left { bottom: 10px; left: 10px; border-bottom-width: 3.5px; border-left-width: 3.5px; border-bottom-left-radius: 8px; }
 .reticle-corner.bottom-right { bottom: 10px; right: 10px; border-bottom-width: 3.5px; border-right-width: 3.5px; border-bottom-right-radius: 8px; }
 
-/* Лазер */
 .laser-beam {
   position: absolute;
   top: 0;
@@ -78,7 +77,6 @@ body {
   100% { transform: translateY(300px); opacity: 0.3; }
 }
 
-/* Вращающиеся кольца */
 .hud-circle { position: absolute; border-radius: 50%; box-sizing: border-box; }
 .ring-outer {
   width: 110px; height: 110px;
@@ -97,7 +95,6 @@ body {
 @keyframes rotateCW { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes rotateCCW { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
 
-/* Шахматный символ */
 .hud-chess-core {
   font-size: 38px;
   color: var(--accent-color);
@@ -122,7 +119,6 @@ body {
 .status-title { font-size: 15px; font-weight: 800; letter-spacing: 1px; color: #fff; }
 .status-sub { font-size: 12px; color: #7a8b9e; }
 
-  /* Прогресс загрузки AR */
 .load-progress-box {
   width: 220px;
   margin-top: 14px;
@@ -152,8 +148,10 @@ body {
   text-align: center;
   line-height: 1.3;
 }
-  
-/* HUD и кнопки */
+
+/* ==========================================================
+   2. ОСНОВНОЙ HUD И ДОК ДЕЙСТВИЙ
+   ========================================================== */
 .top-hud {
   position: absolute; top: 16px; left: 16px; right: 16px;
   display: flex; justify-content: space-between; align-items: center;
@@ -174,9 +172,21 @@ body {
 .hud-btn:active { transform: scale(0.95); }
 #bot-link-btn { border-color: #00e5ff; }
 
+#passport-btn {
+  border-color: #f1c40f;
+  color: #f1c40f;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), 0 0 10px rgba(241, 196, 15, 0.3);
+}
+
 #interactive-dock {
-  position: absolute; bottom: 24px; left: 14px; right: 14px;
-  display: none; justify-content: space-between; gap: 10px; z-index: 110;
+  position: fixed;
+  bottom: 24px;
+  left: 14px;
+  right: 14px;
+  z-index: 150;
+  display: none;
+  justify-content: space-between;
+  gap: 8px;
   animation: dockRise 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 @keyframes dockRise {
@@ -184,22 +194,37 @@ body {
   to { transform: translateY(0); opacity: 1; }
 }
 .dock-btn {
-  flex: 1; padding: 12px 6px; border-radius: 14px;
-  background: linear-gradient(180deg, rgba(25, 32, 48, 0.85) 0%, rgba(10, 14, 22, 0.95) 100%);
-  border: 1.5px solid var(--accent-color);
-  color: #fff; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
-  text-transform: uppercase; backdrop-filter: blur(12px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 15px var(--accent-glow);
-  cursor: pointer; text-align: center; display: flex; flex-direction: column;
-  align-items: center; gap: 4px; transition: all 0.2s ease;
+  flex: 1;
+  padding: 12px 6px;
+  border-radius: 12px;
+  background: rgba(13, 17, 23, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-decoration: none;
+  transition: all 0.2s ease;
 }
 .dock-btn:active {
-  transform: scale(0.92);
-  box-shadow: 0 2px 8px var(--accent-glow);
-  background: var(--accent-color); color: #000;
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.15);
 }
 
-/* Модальные окна */
+/* ==========================================================
+   3. МОДАЛЬНЫЕ ОКНА И ПАСПОРТ КОЛЛЕКЦИИ
+   ========================================================== */
 .modal-overlay {
   position: absolute; inset: 0; background: rgba(4, 6, 12, 0.85);
   display: flex; align-items: center; justify-content: center;
@@ -208,6 +233,7 @@ body {
   backdrop-filter: blur(8px);
 }
 .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
 .modal-card {
   background: linear-gradient(160deg, #121824 0%, #080b11 100%);
   border: 1px solid var(--accent-color); border-radius: 18px;
@@ -222,6 +248,7 @@ body {
   border-radius: 8px; padding: 7px 12px; cursor: pointer;
 }
 .modal-close:active { background: rgba(255, 255, 255, 0.2); color: #fff; }
+
 .modal-title { font-size: 18px; font-weight: 800; color: var(--accent-color); margin-bottom: 4px; padding-right: 65px; }
 .modal-subtitle { font-size: 11px; color: #8a99ad; text-transform: uppercase; margin-bottom: 14px; }
 .bio-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--accent-color); margin-top: 14px; margin-bottom: 4px; }
@@ -264,66 +291,12 @@ body {
 .action-link-btn:active { transform: scale(0.97); }
 .action-link-btn.secondary { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; box-shadow: none; }
 
-/* Hotseat Арена */
-#hotseat-arena {
-  position: absolute; inset: 0; background: #080c14; z-index: 250;
-  display: none; flex-direction: column; overflow: hidden; user-select: none;
-}
-#hotseat-arena.active { display: flex; }
-.hs-zone { flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 8px 12px; box-sizing: border-box; position: relative; }
-.hs-zone.top-player { transform: rotate(180deg); border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
-.hs-divider {
-  height: 32px; background: #0e1422;
-  border-top: 1px solid rgba(255, 255, 255, 0.15); border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-  display: flex; align-items: center; justify-content: space-between; padding: 0 14px; z-index: 10;
-}
-.hs-round-badge { font-size: 11px; font-weight: 800; color: #ff0055; letter-spacing: 1px; }
-.hs-exit-btn { background: rgba(255, 50, 50, 0.15); border: 1px solid #ff4d6d; color: #ff4d6d; padding: 2px 8px; border-radius: 6px; font-size: 9px; font-weight: 800; cursor: pointer; }
-.hs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
-.hs-hero-name { font-size: 11px; font-weight: 800; text-transform: uppercase; }
-.hs-hp-val { font-size: 11px; font-weight: 800; }
-.hs-hp-track { height: 5px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
-.hs-hp-fill { height: 100%; transition: width 0.3s ease; }
-.hs-content-row { flex: 1; display: flex; align-items: center; gap: 10px; margin: 4px 0; min-height: 0; }
-.hs-board-img {
-  height: 100%; max-height: 165px; aspect-ratio: 1 / 1; object-fit: contain;
-  border-radius: 8px; border: 1.5px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8); background: #111622;
-}
-.hs-interactive-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
-.hs-prompt-badge { font-size: 9px; font-weight: 800; color: #00ffcc; text-transform: uppercase; line-height: 1.2; }
-.hs-options-list { display: flex; flex-direction: column; gap: 4px; width: 100%; }
-.hs-opt-btn {
-  background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #fff; padding: 7px 8px; border-radius: 6px; font-size: 10px; font-weight: 700;
-  cursor: pointer; text-align: left; line-height: 1.2;
-}
-.hs-opt-btn:active { transform: scale(0.96); background: rgba(255, 255, 255, 0.25); }
-.hs-feedback-toast {
-  position: absolute; inset: 0; background: rgba(4, 6, 12, 0.95);
-  display: none; align-items: center; justify-content: center; flex-direction: column;
-  z-index: 20; text-align: center; padding: 20px;
-}
-.hs-feedback-toast.active { display: flex; }
-
-
-
-  /* Кнопка паспорта в верхнем HUD */
-#passport-btn {
-  border-color: #f1c40f;
-  color: #f1c40f;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), 0 0 10px rgba(241, 196, 15, 0.3);
-}
-
-/* Компактная сетка на 4 колонки (идеально для 15 карт: 4+4+4+3) */
 .passport-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin: 12px 0;
 }
-
-/* Карточка чемпиона */
 .passport-slot {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -338,122 +311,45 @@ body {
   position: relative;
   box-sizing: border-box;
 }
-
-.passport-slot.unlocked {
-  background: #0f1420;
-  border-color: rgba(255, 255, 255, 0.18);
-}
-.passport-slot.unlocked:active {
-  transform: scale(0.96);
-}
-
-.passport-slot.locked {
-  filter: grayscale(1);
-  opacity: 0.28;
-}
-
-/* Фиксированный компактный размер под картинки 100x100px */
+.passport-slot.unlocked { background: #0f1420; border-color: rgba(255, 255, 255, 0.18); }
+.passport-slot.unlocked:active { transform: scale(0.96); }
+.passport-slot.locked { filter: grayscale(1); opacity: 0.28; }
 .passport-avatar-wrap {
-  width: 56px;
-  height: 56px;
-  border-radius: 6px;
-  overflow: hidden;
-  background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 4px;
+  width: 56px; height: 56px; border-radius: 6px; overflow: hidden;
+  background: #000; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;
 }
-
-/* Фото с аппаратным сглаживанием резкости */
 .passport-avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  /* Заставляет браузер аккуратно интерполировать пиксели при уменьшении */
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: high-quality;
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  image-rendering: -webkit-optimize-contrast; image-rendering: high-quality;
 }
-
-/* Имя чемпиона под иконкой */
 .passport-hero-name {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-  color: #ddd;
-  line-height: 1.1;
-  width: 100%;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase;
+  color: #ddd; line-height: 1.1; width: 100%; text-align: center; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
 }
-
-/* Миниатюрная аккуратная галочка сданного теста */
 .passport-badge-test {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  font-size: 7px;
-  background: #2ecc71;
-  color: #000;
-  border-radius: 50%;
-  width: 13px;
-  height: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  z-index: 5;
+  position: absolute; top: 3px; right: 3px; font-size: 7px; background: #2ecc71;
+  color: #000; border-radius: 50%; width: 13px; height: 13px; display: flex;
+  align-items: center; justify-content: center; font-weight: 900; z-index: 5;
   box-shadow: 0 1px 4px rgba(0,0,0,0.8);
 }
+.passport-lock-icon { font-size: 16px; opacity: 0.4; }
+.passport-monogram { font-size: 11px; font-weight: 800; color: #666; }
 
-/* Замок для закрытых слотов */
-.passport-lock-icon {
-  font-size: 16px;
-  opacity: 0.4;
-}
-
-.passport-monogram {
-  font-size: 11px;
-  font-weight: 800;
-  color: #666;
-}
-
-/* Всплывающее уведомление о новой открытой карте */
 #unlock-toast {
-  position: absolute;
-  top: 70px;
-  left: 50%;
+  position: absolute; top: 70px; left: 50%;
   transform: translateX(-50%) translateY(-20px);
   background: linear-gradient(135deg, #1f2937, #111827);
-  border: 1.5px solid #f1c40f;
-  box-shadow: 0 0 20px rgba(241, 196, 15, 0.5);
-  color: #fff;
-  padding: 10px 18px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 800;
-  z-index: 300;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  opacity: 0;
-  pointer-events: none;
+  border: 1.5px solid #f1c40f; box-shadow: 0 0 20px rgba(241, 196, 15, 0.5);
+  color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 12px; font-weight: 800;
+  z-index: 300; display: flex; align-items: center; gap: 8px; opacity: 0; pointer-events: none;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-#unlock-toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
+#unlock-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* ==========================================================
-   МИНИМАЛИСТИЧНОЕ ЛОББИ ДУЭЛИ (TACTICUS FINCH)
+   4. ЛОББИ СЕТЕВОЙ ДУЭЛИ
    ========================================================== */
-
 .duel-card {
   max-width: 340px !important;
   padding: 32px 24px !important;
@@ -481,7 +377,6 @@ body {
   margin-bottom: 28px;
 }
 
-/* Вертикальный стек кнопок */
 .duel-actions-stack {
   display: flex;
   flex-direction: column;
@@ -523,7 +418,6 @@ body {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Крупный номер стола */
 .duel-big-code {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", monospace;
   font-size: 48px;
@@ -532,10 +426,9 @@ body {
   color: #fff;
   padding: 16px 0;
   margin: 8px 0 20px 0;
-  text-indent: 10px; /* компенсация letter-spacing */
+  text-indent: 10px;
 }
 
-/* Статус ожидания */
 .duel-wait-status {
   display: inline-flex;
   align-items: center;
@@ -555,7 +448,6 @@ body {
   50% { opacity: 1; transform: scale(1.15); }
 }
 
-/* Поле ввода пин-кода */
 .duel-pin-input {
   width: 160px;
   padding: 12px 0;
@@ -582,11 +474,89 @@ body {
   letter-spacing: 12px;
 }
 
-
 /* ==========================================================
-   БОЕВАЯ АРЕНА: ЦЕНТРАЛЬНАЯ ЗОНА И СТОЛКНОВЕНИЕ ХОДОВ
+   5. БОЕВОЙ ОВЕРЛЕЙ (ТУРНИРНЫЙ ЭКРАН СРАЖЕНИЯ)
    ========================================================== */
+#net-battle-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 14px;
+  box-sizing: border-box;
+  background: radial-gradient(circle at center, rgba(10, 14, 22, 0.85) 0%, rgba(5, 7, 10, 0.96) 100%);
+}
 
+/* Панели игроков */
+.duel-actor-panel {
+  pointer-events: auto;
+  background: rgba(13, 17, 23, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+}
+
+.actor-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.actor-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.actor-side-badge {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.actor-side-badge.side-black {
+  background: #21262d;
+  color: #8b949e;
+  border: 1px solid #30363d;
+}
+.actor-side-badge.side-white {
+  background: #ffffff;
+  color: #000000;
+}
+.actor-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+.actor-points {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8b949e;
+}
+
+/* Шкалы здоровья HP */
+.meter-track {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+.meter-fill {
+  height: 100%;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.meter-fill.enemy-fill { background: #ef4444; }
+.meter-fill.player-fill { background: #00ffcc; }
+
+/* Центральная зона: Столкновение, таймер и оценка Stockfish */
 .duel-center-stage {
   flex: 1;
   display: flex;
@@ -597,19 +567,66 @@ body {
   pointer-events: auto;
 }
 
+.eval-meter-container {
+  position: absolute;
+  left: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.eval-bar-track {
+  width: 4px;
+  height: 90px;
+  background: #181b24;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column-reverse;
+  overflow: hidden;
+}
+.eval-bar-fill {
+  width: 100%;
+  background: #ffffff;
+  transition: height 0.5s ease;
+}
+.eval-score-text {
+  font-family: monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: #8b949e;
+}
+
 .duel-center-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 0 40px;
+  padding: 0 35px;
   box-sizing: border-box;
 }
 
 #battle-timer-wrap {
   text-align: center;
   margin-bottom: 8px;
+}
+
+.chess-timer {
+  font-family: -apple-system, BlinkMacSystemFont, monospace;
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  color: #ffffff;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.chess-timer.urgent {
+  color: #ef4444;
+  animation: pulseUrgent 0.6s infinite alternate;
+}
+@keyframes pulseUrgent {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
 }
 
 .timer-sub {
@@ -624,7 +641,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: 16px;
   margin-bottom: 14px;
   animation: clashPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -641,7 +658,7 @@ body {
   background: rgba(255, 255, 255, 0.05);
   border: 1.5px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   min-width: 75px;
 }
 
@@ -656,7 +673,7 @@ body {
 }
 
 .clash-icon {
-  font-size: 28px;
+  font-size: 26px;
   margin-bottom: 4px;
 }
 
@@ -665,17 +682,33 @@ body {
   font-weight: 800;
   letter-spacing: 0.5px;
   color: #fff;
+  text-transform: uppercase;
 }
 
 .clash-vs {
   font-family: monospace;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
   color: #f1c40f;
   text-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
 }
 
-/* Шпаргалка внизу центра */
+/* Лог боя и тактическая подсказка */
+.tactical-teletype {
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: #c9d1d9;
+  background: rgba(13, 17, 23, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 6px 14px;
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+  text-transform: uppercase;
+  text-align: center;
+  max-width: 280px;
+}
+
 .tactical-hint {
   font-size: 9px;
   color: #8b949e;
@@ -684,61 +717,134 @@ body {
   line-height: 1.3;
 }
 
-/* Информативные бейджи на кнопках */
+/* Нижние боевые кнопки */
+.tactical-deck {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.tactical-card-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  cursor: pointer;
+  color: #ffffff;
+  min-height: 64px;
+  box-sizing: border-box;
+  transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.tactical-card-btn:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.action-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
 .action-icon {
   font-size: 14px;
 }
-
 .action-dmg-badge {
   font-family: monospace;
-  font-size: 9px;
+  font-size: 8px;
   color: #ef4444;
   font-weight: 800;
 }
-
 .action-energy-gain {
   font-family: monospace;
-  font-size: 9px;
+  font-size: 8px;
   color: #38bdf8;
   font-weight: 800;
 }
-
 .action-energy-badge {
   font-family: monospace;
-  font-size: 9px;
-  padding: 2px 5px;
-  border-radius: 4px;
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 3px;
   background: rgba(255, 255, 255, 0.1);
   color: #8b949e;
   font-weight: 700;
 }
 
-/* Готовый к удару супернавык */
+.action-name {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #ffffff;
+  margin-top: 2px;
+}
+.action-sub {
+  font-size: 7.5px;
+  color: #6e7681;
+  text-transform: uppercase;
+}
+
+/* Коронный ход при накоплении энергии */
 .tactical-card-btn.skill-card.ready {
   border-color: #00ffcc !important;
   background: linear-gradient(135deg, rgba(0, 255, 204, 0.15) 0%, rgba(13, 17, 23, 0.9) 100%) !important;
   box-shadow: 0 0 15px rgba(0, 255, 204, 0.35);
   animation: pulseReady 1.2s infinite alternate;
 }
-
 .tactical-card-btn.skill-card.ready .action-energy-badge {
   background: #00ffcc;
-  color: #000;
+  color: #000000;
   font-weight: 900;
 }
-
 .tactical-card-btn.skill-card.ready #skill-action-sub {
   color: #00ffcc;
   font-weight: 700;
 }
-
 @keyframes pulseReady {
   0% { transform: scale(1); }
   100% { transform: scale(1.03); }
 }
 
-/* Кнопка в момент выбора */
+/* Подсветка выбранной кнопки */
 .tactical-card-btn.selected {
   border-color: #f1c40f !important;
   background: rgba(241, 196, 15, 0.18) !important;
+}
+
+/* Виньетка удара при уроне */
+.flash-impact-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: inset 0 0 50px rgba(239, 68, 68, 0.8);
+  animation: fadeOutImpact 0.4s ease forwards;
+}
+@keyframes fadeOutImpact {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Всплывающие цифры урона */
+.floating-strike-num {
+  position: absolute;
+  top: -16px;
+  right: 0;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 900;
+  color: #ef4444;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+  animation: floatUp 0.8s ease-out forwards;
+}
+@keyframes floatUp {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-20px); opacity: 0; }
 }
