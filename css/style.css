@@ -1,3 +1,6 @@
+/* ==========================================================
+   1. BASE, PRELOADER & AR HUD
+   ========================================================== */
 :root {
   --accent-color: #00ffcc;
   --accent-glow: rgba(0, 255, 204, 0.4);
@@ -12,13 +15,10 @@ body {
   background-color: #000;
 }
 
-/* ==========================================================
-   1. ПРЕЛОАДЕР И AR-СЕТКА
-   ========================================================== */
 #scanner-hint {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle, rgba(10, 15, 24, 0.35) 0%, rgba(0,0,0,0.55) 100%);
+  background: radial-gradient(circle, rgba(10, 15, 24, 0.35) 0%, rgba(0, 0, 0, 0.55) 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -47,19 +47,19 @@ body {
   box-shadow: inset 0 0 35px rgba(0, 255, 204, 0.06);
 }
 
+/* Компактная запись рамок без дублирования правил */
 .reticle-corner {
   position: absolute;
   width: 28px;
   height: 28px;
   border-color: var(--accent-color);
   border-style: solid;
-  border-width: 0;
   filter: drop-shadow(0 0 8px var(--accent-color));
 }
-.reticle-corner.top-left { top: 10px; left: 10px; border-top-width: 3.5px; border-left-width: 3.5px; border-top-left-radius: 8px; }
-.reticle-corner.top-right { top: 10px; right: 10px; border-top-width: 3.5px; border-right-width: 3.5px; border-top-right-radius: 8px; }
-.reticle-corner.bottom-left { bottom: 10px; left: 10px; border-bottom-width: 3.5px; border-left-width: 3.5px; border-bottom-left-radius: 8px; }
-.reticle-corner.bottom-right { bottom: 10px; right: 10px; border-bottom-width: 3.5px; border-right-width: 3.5px; border-bottom-right-radius: 8px; }
+.reticle-corner.top-left     { top: 10px; left: 10px; border-width: 3.5px 0 0 3.5px; border-radius: 8px 0 0 0; }
+.reticle-corner.top-right    { top: 10px; right: 10px; border-width: 3.5px 3.5px 0 0; border-radius: 0 8px 0 0; }
+.reticle-corner.bottom-left  { bottom: 10px; left: 10px; border-width: 0 0 3.5px 3.5px; border-radius: 0 0 0 8px; }
+.reticle-corner.bottom-right { bottom: 10px; right: 10px; border-width: 0 3.5px 3.5px 0; border-radius: 0 0 8px 0; }
 
 .laser-beam {
   position: absolute;
@@ -71,29 +71,24 @@ body {
   box-shadow: 0 0 15px var(--accent-color), 0 0 30px var(--accent-color);
   animation: scanLaser 2.2s ease-in-out infinite alternate;
 }
-@keyframes scanLaser {
-  0% { transform: translateY(10px); opacity: 0.3; }
-  50% { opacity: 1; }
-  100% { transform: translateY(300px); opacity: 0.3; }
-}
 
 .hud-circle { position: absolute; border-radius: 50%; box-sizing: border-box; }
 .ring-outer {
-  width: 110px; height: 110px;
+  width: 110px;
+  height: 110px;
   border: 2px dashed var(--accent-color);
   opacity: 0.7;
   animation: rotateCW 8s linear infinite;
   filter: drop-shadow(0 0 8px var(--accent-glow));
 }
 .ring-inner {
-  width: 80px; height: 80px;
+  width: 80px;
+  height: 80px;
   border: 3px solid transparent;
-  border-top: 3px solid var(--accent-color);
-  border-bottom: 3px solid var(--accent-color);
+  border-top-color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
   animation: rotateCCW 2.5s cubic-bezier(0.5, 0, 0.5, 1) infinite;
 }
-@keyframes rotateCW { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes rotateCCW { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
 
 .hud-chess-core {
   font-size: 38px;
@@ -102,15 +97,14 @@ body {
   animation: pulseCore 1.6s ease-in-out infinite;
   z-index: 2;
 }
-@keyframes pulseCore {
-  0%, 100% { transform: scale(0.92); opacity: 0.75; }
-  50% { transform: scale(1.08); opacity: 1; }
-}
 
 .scanner-status { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .status-badge {
-  font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
-  padding: 3px 8px; border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  padding: 3px 8px;
+  border-radius: 4px;
   background: rgba(0, 255, 204, 0.12);
   border: 1px solid var(--accent-color);
   color: var(--accent-color);
@@ -149,25 +143,64 @@ body {
   line-height: 1.3;
 }
 
+#unlock-toast {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: linear-gradient(135deg, #1f2937, #111827);
+  border: 1.5px solid #f1c40f;
+  box-shadow: 0 0 20px rgba(241, 196, 15, 0.5);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 800;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+#unlock-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
 /* ==========================================================
-   2. ОСНОВНОЙ HUD И ДОК ДЕЙСТВИЙ
+   2. TOP HUD & BOTTOM DOCK
    ========================================================== */
 .top-hud {
-  position: absolute; top: 16px; left: 16px; right: 16px;
-  display: flex; justify-content: space-between; align-items: center;
-  z-index: 120; pointer-events: none;
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 120;
+  pointer-events: none;
 }
+
 .hud-btn {
   pointer-events: auto;
   background: rgba(12, 16, 26, 0.75);
   border: 1px solid var(--accent-color);
-  color: #fff; border-radius: 12px; padding: 8px 14px;
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
-  text-transform: uppercase; text-decoration: none;
+  color: #fff;
+  border-radius: 12px;
+  padding: 8px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-decoration: none;
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), 0 0 10px var(--accent-glow);
-  cursor: pointer; transition: transform 0.15s;
+  cursor: pointer;
+  transition: transform 0.15s;
 }
 .hud-btn:active { transform: scale(0.95); }
 #bot-link-btn { border-color: #00e5ff; }
@@ -189,10 +222,7 @@ body {
   gap: 8px;
   animation: dockRise 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
-@keyframes dockRise {
-  from { transform: translateY(40px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
+
 .dock-btn {
   flex: 1;
   padding: 12px 6px;
@@ -223,340 +253,479 @@ body {
 }
 
 /* ==========================================================
-   3. МОДАЛЬНЫЕ ОКНА И ПАСПОРТ КОЛЛЕКЦИИ
+   3. MODALS, PASSPORT & BIO
    ========================================================== */
 .modal-overlay {
-  position: absolute; inset: 0; background: rgba(4, 6, 12, 0.85);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 200; opacity: 0; pointer-events: none;
-  transition: opacity 0.25s ease; padding: 16px; box-sizing: border-box;
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 6, 12, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  padding: 16px;
+  box-sizing: border-box;
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .modal-overlay.active { opacity: 1; pointer-events: auto; }
 
 .modal-card {
   background: linear-gradient(160deg, #121824 0%, #080b11 100%);
-  border: 1px solid var(--accent-color); border-radius: 18px;
-  width: 100%; max-width: 420px; padding: 22px; color: #fff;
-  position: relative; box-shadow: 0 0 35px var(--accent-glow);
-  max-height: 85vh; overflow-y: auto; box-sizing: border-box;
+  border: 1px solid var(--accent-color);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 420px;
+  padding: 22px;
+  color: #fff;
+  position: relative;
+  box-shadow: 0 0 35px var(--accent-glow);
+  max-height: 85vh;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
+
 .modal-close {
-  position: absolute; top: 14px; right: 14px;
-  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #aaa; font-size: 11px; font-weight: 700; text-transform: uppercase;
-  border-radius: 8px; padding: 7px 12px; cursor: pointer;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #aaa;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
 }
 .modal-close:active { background: rgba(255, 255, 255, 0.2); color: #fff; }
 
 .modal-title { font-size: 18px; font-weight: 800; color: var(--accent-color); margin-bottom: 4px; padding-right: 65px; }
 .modal-subtitle { font-size: 11px; color: #8a99ad; text-transform: uppercase; margin-bottom: 14px; }
-.bio-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--accent-color); margin-top: 14px; margin-bottom: 4px; }
+.bio-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--accent-color); margin: 14px 0 4px; }
 .bio-paragraph { font-size: 13px; line-height: 1.5; color: #ccc; margin-bottom: 8px; text-align: justify; }
+
 .modal-quote {
-  font-style: italic; color: #ddd; font-size: 12px; line-height: 1.45;
-  border-left: 3px solid var(--accent-color); padding: 8px 12px; margin: 12px 0;
-  background: rgba(255, 255, 255, 0.03); border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: #ddd;
+  font-size: 12px;
+  line-height: 1.45;
+  border-left: 3px solid var(--accent-color);
+  padding: 8px 12px;
+  margin: 12px 0;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0 8px 8px 0;
 }
+
 .diagram-container { width: 100%; margin: 12px 0; display: flex; justify-content: center; }
 .diagram-img {
-  max-width: 250px; width: 100%; height: auto;
-  border: 2px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
-  background-color: #1a1e28; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  max-width: 250px;
+  width: 100%;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background-color: #1a1e28;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
+
 .difficulty-badge {
-  display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase;
-  padding: 4px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.08);
-  color: var(--accent-color); margin-bottom: 8px;
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent-color);
+  margin-bottom: 8px;
 }
+
 .puzzle-option-btn {
-  width: 100%; text-align: left; padding: 12px; font-size: 12px; margin-bottom: 8px;
-  border-radius: 10px; background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.12); color: #fff; cursor: pointer; box-sizing: border-box;
+  width: 100%;
+  text-align: left;
+  padding: 12px;
+  font-size: 12px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  box-sizing: border-box;
 }
 .puzzle-option-btn:active { background: rgba(255, 255, 255, 0.15); border-color: var(--accent-color); }
+
 .stat-row { margin-bottom: 12px; }
 .stat-header { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; margin-bottom: 4px; color: #ccc; }
 .stat-track { height: 7px; background: rgba(255, 255, 255, 0.08); border-radius: 4px; overflow: hidden; }
 .stat-fill { height: 100%; background: var(--accent-color); box-shadow: 0 0 8px var(--accent-glow); border-radius: 4px; }
 .skill-box { margin-top: 16px; padding: 14px; background: rgba(255, 255, 255, 0.03); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08); }
 .external-promo-box { margin-top: 15px; padding: 12px; background: rgba(255, 255, 255, 0.04); border-radius: 10px; border: 1px dashed rgba(255, 255, 255, 0.15); text-align: center; }
+
 .action-link-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  margin-top: 8px; padding: 11px 16px; width: 100%; box-sizing: border-box;
-  border-radius: 10px; background: var(--accent-color); color: #000;
-  font-size: 11px; font-weight: 800; text-decoration: none; text-transform: uppercase;
-  letter-spacing: 0.4px; box-shadow: 0 4px 12px var(--accent-glow); cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 11px 16px;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: var(--accent-color);
+  color: #000;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  box-shadow: 0 4px 12px var(--accent-glow);
+  cursor: pointer;
 }
 .action-link-btn:active { transform: scale(0.97); }
 .action-link-btn.secondary { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; box-shadow: none; }
 
+/* Сетка паспорта */
 .passport-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin: 12px 0;
 }
+
 .passport-slot {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
-  padding: 5px 3px 6px 3px;
+  padding: 5px 3px 6px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  transition: transform 0.15s ease, border-color 0.2s ease;
   position: relative;
   box-sizing: border-box;
+  transition: transform 0.15s ease, border-color 0.2s ease;
 }
 .passport-slot.unlocked { background: #0f1420; border-color: rgba(255, 255, 255, 0.18); }
 .passport-slot.unlocked:active { transform: scale(0.96); }
 .passport-slot.locked { filter: grayscale(1); opacity: 0.28; }
+
 .passport-avatar-wrap {
-  width: 56px; height: 56px; border-radius: 6px; overflow: hidden;
-  background: #000; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;
+  width: 56px;
+  height: 56px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
 }
+
 .passport-avatar-img {
-  width: 100%; height: 100%; object-fit: cover; display: block;
-  image-rendering: -webkit-optimize-contrast; image-rendering: high-quality;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
+
 .passport-hero-name {
-  font-size: 9px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase;
-  color: #ddd; line-height: 1.1; width: 100%; text-align: center; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #ddd;
+  line-height: 1.1;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
 .passport-badge-test {
-  position: absolute; top: 3px; right: 3px; font-size: 7px; background: #2ecc71;
-  color: #000; border-radius: 50%; width: 13px; height: 13px; display: flex;
-  align-items: center; justify-content: center; font-weight: 900; z-index: 5;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  font-size: 7px;
+  background: #2ecc71;
+  color: #000;
+  border-radius: 50%;
+  width: 13px;
+  height: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  z-index: 5;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
+
 .passport-lock-icon { font-size: 16px; opacity: 0.4; }
 .passport-monogram { font-size: 11px; font-weight: 800; color: #666; }
 
-#unlock-toast {
-  position: absolute; top: 70px; left: 50%;
-  transform: translateX(-50%) translateY(-20px);
-  background: linear-gradient(135deg, #1f2937, #111827);
-  border: 1.5px solid #f1c40f; box-shadow: 0 0 20px rgba(241, 196, 15, 0.5);
-  color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 12px; font-weight: 800;
-  z-index: 300; display: flex; align-items: center; gap: 8px; opacity: 0; pointer-events: none;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-#unlock-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
 /* ==========================================================
-   4. ЛОББИ СЕТЕВОЙ ДУЭЛИ
-   ========================================================== */
+
+NET DUEL (LOBBY & BATTLE ARENA)
+========================================================== */
 .duel-card {
-  max-width: 340px !important;
-  padding: 32px 24px !important;
-  text-align: center;
-  background: #0d1117 !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 20px !important;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8) !important;
+max-width: 340px !important;
+padding: 32px 24px !important;
+text-align: center;
+background: #0d1117 !important;
+border: 1px solid rgba(255, 255, 255, 0.1) !important;
+border-radius: 20px !important;
+box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8) !important;
 }
 
 .duel-card .modal-title {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
-  color: #fff;
-  margin-bottom: 4px;
-  padding-right: 0;
+font-size: 20px;
+font-weight: 700;
+letter-spacing: -0.3px;
+color: #fff;
+margin-bottom: 4px;
+padding-right: 0;
 }
 
 .duel-card .modal-subtitle {
-  font-size: 13px;
-  color: #6e7681;
-  text-transform: none;
-  letter-spacing: 0;
-  margin-bottom: 28px;
+font-size: 13px;
+color: #6e7681;
+text-transform: none;
+letter-spacing: 0;
+margin-bottom: 28px;
 }
 
 .duel-actions-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+display: flex;
+flex-direction: column;
+gap: 10px;
 }
 
 .duel-primary-btn {
-  width: 100%;
-  padding: 14px;
-  background: #fff;
-  color: #000;
-  border: none;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
-  cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+width: 100%;
+padding: 14px;
+background: #fff;
+color: #000;
+border: none;
+border-radius: 12px;
+font-size: 14px;
+font-weight: 600;
+letter-spacing: -0.2px;
+cursor: pointer;
+transition: transform 0.15s ease, opacity 0.15s ease;
 }
-.duel-primary-btn:active {
-  transform: scale(0.97);
-  opacity: 0.9;
-}
+.duel-primary-btn:active { transform: scale(0.97); opacity: 0.9; }
 
 .duel-secondary-btn {
-  width: 100%;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #c9d1d9;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
+width: 100%;
+padding: 14px;
+background: rgba(255, 255, 255, 0.05);
+color: #c9d1d9;
+border: 1px solid rgba(255, 255, 255, 0.1);
+border-radius: 12px;
+font-size: 14px;
+font-weight: 500;
+cursor: pointer;
+transition: background 0.15s ease, transform 0.15s ease;
 }
 .duel-secondary-btn:active {
-  transform: scale(0.97);
-  background: rgba(255, 255, 255, 0.1);
+transform: scale(0.97);
+background: rgba(255, 255, 255, 0.1);
 }
 
 .duel-big-code {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", monospace;
-  font-size: 48px;
-  font-weight: 800;
-  letter-spacing: 10px;
-  color: #fff;
-  padding: 16px 0;
-  margin: 8px 0 20px 0;
-  text-indent: 10px;
+font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", monospace;
+font-size: 48px;
+font-weight: 800;
+letter-spacing: 10px;
+color: #fff;
+padding: 16px 0;
+margin: 8px 0 20px;
+text-indent: 10px;
 }
 
 .duel-wait-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #8b949e;
+display: inline-flex;
+align-items: center;
+gap: 8px;
+font-size: 12px;
+color: #8b949e;
 }
 .wait-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #d4af37;
-  animation: pulseWait 1.4s ease-in-out infinite;
-}
-@keyframes pulseWait {
-  0%, 100% { opacity: 0.3; transform: scale(0.85); }
-  50% { opacity: 1; transform: scale(1.15); }
+width: 6px;
+height: 6px;
+border-radius: 50%;
+background: #d4af37;
+animation: pulseWait 1.4s ease-in-out infinite;
 }
 
 .duel-pin-input {
-  width: 160px;
-  padding: 12px 0;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: 12px;
-  text-align: center;
-  text-indent: 12px;
-  font-family: monospace;
-  border-radius: 0;
-  margin-bottom: 28px;
-  outline: none;
-  transition: border-color 0.2s ease;
+width: 160px;
+padding: 12px 0;
+background: transparent;
+border: none;
+border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+color: #fff;
+font-size: 32px;
+font-weight: 700;
+letter-spacing: 12px;
+text-align: center;
+text-indent: 12px;
+font-family: monospace;
+border-radius: 0;
+margin-bottom: 28px;
+outline: none;
+transition: border-color 0.2s ease;
 }
-.duel-pin-input:focus {
-  border-color: #fff;
-}
-.duel-pin-input::placeholder {
-  color: #30363d;
-  letter-spacing: 12px;
+.duel-pin-input:focus { border-color: #fff; }
+.duel-pin-input::placeholder { color: #30363d; letter-spacing: 12px; }
+
+/ Боевой оверлей /
+
+net-battle-overlay {
+display: none;
+position: fixed;
+inset: 0;
+z-index: 999;
+flex-direction: column;
+justify-content: space-between;
+padding: 16px 14px;
+box-sizing: border-box;
+background: radial-gradient(circle at center, rgba(10, 14, 22, 0.85) 0%, rgba(5, 7, 10, 0.96) 100%);
 }
 
-/* ==========================================================
-   5. БОЕВОЙ ОВЕРЛЕЙ (ТУРНИРНЫЙ ЭКРАН СРАЖЕНИЯ)
-   ========================================================== */
-#net-battle-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 16px 14px;
-  box-sizing: border-box;
-  background: radial-gradient(circle at center, rgba(10, 14, 22, 0.85) 0%, rgba(5, 7, 10, 0.96) 100%);
-}
-
-/* Панели игроков */
 .duel-actor-panel {
-  pointer-events: auto;
-  background: rgba(13, 17, 23, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  padding: 12px 14px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+pointer-events: auto;
+background: rgba(13, 17, 23, 0.9);
+border: 1px solid rgba(255, 255, 255, 0.12);
+border-radius: 12px;
+padding: 12px 14px;
+box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+}
+
+.actor-card-row { display: flex; align-items: center; gap: 12px; }
+.actor-details { flex: 1; }
+
+.actor-avatar {
+width: 44px;
+height: 44px;
+border-radius: 10px;
+overflow: hidden;
+background: #000;
+flex-shrink: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+position: relative;
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.enemy-avatar-frame {
+border: 1.5px solid #ef4444;
+box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
+}
+
+.player-avatar-frame {
+border: 1.5px solid #00ffcc;
+box-shadow: 0 0 10px rgba(0, 255, 204, 0.35);
+}
+
+.actor-avatar-img {
+width: 100%;
+height: 100%;
+object-fit: cover;
 }
 
 .actor-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 8px;
 }
-.actor-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.actor-title-row { display: flex; align-items: center; gap: 8px; }
+
 .actor-side-badge {
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  padding: 2px 6px;
-  border-radius: 3px;
+font-size: 8px;
+font-weight: 800;
+letter-spacing: 1px;
+padding: 2px 6px;
+border-radius: 3px;
 }
-.actor-side-badge.side-black {
-  background: #21262d;
-  color: #8b949e;
-  border: 1px solid #30363d;
-}
-.actor-side-badge.side-white {
-  background: #ffffff;
-  color: #000000;
-}
+.actor-side-badge.side-black { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
+.actor-side-badge.side-white { background: #fff; color: #000; }
+
 .actor-name {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: #ffffff;
-  text-transform: uppercase;
-}
-.actor-points {
-  font-family: monospace;
-  font-size: 11px;
-  font-weight: 600;
-  color: #8b949e;
+font-size: 13px;
+font-weight: 700;
+letter-spacing: 0.5px;
+color: #fff;
+text-transform: uppercase;
 }
 
-/* Шкалы здоровья HP */
+.actor-points {
+font-family: monospace;
+font-size: 11px;
+font-weight: 600;
+color: #8b949e;
+}
+
+/ HP полосы /
 .meter-track {
-  width: 100%;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 3px;
-  overflow: hidden;
-  position: relative;
+width: 100%;
+height: 5px;
+background: rgba(255, 255, 255, 0.08);
+border-radius: 3px;
+overflow: hidden;
 }
 .meter-fill {
-  height: 100%;
-  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+height: 100%;
+transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .meter-fill.enemy-fill { background: #ef4444; }
 .meter-fill.player-fill { background: #00ffcc; }
 
-/* Центральная зона: Столкновение, таймер и оценка Stockfish */
+/ Статы карт /
+.tactical-stats-row {
+display: flex;
+align-items: center;
+gap: 6px;
+margin-top: 6px;
+flex-wrap: wrap;
+}
+
+/* ==========================================================
+   4. NET DUEL (CENTER STAGE & ACTIONS DECK) — ПРОДОЛЖЕНИЕ
+   ========================================================== */
+.stat-pill {
+  font-family: monospace;
+  font-size: 8.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #c9d1d9;
+}
+.stat-pill.atk-pill   { color: #f87171; border-color: rgba(239, 68, 68, 0.25); }
+.stat-pill.def-pill   { color: #38bdf8; border-color: rgba(56, 189, 248, 0.25); }
+.stat-pill.skill-pill { color: #fbbf24; border-color: rgba(251, 191, 36, 0.25); }
+
+.round-status-badge {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--accent-color);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding: 4px 12px;
+  background: rgba(0, 255, 204, 0.08);
+  border: 1px solid rgba(0, 255, 204, 0.2);
+  border-radius: 12px;
+}
+
+/* Центральная зона: Оценка Stockfish и статус хода */
 .duel-center-stage {
   flex: 1;
   display: flex;
@@ -586,7 +755,7 @@ body {
 }
 .eval-bar-fill {
   width: 100%;
-  background: #ffffff;
+  background: #fff;
   transition: height 0.5s ease;
 }
 .eval-score-text {
@@ -606,94 +775,6 @@ body {
   box-sizing: border-box;
 }
 
-#battle-timer-wrap {
-  text-align: center;
-  margin-bottom: 8px;
-}
-
-.chess-timer {
-  font-family: -apple-system, BlinkMacSystemFont, monospace;
-  font-size: 44px;
-  font-weight: 800;
-  letter-spacing: -1.5px;
-  color: #ffffff;
-  line-height: 1;
-  margin-bottom: 4px;
-}
-.chess-timer.urgent {
-  color: #ef4444;
-  animation: pulseUrgent 0.6s infinite alternate;
-}
-@keyframes pulseUrgent {
-  0% { transform: scale(1); }
-  100% { transform: scale(1.1); }
-}
-
-.timer-sub {
-  font-size: 8px;
-  letter-spacing: 1.5px;
-  color: #6e7681;
-  text-transform: uppercase;
-}
-
-/* Арена столкновения приемов */
-.clash-arena {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 14px;
-  animation: clashPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes clashPop {
-  0% { transform: scale(0.6); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.clash-fighter {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  padding: 8px 12px;
-  min-width: 75px;
-}
-
-.my-clash {
-  border-color: #00ffcc;
-  box-shadow: 0 0 15px rgba(0, 255, 204, 0.25);
-}
-
-.enemy-clash {
-  border-color: #ef4444;
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.25);
-}
-
-.clash-icon {
-  font-size: 26px;
-  margin-bottom: 4px;
-}
-
-.clash-label {
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  color: #fff;
-  text-transform: uppercase;
-}
-
-.clash-vs {
-  font-family: monospace;
-  font-size: 13px;
-  font-weight: 900;
-  color: #f1c40f;
-  text-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
-}
-
-/* Лог боя и тактическая подсказка */
 .tactical-teletype {
   font-family: monospace;
   font-size: 11px;
@@ -704,6 +785,7 @@ body {
   padding: 6px 14px;
   border-radius: 20px;
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   text-transform: uppercase;
   text-align: center;
   max-width: 280px;
@@ -717,7 +799,7 @@ body {
   line-height: 1.3;
 }
 
-/* Нижние боевые кнопки */
+/* Нижняя колода боевых карт действий */
 .tactical-deck {
   display: grid;
   grid-template-columns: 1fr 1fr 1.2fr;
@@ -735,7 +817,7 @@ body {
   align-items: flex-start;
   justify-content: space-between;
   cursor: pointer;
-  color: #ffffff;
+  color: #fff;
   min-height: 64px;
   box-sizing: border-box;
   transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
@@ -744,6 +826,10 @@ body {
   transform: scale(0.96);
   background: rgba(255, 255, 255, 0.08);
 }
+.tactical-card-btn.selected {
+  border-color: #f1c40f !important;
+  background: rgba(241, 196, 15, 0.18) !important;
+}
 
 .action-top-row {
   display: flex;
@@ -751,9 +837,7 @@ body {
   align-items: center;
   width: 100%;
 }
-.action-icon {
-  font-size: 14px;
-}
+.action-icon { font-size: 14px; }
 .action-dmg-badge {
   font-family: monospace;
   font-size: 8px;
@@ -781,7 +865,7 @@ body {
   font-weight: 800;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: #ffffff;
+  color: #fff;
   margin-top: 2px;
 }
 .action-sub {
@@ -790,360 +874,25 @@ body {
   text-transform: uppercase;
 }
 
-/* Коронный ход при накоплении энергии */
 .tactical-card-btn.skill-card.ready {
-  border-color: #00ffcc !important;
+  border-color: var(--accent-color) !important;
   background: linear-gradient(135deg, rgba(0, 255, 204, 0.15) 0%, rgba(13, 17, 23, 0.9) 100%) !important;
   box-shadow: 0 0 15px rgba(0, 255, 204, 0.35);
   animation: pulseReady 1.2s infinite alternate;
 }
 .tactical-card-btn.skill-card.ready .action-energy-badge {
-  background: #00ffcc;
-  color: #000000;
+  background: var(--accent-color);
+  color: #000;
   font-weight: 900;
 }
 .tactical-card-btn.skill-card.ready #skill-action-sub {
-  color: #00ffcc;
+  color: var(--accent-color);
   font-weight: 700;
 }
-@keyframes pulseReady {
-  0% { transform: scale(1); }
-  100% { transform: scale(1.03); }
-}
-
-/* Подсветка выбранной кнопки */
-.tactical-card-btn.selected {
-  border-color: #f1c40f !important;
-  background: rgba(241, 196, 15, 0.18) !important;
-}
-
-/* Виньетка удара при уроне */
-.flash-impact-vignette {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1000;
-  box-shadow: inset 0 0 50px rgba(239, 68, 68, 0.8);
-  animation: fadeOutImpact 0.4s ease forwards;
-}
-@keyframes fadeOutImpact {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-/* Всплывающие цифры урона */
-.floating-strike-num {
-  position: absolute;
-  top: -16px;
-  right: 0;
-  font-family: monospace;
-  font-size: 13px;
-  font-weight: 900;
-  color: #ef4444;
-  text-shadow: 0 0 8px rgba(0, 0, 0, 0.9);
-  pointer-events: none;
-  animation: floatUp 0.8s ease-out forwards;
-}
-@keyframes floatUp {
-  0% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(-20px); opacity: 0; }
-}
 
 /* ==========================================================
-   ПРЕМИУМ-ЭФФЕКТЫ: АВАТАРЫ, ТРЯСКА ЭКРАНА И ВСПЫШКИ
+   5. PREMIUM CHESS ARENA (LICHESS HUD & CHESSBOARD)
    ========================================================== */
-
-/* Раскладка панели: Аватар слева + полоска и имя справа */
-.actor-card-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.actor-details {
-  flex: 1;
-}
-
-/* Рамка аватара гроссмейстера */
-.actor-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #000;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-}
-
-.enemy-avatar-frame {
-  border: 1.5px solid #ef4444;
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
-}
-
-.player-avatar-frame {
-  border: 1.5px solid #00ffcc;
-  box-shadow: 0 0 10px rgba(0, 255, 204, 0.35);
-}
-
-.actor-avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  image-rendering: -webkit-optimize-contrast;
-}
-
-/* --- ТРЯСКА ЭКРАНА (SCREEN SHAKE) --- */
-.shake-light {
-  animation: shakeLightAnim 0.25s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-}
-
-.shake-heavy {
-  animation: shakeHeavyAnim 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-}
-
-@keyframes shakeLightAnim {
-  0%, 100% { transform: translate(0, 0); }
-  20% { transform: translate(-3px, 2px); }
-  40% { transform: translate(3px, -2px); }
-  60% { transform: translate(-2px, -1px); }
-  80% { transform: translate(2px, 1px); }
-}
-
-@keyframes shakeHeavyAnim {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  15% { transform: translate(-6px, 5px) scale(1.01); }
-  30% { transform: translate(6px, -5px) scale(0.99); }
-  45% { transform: translate(-5px, -4px) scale(1.01); }
-  60% { transform: translate(5px, 4px) scale(1); }
-  75% { transform: translate(-2px, 2px); }
-}
-
-/* --- ЦВЕТНЫЕ ВСПЫШКИ ПРИ УДАРАХ --- */
-.flash-fx-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1001;
-  opacity: 0;
-  animation: flashFade 0.4s ease-out forwards;
-}
-
-/* 1. Красная вспышка (получен урон) */
-.flash-red {
-  background: radial-gradient(circle at center, transparent 30%, rgba(239, 68, 68, 0.4) 100%);
-  box-shadow: inset 0 0 60px rgba(239, 68, 68, 0.8);
-}
-
-/* 2. Бирюзовая вспышка (успешный блок щитом) */
-.flash-cyan {
-  background: radial-gradient(circle at center, transparent 40%, rgba(0, 255, 204, 0.25) 100%);
-  box-shadow: inset 0 0 50px rgba(0, 255, 204, 0.7);
-}
-
-/* 3. Золотая сокрушительная вспышка (коронный прием) */
-.flash-gold {
-  background: radial-gradient(circle at center, rgba(241, 196, 15, 0.25) 0%, rgba(241, 196, 15, 0.5) 100%);
-  box-shadow: inset 0 0 70px rgba(241, 196, 15, 0.9);
-}
-
-@keyframes flashFade {
-  0% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-/* ==========================================================
-   ПОКАЗАТЕЛИ СТАТОВ КАРТЫ (ATK / DEF / НАВЫК)
-   ========================================================== */
-.tactical-stats-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-  flex-wrap: wrap;
-}
-
-.stat-pill {
-  font-family: monospace;
-  font-size: 8.5px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #c9d1d9;
-}
-
-.stat-pill.atk-pill { color: #f87171; border-color: rgba(239, 68, 68, 0.25); }
-.stat-pill.def-pill { color: #38bdf8; border-color: rgba(56, 189, 248, 0.25); }
-.stat-pill.skill-pill { color: #fbbf24; border-color: rgba(251, 191, 36, 0.25); }
-
-.round-status-badge {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 2px;
-  color: #00ffcc;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-  padding: 4px 12px;
-  background: rgba(0, 255, 204, 0.08);
-  border: 1px solid rgba(0, 255, 204, 0.2);
-  border-radius: 12px;
-}
-
-/* ==========================================================
-   КИНЕМАТОГРАФИЧНАЯ БОЕВКА: ВЫПАД КАРТ И ЩИТЫ
-   ========================================================== */
-
-/* Сияющий неоновый щит поверх аватара */
-.shield-barrier-fx {
-  position: absolute;
-  inset: -4px;
-  border-radius: 12px;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.35) 0%, rgba(0, 255, 204, 0.5) 100%);
-  border: 2px solid #38bdf8;
-  box-shadow: 0 0 20px #00ffcc;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  z-index: 10;
-  animation: shieldPulse 0.6s infinite alternate;
-}
-
-@keyframes shieldPulse {
-  0% { transform: scale(0.96); opacity: 0.85; }
-  100% { transform: scale(1.05); opacity: 1; }
-}
-
-/* 1. Атакующий выпад карты игрока (вверх в сторону соперника) */
-.anim-lunge-up {
-  animation: lungeUpAnim 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-@keyframes lungeUpAnim {
-  0% { transform: translateY(0); }
-  45% { transform: translateY(-70px) scale(1.18); filter: drop-shadow(0 0 15px #f87171); }
-  100% { transform: translateY(0); }
-}
-
-/* 2. Атакующий выпад карты соперника (вниз в сторону игрока) */
-.anim-lunge-down {
-  animation: lungeDownAnim 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-@keyframes lungeDownAnim {
-  0% { transform: translateY(0); }
-  45% { transform: translateY(70px) scale(1.18); filter: drop-shadow(0 0 15px #f87171); }
-  100% { transform: translateY(0); }
-}
-
-/* 3. Золотой коронный суперудар (увеличение и сокрушительная вспышка) */
-.anim-skill-blast {
-  animation: skillBlastAnim 0.85s ease-out;
-}
-@keyframes skillBlastAnim {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.3); filter: drop-shadow(0 0 25px #f1c40f); }
-  100% { transform: scale(1); }
-}
-
-/* ==========================================================
-   ИНТЕРАКТИВНАЯ ТАКТИЧЕСКАЯ МИНИ-ДОСКА
-   ========================================================== */
-.tactic-board-box {
-  background: rgba(13, 17, 23, 0.95);
-  border: 1.5px solid #00ffcc;
-  box-shadow: 0 0 25px rgba(0, 255, 204, 0.35);
-  border-radius: 14px;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  z-index: 50;
-  animation: boardPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes boardPop {
-  0% { transform: scale(0.7); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.tactic-task-title {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  color: #f1c40f;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-}
-
-.tactic-sub-hint {
-  font-size: 8px;
-  color: #8b949e;
-  margin-top: 6px;
-  text-transform: uppercase;
-}
-
-/* Сама сетка 8x8 */
-.mini-chessboard {
-  width: 224px;
-  height: 224px;
-  display: grid;
-  grid-template-columns: repeat(8, 28px);
-  grid-template-rows: repeat(8, 28px);
-  border: 2px solid #30363d;
-  border-radius: 4px;
-  overflow: hidden;
-  user-select: none;
-}
-
-.sq {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  cursor: pointer;
-  position: relative;
-}
-
-/* Шахматные поля */
-.sq.white { background-color: #f0d9b5; }
-.sq.black { background-color: #b58863; }
-
-/* Подсветка выбранной фигуры */
-.sq.selected {
-  background-color: #00ffcc !important;
-  box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
-}
-
-/* Фигуры */
-.piece {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  transition: transform 0.1s;
-}
-
-.piece.white-p {
-  color: #ffffff;
-  text-shadow: 0 0 2px #000, 0 1px 3px rgba(0,0,0,0.8);
-}
-
-.piece.black-p {
-  color: #1a1a1a;
-  text-shadow: 0 0 1px #fff;
-}
-
-/* ========================================================
-   PREMIUM CHESS ARENA (LICHESS HUD)
-   ======================================================== */
 .premium-tactic-modal {
   position: absolute;
   inset: 0;
@@ -1168,6 +917,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-sizing: border-box;
 }
 
 .tactic-header {
@@ -1201,13 +951,14 @@ body {
   text-transform: uppercase;
 }
 
-.tactic-rating-badge {
-  font-size: 10px;
-  font-weight: 700;
-  color: #94a3b8;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 2px 6px;
-  border-radius: 6px;
+.tactic-timer-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 2px 7px;
+  border-radius: 8px;
 }
 
 .tactic-task-title {
@@ -1217,12 +968,12 @@ body {
   letter-spacing: 0.5px;
 }
 
-/* Рама доски */
+/* Рамка и геометрия турнирной доски */
 .board-frame-outer {
   padding: 6px;
   background: #11141c;
   border-radius: 12px;
-  box-shadow: inset 0 2px 8px rgba(0,0,0,0.8), 0 4px 15px rgba(0,0,0,0.5);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8), 0 4px 15px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -1234,76 +985,64 @@ body {
   height: 296px;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  user-select: none;
 }
 
-/* Клетки доски (Турнирный шпон ореха и клена) */
+/* Клетки доски */
 .sq {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  user-select: none;
   cursor: pointer;
   transition: background-color 0.2s;
 }
+.sq.white { background-color: #dee3e6; }
+.sq.black { background-color: #8ca2ad; }
 
-.sq.white {
-  background-color: #dee3e6; /* Мягкий турнирный клен */
-}
-
-.sq.black {
-  background-color: #8ca2ad; /* Благородный сланец */
-}
-
-/* Подсветка выбранной клетки (Золотое свечение) */
 .sq.selected {
   background-color: #f6e05e !important;
   box-shadow: inset 0 0 12px rgba(217, 119, 6, 0.8);
 }
 
-/* Фигуры (Векторный вид с тенью) */
+/* Фигуры (поддержка как фоновых картинок Lichess, так и Unicode-символов) */
 .piece {
   width: 84%;
   height: 84%;
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
   pointer-events: none;
   filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.35));
   transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-
 .sq.selected .piece {
   transform: scale(1.18) translateY(-3px);
 }
+.piece.white-p {
+  color: #fff;
+  text-shadow: 0 0 2px #000, 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+.piece.black-p {
+  color: #1a1a1a;
+  text-shadow: 0 0 1px #fff;
+}
 
-/* Текстовые подсказки внизу */
 .tactic-footer-status {
   margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.tactic-sub-hint {
   font-size: 11px;
   color: #94a3b8;
   font-weight: 600;
-}
-
-@keyframes pulseLive {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.85); }
-}
-
-@keyframes modalFadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.tactic-timer-badge {
-  font-size: 11px;
-  font-weight: 800;
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  padding: 2px 7px;
-  border-radius: 8px;
 }
 
 .tactic-skip-btn {
@@ -1318,9 +1057,155 @@ body {
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .tactic-skip-btn:active {
   background: rgba(239, 68, 68, 0.25);
   color: #ef4444;
   border-color: #ef4444;
+}
+
+/* ==========================================================
+   6. COMBAT FX, SHIELDS & ANIMATION KEYFRAMES
+   ========================================================== */
+/* Сияющий барьер щита поверх аватара */
+.shield-barrier-fx {
+  position: absolute;
+  inset: -4px;
+  border-radius: 12px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.35) 0%, rgba(0, 255, 204, 0.5) 100%);
+  border: 2px solid #38bdf8;
+  box-shadow: 0 0 20px var(--accent-color);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  z-index: 10;
+  animation: shieldPulse 0.6s infinite alternate;
+}
+
+/* Всплывающие цифры урона */
+.floating-strike-num {
+  position: absolute;
+  top: -16px;
+  right: 0;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 900;
+  color: #ef4444;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+  animation: floatUp 0.8s ease-out forwards;
+}
+
+/* Полноэкранные вспышки ударов */
+.flash-fx-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1001;
+  opacity: 0;
+  animation: flashFade 0.4s ease-out forwards;
+}
+.flash-red {
+  background: radial-gradient(circle at center, transparent 30%, rgba(239, 68, 68, 0.4) 100%);
+  box-shadow: inset 0 0 60px rgba(239, 68, 68, 0.8);
+}
+.flash-cyan {
+  background: radial-gradient(circle at center, transparent 40%, rgba(0, 255, 204, 0.25) 100%);
+  box-shadow: inset 0 0 50px rgba(0, 255, 204, 0.7);
+}
+.flash-gold {
+  background: radial-gradient(circle at center, rgba(241, 196, 15, 0.25) 0%, rgba(241, 196, 15, 0.5) 100%);
+  box-shadow: inset 0 0 70px rgba(241, 196, 15, 0.9);
+}
+
+/* Классы анимаций ударов и тряски */
+.shake-light {
+  animation: shakeLightAnim 0.25s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+.shake-heavy {
+  animation: shakeHeavyAnim 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+.anim-lunge-up {
+  animation: lungeUpAnim 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.anim-lunge-down {
+  animation: lungeDownAnim 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.anim-skill-blast {
+  animation: skillBlastAnim 0.85s ease-out;
+}
+
+/* Все Keyframes проекта */
+@keyframes scanLaser {
+  0%   { transform: translateY(10px); opacity: 0.3; }
+  50%  { opacity: 1; }
+  100% { transform: translateY(300px); opacity: 0.3; }
+}
+@keyframes rotateCW  { to { transform: rotate(360deg); } }
+@keyframes rotateCCW { to { transform: rotate(-360deg); } }
+@keyframes pulseCore {
+  0%, 100% { transform: scale(0.92); opacity: 0.75; }
+  50%      { transform: scale(1.08); opacity: 1; }
+}
+@keyframes dockRise {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+@keyframes pulseWait {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50%      { opacity: 1; transform: scale(1.15); }
+}
+@keyframes pulseReady {
+  0%   { transform: scale(1); }
+  100% { transform: scale(1.03); }
+}
+@keyframes pulseLive {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.85); }
+}
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes shieldPulse {
+  0%   { transform: scale(0.96); opacity: 0.85; }
+  100% { transform: scale(1.05); opacity: 1; }
+}
+@keyframes floatUp {
+  0%   { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-20px); opacity: 0; }
+}
+@keyframes flashFade {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes shakeLightAnim {
+  0%, 100% { transform: translate(0, 0); }
+  20%      { transform: translate(-3px, 2px); }
+  40%      { transform: translate(3px, -2px); }
+  60%      { transform: translate(-2px, -1px); }
+  80%      { transform: translate(2px, 1px); }
+}
+@keyframes shakeHeavyAnim {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  15%      { transform: translate(-6px, 5px) scale(1.01); }
+  30%      { transform: translate(6px, -5px) scale(0.99); }
+  45%      { transform: translate(-5px, -4px) scale(1.01); }
+  60%      { transform: translate(5px, 4px) scale(1); }
+  75%      { transform: translate(-2px, 2px); }
+}
+@keyframes lungeUpAnim {
+  0%   { transform: translateY(0); }
+  45%  { transform: translateY(-70px) scale(1.18); filter: drop-shadow(0 0 15px #f87171); }
+  100% { transform: translateY(0); }
+}
+@keyframes lungeDownAnim {
+  0%   { transform: translateY(0); }
+  45%  { transform: translateY(70px) scale(1.18); filter: drop-shadow(0 0 15px #f87171); }
+  100% { transform: translateY(0); }
+}
+@keyframes skillBlastAnim {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.3); filter: drop-shadow(0 0 25px #f1c40f); }
+  100% { transform: scale(1); }
 }
