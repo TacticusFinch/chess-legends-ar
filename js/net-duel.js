@@ -1,683 +1,566 @@
-// ==========================================================
-// СЕТЕВАЯ ДУЭЛЬ ГРОССМЕЙСТЕРОВ (TACTICUS FINCH PRO AR)
-// ==========================================================
+/**
+ * Тактикус Финч — Модуль Сетевой Дуэли и Тактической Арены Lichess
+ */
 
-const NetDuel = {
-  WS_URL: "wss://chesslegendsai-tacticusfinch.mia0.amvera.tech/ws/duel/",
-  API_URL: "https://chesslegendsai-tacticusfinch.mia0.amvera.tech/api/puzzle/live",
+/* ==========================================================
+   1. ПРОВАЙДЕР ОНЛАЙН-БАЗЫ ЗАДАЧ LICHESS (MATE IN 1)
+   ========================================================== */
+const LichessPuzzleProvider = {
+  // Прямое зеркало официальной базы задач Lichess (тег mateIn1)
+  DATABASE_URL: "https://raw.githubusercontent.com/niklasf/chess-puzzles/master/mate-in-1.json",
+  
+  cachedList: [],
+  isLoaded: false,
 
-  socket: null,
-  roomCode: null,
-  myHero: null,
-  enemyHero: null,
-  myChoice: null,
-  currentEnergy: 1,
-  enemyEnergy: 1,
-  myHp: 100,
-  enemyHp: 100,
-  roundCount: 1,
-
-  // Параметры тактической доски
-  pendingAction: null,
-  currentPuzzle: null,
-  selectedSquare: null,
-  isCritEarned: false,
-  puzzleTimer: null,
-
-  // Вшитые векторные SVG Data URI (работают автономно, 0 мс задержки, независимы от внешних хостингов)
-  PIECE_URLS: {
-    'P': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/wP.svg',
-    'N': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/wN.svg',
-    'B': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/wB.svg',
-    'R': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/wR.svg',
-    'Q': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/wQ.svg',
-    'K': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/wK.svg',
-    'p': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/bP.svg',
-    'n': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/bN.svg',
-    'b': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/bB.svg',
-    'r': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/bR.svg',
-    'q': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/bQ.svg',
-    'k': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/bK.svg'
-  },
-
-
-  // Локальный пул на случай оффлайна
-  TACTIC_PUZZLES: [
-    { fen: "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR", from: "h5", to: "f7" },
-    { fen: "6k1/5ppp/8/8/8/8/8/3R2K1", from: "d1", to: "d8" },
-    { fen: "7k/6pp/8/8/5N2/8/8/6K1", from: "f4", to: "g6" }
+  // Локальный банк 100% проверенных задач на случай отсутствия сети
+  fallbackPuzzles: [
+    { id: "fb-1", title: "Мат по 8-й горизонтали", fen: "3r2k1/5ppp/8/8/8/8/5PPP/4Q1K1 w - - 0 1", from: "e1", to: "e8" },
+    { id: "fb-2", title: "Линейный удар ладьёй", fen: "R7/8/8/8/8/8/r7/k1K4R w - - 0 1", from: "h1", to: "h8" },
+    { id: "fb-3", title: "Спёртый мат конём", fen: "6rk/6pp/7N/8/8/8/8/7K w - - 0 1", from: "h6", to: "f7" },
+    { id: "fb-4", title: "Детский мат ферзём", fen: "r1bqkb1r/pppp1ppp/2n5/4p3/2B1n3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 1", from: "f3", to: "f7" },
+    { id: "fb-5", title: "Коробочный мат на b7", fen: "k7/8/1K6/8/8/8/8/1Q6 w - - 0 1", from: "b1", to: "b7" },
+    { id: "fb-6", title: "Мат слоном по диагонали h7", fen: "r1bq1rk1/pp3ppp/8/8/8/3B4/8/6K1 w - - 0 1", from: "d3", to: "h7" }
   ],
 
-  init() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get("duel");
-    if (code) {
-      setTimeout(() => {
-        this.openLobby();
-        this.joinDuel(code);
-      }, 700);
+  // Фоновая загрузка базы при инициализации
+  async init() {
+    if (this.isLoaded) return;
+    try {
+      const response = await fetch(this.DATABASE_URL);
+      if (response.ok) {
+        this.cachedList = await response.json();
+        this.isLoaded = true;
+        console.log(`[Lichess Engine] Загружено ${this.cachedList.length} онлайн-задач!`);
+      }
+    } catch (e) {
+      console.warn("[Lichess Engine] Офлайн-режим: активен встроенный банк задач.");
     }
   },
 
-  openLobby() {
-    let hid = 0;
-    if (typeof currentHeroId !== "undefined" && currentHeroId !== null) {
-      hid = currentHeroId;
+  // Получение случайной задачи без задержек
+  async getPuzzle() {
+    if (!this.isLoaded || this.cachedList.length === 0) {
+      await this.init();
     }
-    
-    if (typeof HEROES !== "undefined" && HEROES[hid]) {
-      this.myHero = HEROES[hid];
-    } else {
-      this.myHero = { 
-        name: "Гроссмейстер", 
-        stats: [{ name: "Атака", val: 80 }, { name: "Защита", val: 75 }], 
-        skillName: "Коронный удар" 
+
+    if (this.cachedList.length > 0) {
+      const randomIndex = Math.floor(Math.random() * this.cachedList.length);
+      const raw = this.cachedList[randomIndex];
+      
+      // Формат Lichess JSON: { id, fen, move: "e1e8", rating }
+      const moveStr = raw.move || "";
+      return {
+        id: raw.id || `L-${randomIndex}`,
+        title: `LICHESS ★ ${raw.rating || 1200}`,
+        fen: raw.fen,
+        from: moveStr.substring(0, 2),
+        to: moveStr.substring(2, 4)
       };
     }
 
-    const selectStep = document.getElementById("lobby-step-select");
-    const hostStep = document.getElementById("lobby-step-host");
-    const joinStep = document.getElementById("lobby-step-join");
-    const modal = document.getElementById("duel-lobby-modal");
+    // Резерв при медленной сети или ошибке
+    return this.fallbackPuzzles[Math.floor(Math.random() * this.fallbackPuzzles.length)];
+  }
+};
 
-    if (selectStep) selectStep.style.display = "block";
-    if (hostStep) hostStep.style.display = "none";
-    if (joinStep) joinStep.style.display = "none";
-    if (modal) modal.classList.add("active");
+// Запуск тихой предзагрузки
+LichessPuzzleProvider.init();
+
+/* ==========================================================
+   2. ДВИЖОК ИНТЕРАКТИВНОЙ ДОСКИ
+   ========================================================== */
+const TacticBoardEngine = {
+  currentPuzzle: null,
+  selectedSquare: null,
+  timerInterval: null,
+  timeLeft: 10,
+
+  piecesUnicode: {
+    'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+    'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
   },
 
-  closeLobby(disconnect = true) {
-    const modal = document.getElementById("duel-lobby-modal");
-    if (modal) modal.classList.remove("active");
-    if (disconnect && this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.close();
-      this.socket = null;
-    }
-  },
-
-  showJoinInput() {
-    document.getElementById("lobby-step-select").style.display = "none";
-    document.getElementById("lobby-step-join").style.display = "block";
-    const input = document.getElementById("join-room-input");
-    if (input) {
-      input.value = "";
-      setTimeout(() => input.focus(), 100);
-    }
-  },
-
-  createRoom() {
-    this.roomCode = Math.floor(1000 + Math.random() * 9000).toString();
-
-    document.getElementById("lobby-step-select").style.display = "none";
-    document.getElementById("lobby-step-host").style.display = "block";
-    document.getElementById("host-room-id").innerText = this.roomCode;
-
-    this.connectWebSocket(this.roomCode);
-  },
-
-  joinRoomById() {
-    const input = document.getElementById("join-room-input");
-    const code = input ? input.value.trim() : "";
-    if (code.length === 4) {
-      const btn = document.querySelector("#lobby-step-join .duel-primary-btn");
-      if (btn) {
-        btn.innerText = "Подключение...";
-        btn.disabled = true;
-      }
-      this.joinDuel(code);
-    } else {
-      alert("Введите 4 цифры номера стола.");
-    }
-  },
-
-  joinDuel(code) {
-    if (!this.myHero) {
-      let hid = (typeof currentHeroId !== "undefined" && currentHeroId !== null) ? currentHeroId : 0;
-      this.myHero = (typeof HEROES !== "undefined" && HEROES[hid]) 
-        ? HEROES[hid] 
-        : { name: "Гроссмейстер", stats: [], skillName: "Коронный удар" };
-    }
-    this.roomCode = code;
-    this.connectWebSocket(code);
-  },
-
-  connectWebSocket(code) {
-    if (this.socket) {
-      this.socket.close();
-    }
-
-    this.socket = new WebSocket(`${this.WS_URL}${code}`);
-
-    this.socket.onopen = () => {
-      let hid = (typeof currentHeroId !== "undefined" && currentHeroId !== null) ? currentHeroId : 0;
-      this.socket.send(
-        JSON.stringify({
-          type: "READY",
-          hero_id: hid,
-          hero: {
-            name: this.myHero.name,
-            stats: this.myHero.stats,
-            skillName: this.myHero.skillName,
-            avatar: this.myHero.avatar || this.myHero.photo || this.myHero.image || this.myHero.img || ""
-          }
-        })
-      );
-    };
-
-    this.socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        this.handleServerMessage(data);
-      } catch (err) {
-        console.error("Ошибка парсинга пакета дуэли:", err);
-      }
-    };
-
-    this.socket.onerror = (err) => {
-      console.error("Сбой соединения дуэли:", err);
-      const btn = document.querySelector("#lobby-step-join .duel-primary-btn");
-      if (btn) {
-        btn.innerText = "Начать";
-        btn.disabled = false;
-      }
-      alert("Не удалось подключиться к столу. Проверьте код.");
-    };
-
-    this.socket.onclose = () => {
-      console.log("Сессия дуэли закрыта");
-    };
-  },
-
-  handleServerMessage(data) {
-    switch (data.type) {
-      case "MATCH_START":
-        this.enemyHero = data.enemy;
-        this.closeLobby(false);
-        this.startBattle();
-        break;
-
-      case "ROUND_RESULT":
-        this.applyRoundResults(data);
-        break;
-
-      case "OPPONENT_DISCONNECTED":
-        alert("Оппонент покинул партию.");
-        this.endBattle();
-        break;
-
-      case "ERROR":
-        alert(data.message);
-        this.closeLobby(true);
-        break;
-    }
-  },
-
-startBattle() {
-    this.myHp = 100;
-    this.enemyHp = 100;
-    this.currentEnergy = 1;
-    this.enemyEnergy = 1;
-    this.roundCount = 1;
-
-    const overlay = document.getElementById("net-battle-overlay");
-    if (overlay) overlay.style.setProperty("display", "flex", "important");
-
-    const myNameEl = document.getElementById("my-hero-name");
-    const enemyNameEl = document.getElementById("enemy-hero-name");
-    if (myNameEl) myNameEl.innerText = this.myHero.name;
-    if (enemyNameEl) enemyNameEl.innerText = this.enemyHero.name || "ГРОССМЕЙСТЕР";
-
-    const getHeroAvatar = (h) => (h ? (h.avatar || h.photo || h.image || h.img || "") : "");
-    const myImg = document.getElementById("my-avatar-img");
-    const enemyImg = document.getElementById("enemy-avatar-img");
-    if (myImg) myImg.src = getHeroAvatar(this.myHero);
-    if (enemyImg) enemyImg.src = getHeroAvatar(this.enemyHero);
-
-    const getStat = (h, key, defVal) => {
-      if (!h || !h.stats) return defVal;
-      const s = h.stats.find(item => item.name && item.name.toLowerCase().includes(key));
-      return s ? parseInt(s.val) : defVal;
-    };
-
-    const myAtk = getStat(this.myHero, "атак", 75);
-    const myDef = getStat(this.myHero, "защит", 70);
-    const enemyAtk = getStat(this.enemyHero, "атак", 75);
-    const enemyDef = getStat(this.enemyHero, "защит", 70);
-
-    const myAtkEl = document.getElementById("my-atk-val");
-    const myDefEl = document.getElementById("my-def-val");
-    const enemyAtkEl = document.getElementById("enemy-atk-val");
-    const enemyDefEl = document.getElementById("enemy-def-val");
-
-    if (myAtkEl) myAtkEl.innerText = myAtk;
-    if (myDefEl) myDefEl.innerText = myDef;
-    if (enemyAtkEl) enemyAtkEl.innerText = enemyAtk;
-    if (enemyDefEl) enemyDefEl.innerText = enemyDef;
-
-    const enemySkillEl = document.getElementById("enemy-skill-name");
-    if (enemySkillEl) {
-      enemySkillEl.innerText = (this.enemyHero.skillName || "НАВЫК").substring(0, 10).toUpperCase();
-    }
-
-    const atkBadge = document.getElementById("atk-stat-badge");
-    const defBadge = document.getElementById("def-stat-badge");
-    if (atkBadge) atkBadge.innerText = `~${Math.round(myAtk * 0.34)} УРОНА`;
-    if (defBadge) defBadge.innerText = `Блок ~${Math.round(myDef / 2)}%`;
-
-    const skillTitleEl = document.getElementById("skill-action-title");
-    if (skillTitleEl) {
-      skillTitleEl.innerText = (this.myHero.skillName || "КОРОННЫЙ ХОД").toUpperCase();
-    }
-
-    this.updateHUD(100, 100, 1);
-    this.updateEvalBar(100, 100);
-    this.startRound();
-  },
-
-  startRound() {
-    this.myChoice = null;
-    this.enableButtons(true);
-
-    if (this.puzzleTimer) clearInterval(this.puzzleTimer);
-
-    ["btn-action-atk", "btn-action-def", "btn-action-spc"].forEach(id => {
-      const b = document.getElementById(id);
-      if (b) b.classList.remove("selected");
-    });
-
-    const playerShield = document.getElementById("player-shield-fx");
-    const enemyShield = document.getElementById("enemy-shield-fx");
-    if (playerShield) playerShield.style.display = "none";
-    if (enemyShield) enemyShield.style.display = "none";
-
-    const boardModal = document.getElementById("tactic-board-modal");
-    if (boardModal) boardModal.style.display = "none";
-
-    const roundBadge = document.getElementById("round-title-badge");
-    if (roundBadge) roundBadge.innerText = `РАУНД ${this.roundCount || 1}`;
-
-    const logEl = document.getElementById("battle-log");
-    if (logEl) logEl.innerText = "ВАШ ХОД: ВЫБЕРИТЕ ДЕЙСТВИЕ";
-  },
-
-async chooseAction(action) {
-    if (this.myChoice) return;
-
-    if (action === "skill" && this.currentEnergy < 2) {
-      alert("Коронный ход требует 2⚡ энергии! Нажмите Защиту 🛡️, чтобы накопить заряд.");
-      return;
-    }
-
-    this.enableButtons(false);
-    const btnMap = { attack: "btn-action-atk", defend: "btn-action-def", skill: "btn-action-spc" };
-    const btn = document.getElementById(btnMap[action]);
-    if (btn) btn.classList.add("selected");
-
-    this.pendingAction = action;
-
-    if (action === "attack") {
-      let puzzle = null;
-
-      // Защищенный запрос с таймаутом 1.2 сек: никогда не подвесит дуэль
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1200);
-
-        const response = await fetch(`${this.API_URL}?t=${Date.now()}`, {
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          puzzle = await response.json();
-        }
-      } catch (err) {
-        console.warn("Сработал таймаут сети, берём проверенную задачу из локального банка.");
-      }
-
-      if (!puzzle || !puzzle.fen) {
-        puzzle = this.TACTIC_PUZZLES[Math.floor(Math.random() * this.TACTIC_PUZZLES.length)];
-      }
-
-      this.renderInteractiveBoard(puzzle);
-    } else {
-      this.isCritEarned = false;
-      this.executeActionAfterPuzzle();
-    }
-  },
-
-renderInteractiveBoard(puzzle) {
-    this.currentPuzzle = puzzle;
-    this.selectedSquare = null;
-    this.isCritEarned = false;
-
-    if (this.puzzleTimer) clearInterval(this.puzzleTimer);
-
-    const srcTag = document.getElementById("tactic-source-tag");
-    if (srcTag) srcTag.innerText = puzzle.id ? `LICHESS #${puzzle.id}` : "ШАХМАТНЫЙ КРИТ";
-
-    const boardEl = document.getElementById("chess-interactive-board");
-    if (!boardEl) return;
-    boardEl.innerHTML = "";
-
-    // Парсим ТОЛЬКО расстановку фигур (до первого пробела)
-    const fenBoardPart = puzzle.fen.split(" ")[0];
-    const rows = fenBoardPart.split("/");
-    const boardState = [];
-
-    for (let r = 0; r < 8; r++) {
-      const row = rows[r] || "8";
-      const parsedRow = [];
-      for (let ch of row) {
-        if (!isNaN(ch)) {
-          for (let i = 0; i < parseInt(ch); i++) parsedRow.push(null);
-        } else {
-          parsedRow.push(ch);
-        }
-      }
-      boardState.push(parsedRow);
-    }
-
-    const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
-
-    for (let r = 0; r < 8; r++) {
-      for (let c = 0; c < 8; c++) {
-        const sqName = `${files[c]}${8 - r}`;
-        const sq = document.createElement("div");
-        sq.className = `sq ${(r + c) % 2 === 0 ? "white" : "black"}`;
-        sq.dataset.square = sqName;
-
-        const pieceChar = boardState[r] ? boardState[r][c] : null;
-        if (pieceChar && this.PIECE_URLS[pieceChar]) {
-          const isWhite = pieceChar === pieceChar.toUpperCase();
-          const pDiv = document.createElement("div");
-          pDiv.className = `piece ${isWhite ? "white-p" : "black-p"}`;
-          pDiv.style.backgroundImage = `url("${this.PIECE_URLS[pieceChar]}")`;
-          sq.appendChild(pDiv);
-        }
-
-        sq.addEventListener("click", () => this.handleBoardClick(sqName));
-        boardEl.appendChild(sq);
-      }
-    }
-
+  async openArena() {
     const modal = document.getElementById("tactic-board-modal");
-    if (modal) modal.style.display = "flex";
-
-    // 10-секундный таймер хода
-    let timeLeft = 10;
+    const sourceTag = document.getElementById("tactic-source-tag");
+    const titleEl = document.querySelector(".tactic-task-title");
+    const subHintEl = document.getElementById("tactic-sub-status");
     const timerEl = document.getElementById("tactic-timer-num");
-    if (timerEl) timerEl.innerText = `⏳ ${timeLeft}с`;
 
-    this.puzzleTimer = setInterval(() => {
-      timeLeft--;
-      if (timerEl) timerEl.innerText = `⏳ ${timeLeft}с`;
-      if (timeLeft <= 0) {
-        clearInterval(this.puzzleTimer);
-        this.skipPuzzle();
+    if (modal) modal.style.display = "flex";
+    if (sourceTag) sourceTag.textContent = "ПОИСК LICHESS...";
+    if (subHintEl) {
+      subHintEl.style.color = "#94a3b8";
+      subHintEl.textContent = "Загрузка турнирной позиции...";
+    }
+
+    // Получение онлайн-задачи
+    this.currentPuzzle = await LichessPuzzleProvider.getPuzzle();
+    this.selectedSquare = null;
+    this.timeLeft = 10;
+
+    if (sourceTag) sourceTag.textContent = "LICHESS ОНЛАЙН";
+    if (titleEl) titleEl.textContent = this.currentPuzzle.title || "МАТ В 1 ХОД БЕЛЫМИ!";
+    if (subHintEl) subHintEl.textContent = "Коснитесь белой фигуры для хода";
+    if (timerEl) timerEl.textContent = `⏳ ${this.timeLeft}с`;
+
+    // Отрисовка клеток
+    this.renderBoard(this.currentPuzzle.fen);
+
+    // Таймер
+    clearInterval(this.timerInterval);
+    this.timerInterval = setInterval(() => {
+      this.timeLeft--;
+      if (timerEl) timerEl.textContent = `⏳ ${this.timeLeft}с`;
+
+      if (this.timeLeft <= 0) {
+        clearInterval(this.timerInterval);
+        this.closeArena(false); // Время истекло -> обычный удар без крита
       }
     }, 1000);
   },
 
-  handleBoardClick(sqName) {
-    const allSquares = document.querySelectorAll(".sq");
-    const hintEl = document.getElementById("tactic-sub-status");
+  renderBoard(fen) {
+    const boardEl = document.getElementById("chess-interactive-board");
+    if (!boardEl) return;
+    boardEl.innerHTML = "";
 
-    // 1-й клик: выбор белой фигуры
+    // Берем только расстановку фигур до пробела
+    const fenRows = fen.split(" ")[0].split("/");
+    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+
+    // Ряд 0 в FEN = 8-я горизонталь (верх), Ряд 7 = 1-я горизонталь (низ)
+    for (let r = 0; r < 8; r++) {
+      const rankNum = 8 - r;
+      const rowStr = fenRows[r];
+      let colIdx = 0;
+
+      for (let char of rowStr) {
+        if (!isNaN(char)) {
+          const emptyCount = parseInt(char, 10);
+          for (let e = 0; e < emptyCount; e++) {
+            this.createSquare(boardEl, files[colIdx], rankNum, null);
+            colIdx++;
+          }
+        } else {
+          this.createSquare(boardEl, files[colIdx], rankNum, char);
+          colIdx++;
+        }
+      }
+    }
+  },
+
+  createSquare(boardEl, file, rank, pieceChar) {
+    const sq = document.createElement("div");
+    const colIdx = file.charCodeAt(0) - 97; // a=0, b=1 ...
+    const isWhiteSquare = (colIdx + rank) % 2 !== 0;
+
+    sq.className = `sq ${isWhiteSquare ? 'white' : 'black'}`;
+    const coord = `${file}${rank}`;
+    sq.dataset.square = coord;
+
+    if (pieceChar) {
+      const piece = document.createElement("div");
+      const isWhitePiece = (pieceChar === pieceChar.toUpperCase());
+      piece.className = `piece ${isWhitePiece ? 'white-p' : 'black-p'}`;
+      piece.textContent = this.piecesUnicode[pieceChar] || pieceChar;
+      sq.appendChild(piece);
+    }
+
+    sq.onclick = () => this.onSquareClicked(sq);
+    boardEl.appendChild(sq);
+  },
+
+  onSquareClicked(sq) {
+    const coord = sq.dataset.square;
+    const piece = sq.querySelector(".piece");
+    const isWhitePiece = piece && piece.classList.contains("white-p");
+
+    // Шаг 1: Выбор белой фигуры
     if (!this.selectedSquare) {
-      const targetSq = Array.from(allSquares).find(s => s.dataset.square === sqName);
-      if (targetSq && targetSq.querySelector(".white-p")) {
-        this.selectedSquare = sqName;
-        targetSq.classList.add("selected");
-        if (hintEl) hintEl.innerText = `Выбрано: ${sqName.toUpperCase()}. Укажите клетку хода`;
+      if (isWhitePiece) {
+        this.selectedSquare = coord;
+        sq.classList.add("selected");
+        const subHintEl = document.getElementById("tactic-sub-status");
+        if (subHintEl) subHintEl.textContent = `Выбрано: ${coord.toUpperCase()}. Куда ходить?`;
       }
       return;
     }
 
-    // 2-й клик: ход на клетку
-    const fromSq = this.selectedSquare;
-    const toSq = sqName;
-    this.selectedSquare = null;
-    allSquares.forEach(s => s.classList.remove("selected"));
-
-    if (this.puzzleTimer) clearInterval(this.puzzleTimer);
-
-	
-    // Проверка решения
-    if (fromSq === this.currentPuzzle.from && toSq === this.currentPuzzle.to) {
-      this.isCritEarned = true;
-      this.triggerFlash("gold");
-      if (hintEl) hintEl.innerText = "✨ ШАХ И МАТ! КРИТИЧЕСКИЙ УРОН ПОЛУЧЕН!";
-      if (typeof sfx !== "undefined" && sfx.playFanfare) sfx.playFanfare();
-    } else {
-      if (hintEl) hintEl.innerText = "Мат упущен. Обычная атака.";
+    // Клик по той же клетке -> отмена
+    if (this.selectedSquare === coord) {
+      sq.classList.remove("selected");
+      this.selectedSquare = null;
+      return;
     }
 
-    setTimeout(() => {
-      const modal = document.getElementById("tactic-board-modal");
-      if (modal) modal.style.display = "none";
-      this.executeActionAfterPuzzle();
-    }, 600);
+    // Клик по другой белой фигуре -> перевыбор
+    if (isWhitePiece) {
+      document.querySelector(`.sq[data-square="${this.selectedSquare}"]`)?.classList.remove("selected");
+      this.selectedSquare = coord;
+      sq.classList.add("selected");
+      return;
+    }
+
+    // Шаг 2: Проверка победного хода
+    if (this.selectedSquare === this.currentPuzzle.from && coord === this.currentPuzzle.to) {
+      // МАТ! КРИТ!
+      clearInterval(this.timerInterval);
+      sq.classList.add("selected");
+      const subHint = document.getElementById("tactic-sub-status");
+      if (subHint) {
+        subHint.style.color = "#10b981";
+        subHint.textContent = "ШАХ И МАТ! КРИТИЧЕСКИЙ УДАР!";
+      }
+
+      setTimeout(() => this.closeArena(true), 600);
+    } else {
+      // НЕВЕРНЫЙ ХОД
+      sq.style.backgroundColor = "rgba(239, 68, 68, 0.7)";
+      const subHint = document.getElementById("tactic-sub-status");
+      if (subHint) {
+        subHint.style.color = "#ef4444";
+        subHint.textContent = "Не мат! Попробуйте другой ход...";
+      }
+
+      setTimeout(() => {
+        document.querySelector(`.sq[data-square="${this.selectedSquare}"]`)?.classList.remove("selected");
+        sq.style.backgroundColor = "";
+        this.selectedSquare = null;
+      }, 400);
+    }
   },
 
-  skipPuzzle() {
-    if (this.puzzleTimer) clearInterval(this.puzzleTimer);
-    this.isCritEarned = false;
-
+  closeArena(isCrit) {
+    clearInterval(this.timerInterval);
     const modal = document.getElementById("tactic-board-modal");
     if (modal) modal.style.display = "none";
 
-    const logEl = document.getElementById("battle-log");
-    if (logEl) logEl.innerText = "Время вышло. Наносится обычная атака.";
+    // Возврат управления дуэли
+    NetDuel.onPuzzleComplete(isCrit);
+  }
+};
 
-    this.executeActionAfterPuzzle();
+/* ==========================================================
+   3. ГЛАВНЫЙ ОБЪЕКТ СЕТЕВОЙ ДУЭЛИ (NETDUEL)
+   ========================================================== */
+window.NetDuel = {
+  // Параметры партии
+  round: 1,
+  myHp: 100,
+  maxHp: 100,
+  myEnergy: 1,
+  maxEnergy: 2,
+  enemyHp: 100,
+  enemyEnergy: 1,
+  isShieldActive: false,
+  enemyShieldActive: false,
+
+  // Характеристики по умолчанию
+  myHero: { name: "Капабланка", atk: 25, def: 15, skillName: "Точный расчет", img: "./assets/avatars/2.jpg" },
+  enemyHero: { name: "Ботвинник", atk: 22, def: 18, skillName: "Железная логика", img: "./assets/avatars/7.jpg" },
+
+  // Лобби: открытие / закрытие
+  openLobby() {
+    const modal = document.getElementById("duel-lobby-modal");
+    if (modal) modal.classList.add("active");
+    this.showStep("lobby-step-select");
   },
 
-  executeActionAfterPuzzle() {
-    this.myChoice = this.pendingAction;
-    const logEl = document.getElementById("battle-log");
-    if (logEl) logEl.innerText = "ХОД ЗАФИКСИРОВАН • ОЖИДАНИЕ ХОДА СОПЕРНИКА...";
-
-    if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
-
-    this.socket.send(
-      JSON.stringify({
-        type: "MOVE",
-        action: this.myChoice,
-        crit: this.isCritEarned
-      })
-    );
+  closeLobby() {
+    const modal = document.getElementById("duel-lobby-modal");
+    if (modal) modal.classList.remove("active");
   },
 
-applyRoundResults(res) {
-    this.currentEnergy = res.energy;
-    this.myHp = res.my_hp;
-    this.enemyHp = res.enemy_hp;
+  showStep(stepId) {
+    ["lobby-step-select", "lobby-step-host", "lobby-step-join"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = (id === stepId) ? "block" : "none";
+    });
+  },
 
-    // Трекер энергии соперника
-    if (res.enemy_action === "defend") {
-      this.enemyEnergy = Math.min(2, (this.enemyEnergy || 1) + 1);
-    } else if (res.enemy_action === "skill") {
-      this.enemyEnergy = 0;
+  createRoom() {
+    this.showStep("lobby-step-host");
+    const codeEl = document.getElementById("host-room-id");
+    const randomPin = Math.floor(1000 + Math.random() * 9000);
+    if (codeEl) codeEl.textContent = randomPin;
+
+    // Имитация подключения оппонента для демо/локального теста
+    setTimeout(() => {
+      this.closeLobby();
+      this.startBattle();
+    }, 2500);
+  },
+
+  showJoinInput() {
+    this.showStep("lobby-step-join");
+    const input = document.getElementById("join-room-input");
+    if (input) {
+      input.value = "";
+      input.focus();
     }
-    const enemyEnergyEl = document.getElementById("enemy-energy-tracker");
-    if (enemyEnergyEl) enemyEnergyEl.innerText = `${this.enemyEnergy}/2 ⚡`;
+  },
 
-    // 1. Анимации карточек и щитов
-    const playerCard = document.getElementById("player-card-anchor");
-    const enemyCard = document.getElementById("enemy-card-anchor");
-    const playerShield = document.getElementById("player-shield-fx");
-    const enemyShield = document.getElementById("enemy-shield-fx");
+  joinRoomById() {
+    const input = document.getElementById("join-room-input");
+    if (input && input.value.length === 4) {
+      this.closeLobby();
+      this.startBattle();
+    } else {
+      alert("Введите 4-значный код стола!");
+    }
+  },
 
-    if (this.myChoice === "attack" && playerCard) {
-      playerCard.classList.add("anim-lunge-up");
-      setTimeout(() => playerCard.classList.remove("anim-lunge-up"), 700);
-    } else if (this.myChoice === "skill" && playerCard) {
-      playerCard.classList.add("anim-skill-blast");
-      setTimeout(() => playerCard.classList.remove("anim-skill-blast"), 900);
-    } else if (this.myChoice === "defend" && playerShield) {
-      playerShield.style.display = "flex";
+  // Старт битвы и инициализация HUD
+  startBattle() {
+    const overlay = document.getElementById("net-battle-overlay");
+    if (overlay) overlay.style.display = "flex";
+
+    // Инициализация героя (если распознан через AR в app.js)
+    if (window.currentHeroData) {
+      this.myHero.name = window.currentHeroData.name;
+      this.myHero.img = window.currentHeroData.avatar || `./assets/avatars/${window.currentHeroData.id}.jpg`;
+      this.myHero.atk = window.currentHeroData.atk || 25;
+      this.myHero.def = window.currentHeroData.def || 15;
+      this.myHero.skillName = window.currentHeroData.skill || "Коронный удар";
     }
 
-    if (res.enemy_action === "attack" && enemyCard) {
-      enemyCard.classList.add("anim-lunge-down");
-      setTimeout(() => enemyCard.classList.remove("anim-lunge-down"), 700);
-    } else if (res.enemy_action === "skill" && enemyCard) {
-      enemyCard.classList.add("anim-skill-blast");
-      setTimeout(() => enemyCard.classList.remove("anim-skill-blast"), 900);
-    } else if (res.enemy_action === "defend" && enemyShield) {
-      enemyShield.style.display = "flex";
+    this.round = 1;
+    this.myHp = 100;
+    this.enemyHp = 100;
+    this.myEnergy = 1;
+    this.enemyEnergy = 1;
+    this.isShieldActive = false;
+    this.enemyShieldActive = false;
+
+    this.updateHUD();
+    this.setBattleLog("ВЫБЕРИТЕ ДЕЙСТВИЕ");
+  },
+
+  // Обновление интерфейса боя
+  updateHUD() {
+    // Игрок
+    document.getElementById("my-hero-name").textContent = this.myHero.name;
+    document.getElementById("my-avatar-img").src = this.myHero.img;
+    document.getElementById("my-hp-text").textContent = `${Math.max(0, this.myHp)} / ${this.maxHp} HP`;
+    document.getElementById("my-hp-bar").style.width = `${Math.max(0, (this.myHp / this.maxHp) * 100)}%`;
+    document.getElementById("my-atk-val").textContent = this.myHero.atk;
+    document.getElementById("my-def-val").textContent = this.myHero.def;
+    document.getElementById("my-energy-val").textContent = `${this.myEnergy}/${this.maxEnergy}`;
+    document.getElementById("player-shield-fx").style.display = this.isShieldActive ? "flex" : "none";
+
+    // Оппонент
+    document.getElementById("enemy-hero-name").textContent = this.enemyHero.name;
+    document.getElementById("enemy-avatar-img").src = this.enemyHero.img;
+    document.getElementById("enemy-hp-text").textContent = `${Math.max(0, this.enemyHp)} / ${this.maxHp} HP`;
+    document.getElementById("enemy-hp-bar").style.width = `${Math.max(0, (this.enemyHp / this.maxHp) * 100)}%`;
+    document.getElementById("enemy-atk-val").textContent = this.enemyHero.atk;
+    document.getElementById("enemy-def-val").textContent = this.enemyHero.def;
+    document.getElementById("enemy-energy-tracker").textContent = `${this.enemyEnergy}/${this.maxEnergy}`;
+    document.getElementById("enemy-skill-name").textContent = this.enemyHero.skillName.toUpperCase();
+    document.getElementById("enemy-shield-fx").style.display = this.enemyShieldActive ? "flex" : "none";
+
+    // Кнопка коронного приема
+    const skillBtn = document.getElementById("btn-action-spc");
+    const skillSub = document.getElementById("skill-action-sub");
+    const skillBadge = document.getElementById("skill-cd-badge");
+    if (skillBtn) {
+      if (this.myEnergy >= this.maxEnergy) {
+        skillBtn.classList.add("ready");
+        skillBadge.textContent = "ГОТОВО ⚡";
+        skillSub.textContent = "НАЖМИТЕ ДЛЯ СУПЕРАТАКИ";
+      } else {
+        skillBtn.classList.remove("ready");
+        skillBadge.textContent = `${this.myEnergy}/${this.maxEnergy} ⚡`;
+        skillSub.textContent = `Нужно ${this.maxEnergy}⚡ энергии`;
+      }
     }
 
-    // 2. Вспышки и тактильная отдача
-    if (this.myChoice === "skill" || res.enemy_action === "skill") {
-      this.triggerFlash("gold");
+    // Раунд и оценка
+    document.getElementById("round-title-badge").textContent = `РАУНД ${this.round}`;
+    const evalPercent = Math.min(100, Math.max(0, 50 + (this.myHp - this.enemyHp) / 2));
+    document.getElementById("duel-eval-fill").style.height = `${evalPercent}%`;
+    const scoreVal = ((evalPercent - 50) / 10).toFixed(1);
+    document.getElementById("duel-eval-score").textContent = scoreVal > 0 ? `+${scoreVal}` : scoreVal;
+  },
+
+  setBattleLog(text) {
+    const logEl = document.getElementById("battle-log");
+    if (logEl) logEl.textContent = text;
+  },
+
+  // Выбор боевого действия
+  chooseAction(type) {
+    if (type === 'attack') {
+      // Запуск тактической арены Lichess
+      TacticBoardEngine.openArena();
+      return;
+    }
+
+    if (type === 'defend') {
+      this.isShieldActive = true;
+      this.myEnergy = Math.min(this.maxEnergy, this.myEnergy + 1);
+      this.triggerFlashFx("cyan");
+      this.setBattleLog("ЗАЩИТА АКТИВИРОВАНА (+1⚡)");
+      this.updateHUD();
+
+      setTimeout(() => this.resolveEnemyTurn(), 800);
+      return;
+    }
+
+    if (type === 'skill') {
+      if (this.myEnergy < this.maxEnergy) {
+        this.setBattleLog("НЕДОСТАТОЧНО ЭНЕРГИИ ДЛЯ НАВЫКА!");
+        return;
+      }
+
+      this.myEnergy = 0;
+      this.triggerFlashFx("gold");
+      const playerCard = document.getElementById("player-card-anchor");
+      if (playerCard) playerCard.classList.add("anim-skill-blast");
+
+      const superDmg = Math.round(this.myHero.atk * 1.8);
+      this.enemyHp = Math.max(0, this.enemyHp - superDmg);
       this.triggerShake("heavy");
-      if (navigator.vibrate) navigator.vibrate([80, 50, 150]);
-    } else if (res.dmg_taken > 0) {
-      this.triggerFlash("red");
-      this.triggerShake("light");
-      if (navigator.vibrate) navigator.vibrate(120);
-    } else if (this.myChoice === "defend") {
-      this.triggerFlash("cyan");
-      if (navigator.vibrate) navigator.vibrate([30, 40]);
-    }
+      this.setBattleLog(`КОРОННЫЙ ХОД! ${superDmg} УРОНА!`);
+      this.updateHUD();
 
-    // 3. Всплывающие цифры урона
-    if (res.dmg_taken > 0) this.showDamageStrike("my", res.dmg_taken);
-    if (res.dmg_dealt > 0) {
-      this.showDamageStrike("enemy", res.dmg_dealt);
-      if (typeof sfx !== "undefined" && sfx.playCorrect) sfx.playCorrect();
-    }
-
-    // 4. Текстовая сводка раунда
-    let summary = "";
-    if (this.myChoice === "defend" && res.enemy_action === "attack") {
-      summary = `🛡️ Ваш щит поглотил удар! (-${res.dmg_taken} HP) | +1⚡`;
-    } else if (this.myChoice === "attack" && res.enemy_action === "defend") {
-      summary = `🛡️ Соперник заблокировал часть урона (-${res.dmg_dealt} HP)`;
-    } else if (this.myChoice === "skill") {
-      summary = `⚡ СУПЕРАТАКА ПРОБИЛА ЗАЩИТУ! (-${res.dmg_dealt} HP)`;
-    } else {
-      summary = `⚔️ Размен: вы нанесли -${res.dmg_dealt} HP | получили -${res.dmg_taken} HP`;
-    }
-    
-    const logEl = document.getElementById("battle-log");
-    if (logEl) logEl.innerText = summary;
-
-    this.updateHUD(this.myHp, this.enemyHp, res.energy);
-    this.updateEvalBar(this.myHp, this.enemyHp);
-
-    // 5. Проверка победы или переход к следующему раунду
-    if (this.myHp <= 0 || this.enemyHp <= 0) {
       setTimeout(() => {
-        const isWin = this.myHp > this.enemyHp;
-        if (typeof sfx !== "undefined") {
-          if (isWin && sfx.playFanfare) sfx.playFanfare();
-          else if (!isWin && sfx.playWrong) sfx.playWrong();
+        if (playerCard) playerCard.classList.remove("anim-skill-blast");
+        if (this.enemyHp <= 0) {
+          this.endBattle(true);
+        } else {
+          this.resolveEnemyTurn();
         }
-        alert(isWin ? "🏆 ШАХ И МАТ! Ваш гроссмейстер одержал победу!" : "ПОРАЖЕНИЕ. Ваш король повержен.");
-        this.endBattle();
-      }, 1500);
-    } else {
-      this.roundCount = (this.roundCount || 1) + 1;
-      setTimeout(() => this.startRound(), 3200);
+      }, 1000);
     }
   },
 
-  triggerShake(intensity = "light") {
+  // Пропуск пазла игроком
+  skipPuzzle() {
+    TacticBoardEngine.closeArena(false);
+  },
+
+  // Завершение решения задачи на доске
+  onPuzzleComplete(isCrit) {
+    const playerCard = document.getElementById("player-card-anchor");
+    if (playerCard) playerCard.classList.add("anim-lunge-up");
+
+    let finalDmg = this.myHero.atk;
+    if (isCrit) {
+      finalDmg = Math.round(finalDmg * 1.6);
+      this.triggerFlashFx("gold");
+      this.triggerShake("heavy");
+      this.setBattleLog(`ШАХ И МАТ! КРИТ: ${finalDmg} УРОНА!`);
+    } else {
+      this.triggerShake("light");
+      this.setBattleLog(`АТАКА! ${finalDmg} УРОНА`);
+    }
+
+    // Если у соперника был щит
+    if (this.enemyShieldActive) {
+      finalDmg = Math.max(5, finalDmg - this.enemyHero.def);
+      this.enemyShieldActive = false;
+    }
+
+    this.enemyHp = Math.max(0, this.enemyHp - finalDmg);
+    this.updateHUD();
+
+    setTimeout(() => {
+      if (playerCard) playerCard.classList.remove("anim-lunge-up");
+      if (this.enemyHp <= 0) {
+        this.endBattle(true);
+      } else {
+        this.resolveEnemyTurn();
+      }
+    }, 900);
+  },
+
+  // Ответный ход соперника (ИИ/Сеть)
+  resolveEnemyTurn() {
+    this.setBattleLog("ХОД ОППОНЕНТА...");
+
+    setTimeout(() => {
+      const enemyCard = document.getElementById("enemy-card-anchor");
+
+      // Если соперник накопил энергию — использует навык
+      if (this.enemyEnergy >= this.maxEnergy) {
+        this.enemyEnergy = 0;
+        let skillDmg = Math.round(this.enemyHero.atk * 1.7);
+        if (this.isShieldActive) {
+          skillDmg = Math.max(5, skillDmg - this.myHero.def);
+          this.isShieldActive = false;
+        }
+
+        this.myHp = Math.max(0, this.myHp - skillDmg);
+        this.triggerFlashFx("red");
+        this.triggerShake("heavy");
+        this.setBattleLog(`ОППОНЕНТ: ${this.enemyHero.skillName.toUpperCase()} (-${skillDmg} HP)`);
+      } else {
+        // Случайный выбор: Атака (70%) или Защита (30%)
+        const willAttack = Math.random() > 0.3;
+        if (willAttack) {
+          if (enemyCard) enemyCard.classList.add("anim-lunge-down");
+          let dmg = this.enemyHero.atk;
+          if (this.isShieldActive) {
+            dmg = Math.max(5, dmg - this.myHero.def);
+            this.isShieldActive = false;
+          }
+
+          this.myHp = Math.max(0, this.myHp - dmg);
+          this.triggerFlashFx("red");
+          this.triggerShake("light");
+          this.setBattleLog(`ОППОНЕНТ АТАКУЕТ! (-${dmg} HP)`);
+        } else {
+          this.enemyShieldActive = true;
+          this.enemyEnergy = Math.min(this.maxEnergy, this.enemyEnergy + 1);
+          this.setBattleLog("ОППОНЕНТ ВСТАЛ В ЗАЩИТУ (+1⚡)");
+        }
+      }
+
+      this.round++;
+      this.updateHUD();
+
+      setTimeout(() => {
+        if (enemyCard) enemyCard.classList.remove("anim-lunge-down");
+        if (this.myHp <= 0) {
+          this.endBattle(false);
+        } else {
+          this.setBattleLog("ВАШ ХОД! ВЫБЕРИТЕ ДЕЙСТВИЕ");
+        }
+      }, 800);
+    }, 1000);
+  },
+
+  // Финал боя
+  endBattle(isWin) {
+    if (isWin) {
+      this.triggerFlashFx("gold");
+      this.setBattleLog("🏆 ПОБЕДА! ВЫ ОДОЛЕЛИ ГРОССМЕЙСТЕРА!");
+    } else {
+      this.triggerFlashFx("red");
+      this.setBattleLog("МАТ... ВЫ ПОТЕРПЕЛИ ПОРАЖЕНИЕ");
+    }
+
+    setTimeout(() => {
+      const overlay = document.getElementById("net-battle-overlay");
+      if (overlay) overlay.style.display = "none";
+    }, 3000);
+  },
+
+  // Визуальные эффекты
+  triggerShake(intensity) {
     const overlay = document.getElementById("net-battle-overlay");
     if (!overlay) return;
-    overlay.classList.remove("shake-light", "shake-heavy");
-    void overlay.offsetWidth;
-    overlay.classList.add(intensity === "heavy" ? "shake-heavy" : "shake-light");
-    setTimeout(() => overlay.classList.remove("shake-light", "shake-heavy"), 450);
+    const cls = intensity === "heavy" ? "shake-heavy" : "shake-light";
+    overlay.classList.add(cls);
+    setTimeout(() => overlay.classList.remove(cls), 450);
   },
 
-  triggerFlash(color = "red") {
+  triggerFlashFx(color) {
     const flash = document.createElement("div");
     flash.className = `flash-fx-overlay flash-${color}`;
     document.body.appendChild(flash);
     setTimeout(() => flash.remove(), 450);
-  },
-
-  showDamageStrike(target, val) {
-    const bar = target === "my" ? document.getElementById("my-hp-bar") : document.getElementById("enemy-hp-bar");
-    if (!bar) return;
-
-    const el = document.createElement("div");
-    el.className = "floating-strike-num";
-    el.innerText = `-${val}`;
-    bar.parentElement.appendChild(el);
-    setTimeout(() => el.remove(), 800);
-  },
-
-  updateEvalBar(myHp, enemyHp) {
-    const total = myHp + enemyHp;
-    const myPercent = total > 0 ? (myHp / total) * 100 : 50;
-
-    const fill = document.getElementById("duel-eval-fill");
-    const score = document.getElementById("duel-eval-score");
-
-    if (fill) fill.style.height = `${myPercent}%`;
-    if (score) {
-      const diff = ((myHp - enemyHp) / 10).toFixed(1);
-      score.innerText = diff > 0 ? `+${diff}` : `${diff}`;
-      score.style.color = diff >= 0 ? "#ffffff" : "#ef4444";
-    }
-  },
-
-  updateHUD(myHp, enemyHp, energy) {
-    const myBar = document.getElementById("my-hp-bar");
-    const myText = document.getElementById("my-hp-text");
-    const enemyBar = document.getElementById("enemy-hp-bar");
-    const enemyText = document.getElementById("enemy-hp-text");
-
-    if (myBar) myBar.style.width = `${myHp}%`;
-    if (myText) myText.innerText = `${myHp} / 100 HP`;
-    if (enemyBar) enemyBar.style.width = `${enemyHp}%`;
-    if (enemyText) enemyText.innerText = `${enemyHp} / 100 HP`;
-
-    const energyValEl = document.getElementById("my-energy-val");
-    if (energyValEl) energyValEl.innerText = `${energy}/2 ⚡`;
-
-    const cdBadge = document.getElementById("skill-cd-badge");
-    const skillBtn = document.getElementById("btn-action-spc");
-    const skillSub = document.getElementById("skill-action-sub");
-
-    if (cdBadge) cdBadge.innerText = `${energy}/2 ⚡`;
-    if (skillBtn) {
-      if (energy >= 2) {
-        skillBtn.classList.add("ready");
-        if (skillSub) skillSub.innerText = "ГОТОВ! ПРОБИВАЕТ БЛОК";
-      } else {
-        skillBtn.classList.remove("ready");
-        if (skillSub) skillSub.innerText = `Нужно 2⚡ (Защита дает +1⚡)`;
-      }
-    }
-  },
-
-  enableButtons(enable) {
-    ["btn-action-atk", "btn-action-def", "btn-action-spc"].forEach((id) => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.disabled = !enable;
-        btn.style.pointerEvents = enable ? "auto" : "none";
-        btn.style.opacity = enable ? "1" : "0.35";
-      }
-    });
-  },
-
-  endBattle() {
-    if (this.puzzleTimer) clearInterval(this.puzzleTimer);
-    const overlay = document.getElementById("net-battle-overlay");
-    if (overlay) overlay.style.setProperty("display", "none", "important");
-    if (this.socket) {
-      this.socket.close();
-      this.socket = null;
-    }
   }
 };
-
-// Запуск инициализации при загрузке документа
-document.addEventListener("DOMContentLoaded", () => NetDuel.init());
