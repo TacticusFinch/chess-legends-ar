@@ -123,17 +123,25 @@
 
   <!-- БОЕВОЙ ТУРНИРНЫЙ HUD -->
   <div id="net-battle-overlay" style="display: none;">
-    <!-- Оппонент (Верх) -->
+<!-- Оппонент (Верх) -->
     <div class="duel-actor-panel enemy-panel">
-      <div class="actor-meta">
-        <div class="actor-title-row">
-          <span class="actor-side-badge side-black">ЧЁРНЫЕ</span>
-          <span id="enemy-hero-name" class="actor-name">ГРОССМЕЙСТЕР</span>
+      <div class="actor-card-row">
+        <!-- Аватар соперника -->
+        <div class="actor-avatar enemy-avatar-frame">
+          <img id="enemy-avatar-img" class="actor-avatar-img" src="" alt="Оппонент">
         </div>
-        <span id="enemy-hp-text" class="actor-points">100 / 100 HP</span>
-      </div>
-      <div class="meter-track">
-        <div id="enemy-hp-bar" class="meter-fill enemy-fill" style="width: 100%;"></div>
+        <div class="actor-details">
+          <div class="actor-meta">
+            <div class="actor-title-row">
+              <span class="actor-side-badge side-black">ЧЁРНЫЕ</span>
+              <span id="enemy-hero-name" class="actor-name">ГРОССМЕЙСТЕР</span>
+            </div>
+            <span id="enemy-hp-text" class="actor-points">100 / 100 HP</span>
+          </div>
+          <div class="meter-track">
+            <div id="enemy-hp-bar" class="meter-fill enemy-fill" style="width: 100%;"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -176,17 +184,25 @@
       </div>
     </div>
 
-    <!-- Игрок (Низ) -->
+<!-- Игрок (Низ) -->
     <div class="duel-actor-panel player-panel">
-      <div class="actor-meta">
-        <div class="actor-title-row">
-          <span class="actor-side-badge side-white">БЕЛЫЕ</span>
-          <span id="my-hero-name" class="actor-name">ВАШ ЧЕМПИОН</span>
+      <div class="actor-card-row">
+        <!-- Ваш аватар -->
+        <div class="actor-avatar player-avatar-frame">
+          <img id="my-avatar-img" class="actor-avatar-img" src="" alt="Ваш герой">
         </div>
-        <span id="my-hp-text" class="actor-points">100 / 100 HP</span>
-      </div>
-      <div class="meter-track">
-        <div id="my-hp-bar" class="meter-fill player-fill" style="width: 100%;"></div>
+        <div class="actor-details">
+          <div class="actor-meta">
+            <div class="actor-title-row">
+              <span class="actor-side-badge side-white">БЕЛЫЕ</span>
+              <span id="my-hero-name" class="actor-name">ВАШ ЧЕМПИОН</span>
+            </div>
+            <span id="my-hp-text" class="actor-points">100 / 100 HP</span>
+          </div>
+          <div class="meter-track">
+            <div id="my-hp-bar" class="meter-fill player-fill" style="width: 100%;"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Кнопки действий с понятными эффектами -->

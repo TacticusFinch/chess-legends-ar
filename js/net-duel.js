@@ -111,7 +111,7 @@ const NetDuel = {
 
     this.socket = new WebSocket(`${this.WS_URL}${code}`);
 
-    this.socket.onopen = () => {
+this.socket.onopen = () => {
       let hid = (typeof currentHeroId !== "undefined" && currentHeroId !== null) ? currentHeroId : 0;
       this.socket.send(
         JSON.stringify({
@@ -120,7 +120,9 @@ const NetDuel = {
           hero: {
             name: this.myHero.name,
             stats: this.myHero.stats,
-            skillName: this.myHero.skillName
+            skillName: this.myHero.skillName,
+            // Передаем изображение или аватарку из базы героев:
+            avatar: this.myHero.avatar || this.myHero.photo || this.myHero.image || ""
           }
         })
       );
@@ -177,26 +179,50 @@ const NetDuel = {
     const overlay = document.getElementById("net-battle-overlay");
     if (overlay) overlay.style.setProperty("display", "flex", "important");
 
-    // Имена
-    document.getElementById("my-hero-name").innerText = this.myHero.name;
-    document.getElementById("enemy-hero-name").innerText = this.enemyHero.name || "ГРОССМЕЙСТЕР";
+    // 1. Имена чемпионов
+    const myNameEl = document.getElementById("my-hero-name");
+    const enemyNameEl = document.getElementById("enemy-hero-name");
+    if (myNameEl) myNameEl.innerText = this.myHero.name;
+    if (enemyNameEl) enemyNameEl.innerText = this.enemyHero.name || "ГРОССМЕЙСТЕР";
 
-    // Расчет примерного урона для отображения на кнопке Атаки
+    // 2. Портреты чемпионов (проверяем все возможные ключи в базе данных героев)
+    const myImg = document.getElementById("my-avatar-img");
+    const enemyImg = document.getElementById("enemy-avatar-img");
+
+    const getHeroAvatar = (hero) => {
+      if (!hero) return "";
+      return hero.avatar || hero.photo || hero.image || hero.img || "";
+    };
+
+    const myAvatarSrc = getHeroAvatar(this.myHero);
+    const enemyAvatarSrc = getHeroAvatar(this.enemyHero);
+
+    if (myImg && myAvatarSrc) {
+      myImg.src = myAvatarSrc;
+      myImg.style.display = "block";
+    }
+    if (enemyImg && enemyAvatarSrc) {
+      enemyImg.src = enemyAvatarSrc;
+      enemyImg.style.display = "block";
+    }
+
+    // 3. Расчет примерного урона атаки на основе параметров карточки
     let myAtk = 75;
-    if (this.myHero.stats) {
-      const atkObj = this.myHero.stats.find(s => s.name.toLowerCase().includes("атак"));
-      if (atkObj) myAtk = parseInt(atkObj.val);
+    if (this.myHero && this.myHero.stats) {
+      const atkObj = this.myHero.stats.find(s => s.name && s.name.toLowerCase().includes("атак"));
+      if (atkObj) myAtk = parseInt(atkObj.val) || 75;
     }
     const approxDmg = Math.round(myAtk * 0.34);
     const atkDmgEl = document.getElementById("atk-stat-badge");
     if (atkDmgEl) atkDmgEl.innerText = `~${approxDmg} УРОНА`;
 
-    // Привязка названия коронного навыка
+    // 4. Привязка названия коронного суперудара
     const skillTitleEl = document.getElementById("skill-action-title");
-    if (skillTitleEl && this.myHero.skillName) {
-      skillTitleEl.innerText = this.myHero.skillName.toUpperCase();
+    if (skillTitleEl) {
+      skillTitleEl.innerText = (this.myHero.skillName || "КОРОННЫЙ ХОД").toUpperCase();
     }
 
+    // 5. Инициализация панелей, шкал здоровья и старт первого раунда
     this.updateHUD(100, 100, 1);
     this.updateEvalBar(100, 100);
     this.startRound();
@@ -266,7 +292,7 @@ const NetDuel = {
     );
   },
 
-  applyRoundResults(res) {
+applyRoundResults(res) {
     clearInterval(this.timerInterval);
     this.currentEnergy = res.energy;
     this.myHp = res.my_hp;
@@ -295,6 +321,33 @@ const NetDuel = {
     if (enemyIcon) enemyIcon.innerText = icons[res.enemy_action] || "⚔️";
     if (enemyLabel) enemyLabel.innerText = titles[res.enemy_action] || "ХОД";
 
+    // Спецэффекты ударов: Вспышки, виброотклик и тряска экрана
+    const isSkillUsed = this.myChoice === "skill" || res.enemy_action === "skill";
+
+    if (isSkillUsed) {
+      // Сокрушительный навык: Золотая вспышка + мощная тряска
+      this.triggerFlash("gold");
+      this.triggerShake("heavy");
+      if (navigator.vibrate) navigator.vibrate([80, 40, 140]);
+    } else if (res.dmg_taken > 0) {
+      // Игрок получил урон: Красная вспышка + тряска
+      this.triggerFlash("red");
+      this.triggerShake(res.dmg_taken > 18 ? "heavy" : "light");
+      if (navigator.vibrate) navigator.vibrate(120);
+    } else if (this.myChoice === "defend") {
+      // Успешный блок: Бирюзовая вспышка щита + мягкий вибро-импульс
+      this.triggerFlash("cyan");
+      if (navigator.vibrate) navigator.vibrate([30, 30]);
+    }
+
+    // Всплывающие цифры урона
+    if (res.dmg_taken > 0) this.showDamageStrike("my", res.dmg_taken);
+    if (res.dmg_dealt > 0) {
+      this.showDamageStrike("enemy", res.dmg_dealt);
+      if (typeof sfx !== "undefined" && sfx.playCorrect) sfx.playCorrect();
+    }
+
+    // Текстовая сводка раунда
     let summary = "";
     if (this.myChoice === "defend" && res.enemy_action === "attack") {
       summary = `🛡️ Ваш блок сдержал удар! Получено всего -${res.dmg_taken} HP (+1⚡)`;
@@ -306,17 +359,6 @@ const NetDuel = {
       summary = `⚔️ Размен ударами: вы -${res.dmg_dealt} HP | враг -${res.dmg_taken} HP`;
     }
     document.getElementById("battle-log").innerText = summary;
-
-    if (res.dmg_taken > 0) {
-      this.triggerImpact();
-      this.showDamageStrike("my", res.dmg_taken);
-      if (navigator.vibrate) navigator.vibrate(120);
-    }
-
-    if (res.dmg_dealt > 0) {
-      this.showDamageStrike("enemy", res.dmg_dealt);
-      if (typeof sfx !== "undefined" && sfx.playCorrect) sfx.playCorrect();
-    }
 
     this.updateHUD(this.myHp, this.enemyHp, res.energy);
     this.updateEvalBar(this.myHp, this.enemyHp);
@@ -334,6 +376,23 @@ const NetDuel = {
     } else {
       setTimeout(() => this.startRound(), 3200);
     }
+  },
+
+  // Вспомогательные функции вспышки и тряски
+  triggerShake(intensity = "light") {
+    const overlay = document.getElementById("net-battle-overlay");
+    if (!overlay) return;
+    overlay.classList.remove("shake-light", "shake-heavy");
+    void overlay.offsetWidth; // Force reflow для перезапуска CSS анимации
+    overlay.classList.add(intensity === "heavy" ? "shake-heavy" : "shake-light");
+    setTimeout(() => overlay.classList.remove("shake-light", "shake-heavy"), 450);
+  },
+
+  triggerFlash(color = "red") {
+    const flash = document.createElement("div");
+    flash.className = `flash-fx-overlay flash-${color}`;
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 450);
   },
 
   triggerImpact() {
