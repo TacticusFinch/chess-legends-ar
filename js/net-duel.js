@@ -120,6 +120,12 @@ const NetDuel = {
     const input = document.getElementById("join-room-input");
     const code = input ? input.value.trim() : "";
     if (code.length === 4) {
+      // Показываем игроку статус подключения
+      const btn = event?.target || document.querySelector("#lobby-step-join .duel-primary-btn");
+      if (btn) {
+        btn.innerText = "Подключение...";
+        btn.disabled = true;
+      }
       this.joinDuel(code);
     } else {
       alert("Введите 4 цифры номера стола.");
@@ -172,6 +178,12 @@ const NetDuel = {
 
     this.socket.onerror = (err) => {
       console.error("Сбой соединения дуэли:", err);
+      const btn = document.querySelector("#lobby-step-join .duel-primary-btn");
+      if (btn) {
+        btn.innerText = "Начать";
+        btn.disabled = false;
+      }
+      alert("Не удалось подключиться к столу. Проверьте код или статус сервера.");
     };
 
     this.socket.onclose = () => {
