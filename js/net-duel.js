@@ -25,20 +25,21 @@ const NetDuel = {
   puzzleTimer: null,
 
   // Вшитые векторные SVG Data URI (работают автономно, 0 мс задержки, независимы от внешних хостингов)
-  PIECE_SVGS: {
-    'K': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><path d='M22.5 11.63V6M20 8h5' stroke='%23000' stroke-width='1.5'/><path d='M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5' fill='%23fff' stroke='%23000' stroke-width='1.5'/><path d='M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-1-6 2-6 2s-3-7-10-7-10 7-10 7-2-3-6-2c-3 6 6 10.5 6 10.5v7z' fill='%23fff' stroke='%23000' stroke-width='1.5'/><path d='M11.5 30c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0' stroke='%23000' stroke-width='1.5'/></svg>",
-    'Q': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><path d='M9 26c8.5-1.5 21-1.5 27 0l2-12-7 11V11l-5.5 13.5-3-15-3 15-5.5-13.5V25l-7-11 2 12z' fill='%23fff' stroke='%23000' stroke-width='1.5'/><path d='M9 26c0 2 1.5 2 2.5 4 2.5 1 1 5.5 1 5.5h20s-1.5-4.5 1-5.5c1-2 2.5-2 2.5-4 0 0-6.5-1.5-13.5-1.5S9 26 9 26z' fill='%23fff' stroke='%23000' stroke-width='1.5'/><circle cx='6' cy='12' r='2' fill='%23fff' stroke='%23000'/><circle cx='14' cy='9' r='2' fill='%23fff' stroke='%23000'/><circle cx='22.5' cy='8' r='2' fill='%23fff' stroke='%23000'/><circle cx='31' cy='9' r='2' fill='%23fff' stroke='%23000'/><circle cx='39' cy='12' r='2' fill='%23fff' stroke='%23000'/></svg>",
-    'R': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><path d='M9 39h27v-3H9v3zm3-3v-4.5h21V36H12zm2.5-4.5l1.5-13.5h13l1.5 13.5h-16zM11 14h23l-2-6h-4v3h-3V8h-5v3h-3V8h-4l-2 6z' fill='%23fff' stroke='%23000' stroke-width='1.5'/></svg>",
-    'B': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><g fill='%23fff' stroke='%23000' stroke-width='1.5'><path d='M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.35.49-2.32.47-3-.5 1.35-1.94 3-2 3-2z'/><path d='M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z'/><path d='M25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z'/></g><path d='M17.5 26h10M22.5 21v10' stroke='%23000' stroke-width='1.5'/></svg>",
-    'N': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><path d='M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21' fill='%23fff' stroke='%23000' stroke-width='1.5'/><path d='M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.042-.94 1.41-4.04 3-6 2.1-2.6 4.5-4.1 6-7 1.5-2.9 1-5.5 4-6 2.3-.4 2.5 3.5 4 3z' fill='%23fff' stroke='%23000' stroke-width='1.5'/><circle cx='27' cy='15' r='1.5' fill='%23000'/></svg>",
-    'P': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><path d='M22 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38-1.95 1.12-3.28 3.21-3.28 5.62 0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z' fill='%23fff' stroke='%23000' stroke-width='1.5'/></svg>",
-    'k': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><path d='M22.5 11.63V6M20 8h5' stroke='%23fff' stroke-width='1.5'/><path d='M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5' fill='%23222' stroke='%23fff' stroke-width='1.5'/><path d='M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-1-6 2-6 2s-3-7-10-7-10 7-10 7-2-3-6-2c-3 6 6 10.5 6 10.5v7z' fill='%23222' stroke='%23fff' stroke-width='1.5'/></svg>",
-    'q': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><path d='M9 26c8.5-1.5 21-1.5 27 0l2-12-7 11V11l-5.5 13.5-3-15-3 15-5.5-13.5V25l-7-11 2 12z' fill='%23222' stroke='%23fff' stroke-width='1.5'/><circle cx='6' cy='12' r='2' fill='%23222' stroke='%23fff'/><circle cx='22.5' cy='8' r='2' fill='%23222' stroke='%23fff'/><circle cx='39' cy='12' r='2' fill='%23222' stroke='%23fff'/></svg>",
-    'r': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><path d='M9 39h27v-3H9v3zm3-3v-4.5h21V36H12zm2.5-4.5l1.5-13.5h13l1.5 13.5h-16zM11 14h23l-2-6h-4v3h-3V8h-5v3h-3V8h-4l-2 6z' fill='%23222' stroke='%23fff' stroke-width='1.5'/></svg>",
-    'b': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><g fill='%23222' stroke='%23fff' stroke-width='1.5'><path d='M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.35.49-2.32.47-3-.5 1.35-1.94 3-2 3-2z'/><path d='M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z'/></g></svg>",
-    'n': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><path d='M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21' fill='%23222' stroke='%23fff' stroke-width='1.5'/><circle cx='27' cy='15' r='1.5' fill='%23fff'/></svg>",
-    'p': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><path d='M22 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38-1.95 1.12-3.28 3.21-3.28 5.62 0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z' fill='%23222' stroke='%23fff' stroke-width='1.5'/></svg>"
+  PIECE_URLS: {
+    'P': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/wP.svg',
+    'N': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/wN.svg',
+    'B': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/wB.svg',
+    'R': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/wR.svg',
+    'Q': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/wQ.svg',
+    'K': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/wK.svg',
+    'p': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/bP.svg',
+    'n': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/bN.svg',
+    'b': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/bB.svg',
+    'r': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/bR.svg',
+    'q': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/bQ.svg',
+    'k': 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/bK.svg'
   },
+
 
   // Локальный пул на случай оффлайна
   TACTIC_PUZZLES: [
@@ -317,10 +318,10 @@ async chooseAction(action) {
     if (action === "attack") {
       let puzzle = null;
 
-      // Защищенный запрос с таймаутом 1.5 секунды (игра никогда не зависнет)
+      // Защищенный запрос с таймаутом 1.2 сек: никогда не подвесит дуэль
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1500);
+        const timeoutId = setTimeout(() => controller.abort(), 1200);
 
         const response = await fetch(`${this.API_URL}?t=${Date.now()}`, {
           signal: controller.signal
@@ -331,7 +332,7 @@ async chooseAction(action) {
           puzzle = await response.json();
         }
       } catch (err) {
-        console.warn("Таймаут или сбой API задач, мгновенно берем локальный:", err);
+        console.warn("Сработал таймаут сети, берём проверенную задачу из локального банка.");
       }
 
       if (!puzzle || !puzzle.fen) {
@@ -345,7 +346,7 @@ async chooseAction(action) {
     }
   },
 
-  renderInteractiveBoard(puzzle) {
+renderInteractiveBoard(puzzle) {
     this.currentPuzzle = puzzle;
     this.selectedSquare = null;
     this.isCritEarned = false;
@@ -359,7 +360,7 @@ async chooseAction(action) {
     if (!boardEl) return;
     boardEl.innerHTML = "";
 
-    // Парсим только поле фигур FEN (до первого пробела)
+    // Парсим ТОЛЬКО расстановку фигур (до первого пробела)
     const fenBoardPart = puzzle.fen.split(" ")[0];
     const rows = fenBoardPart.split("/");
     const boardState = [];
@@ -387,11 +388,11 @@ async chooseAction(action) {
         sq.dataset.square = sqName;
 
         const pieceChar = boardState[r] ? boardState[r][c] : null;
-        if (pieceChar && this.PIECE_SVGS[pieceChar]) {
+        if (pieceChar && this.PIECE_URLS[pieceChar]) {
           const isWhite = pieceChar === pieceChar.toUpperCase();
           const pDiv = document.createElement("div");
           pDiv.className = `piece ${isWhite ? "white-p" : "black-p"}`;
-          pDiv.style.backgroundImage = `url("${this.PIECE_SVGS[pieceChar]}")`;
+          pDiv.style.backgroundImage = `url("${this.PIECE_URLS[pieceChar]}")`;
           sq.appendChild(pDiv);
         }
 
@@ -403,7 +404,7 @@ async chooseAction(action) {
     const modal = document.getElementById("tactic-board-modal");
     if (modal) modal.style.display = "flex";
 
-    // Обратный отсчет на 10 секунд
+    // 10-секундный таймер хода
     let timeLeft = 10;
     const timerEl = document.getElementById("tactic-timer-num");
     if (timerEl) timerEl.innerText = `⏳ ${timeLeft}с`;
@@ -441,6 +442,7 @@ async chooseAction(action) {
 
     if (this.puzzleTimer) clearInterval(this.puzzleTimer);
 
+	
     // Проверка решения
     if (fromSq === this.currentPuzzle.from && toSq === this.currentPuzzle.to) {
       this.isCritEarned = true;
@@ -455,7 +457,7 @@ async chooseAction(action) {
       const modal = document.getElementById("tactic-board-modal");
       if (modal) modal.style.display = "none";
       this.executeActionAfterPuzzle();
-    }, 550);
+    }, 600);
   },
 
   skipPuzzle() {
