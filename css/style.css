@@ -47,7 +47,6 @@ body {
   box-shadow: inset 0 0 35px rgba(0, 255, 204, 0.06);
 }
 
-/* Компактная запись рамок без дублирования правил */
 .reticle-corner {
   position: absolute;
   width: 28px;
@@ -167,7 +166,7 @@ body {
 #unlock-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* ==========================================================
-   2. TOP HUD & BOTTOM DOCK
+   2. TOP HUD, BOTTOM DOCK & MODAL FRAME
    ========================================================== */
 .top-hud {
   position: absolute;
@@ -252,9 +251,6 @@ body {
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* ==========================================================
-   3. MODALS, PASSPORT & BIO
-   ========================================================== */
 .modal-overlay {
   position: absolute;
   inset: 0;
@@ -304,6 +300,9 @@ body {
 }
 .modal-close:active { background: rgba(255, 255, 255, 0.2); color: #fff; }
 
+/* ==========================================================
+   3. BIO, TESTS & PASSPORT
+   ========================================================== */
 .modal-title { font-size: 18px; font-weight: 800; color: var(--accent-color); margin-bottom: 4px; padding-right: 65px; }
 .modal-subtitle { font-size: 11px; color: #8a99ad; text-transform: uppercase; margin-bottom: 14px; }
 .bio-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--accent-color); margin: 14px 0 4px; }
@@ -388,7 +387,6 @@ body {
 .action-link-btn:active { transform: scale(0.97); }
 .action-link-btn.secondary { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; box-shadow: none; }
 
-/* Сетка паспорта */
 .passport-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -462,242 +460,238 @@ body {
   z-index: 5;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
-
 .passport-lock-icon { font-size: 16px; opacity: 0.4; }
 .passport-monogram { font-size: 11px; font-weight: 800; color: #666; }
 
 /* ==========================================================
-
-NET DUEL (LOBBY & BATTLE ARENA)
-========================================================== */
+   4. DUEL LOBBY & BATTLE OVERLAY PLAYERS
+   ========================================================== */
 .duel-card {
-max-width: 340px !important;
-padding: 32px 24px !important;
-text-align: center;
-background: #0d1117 !important;
-border: 1px solid rgba(255, 255, 255, 0.1) !important;
-border-radius: 20px !important;
-box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8) !important;
+  max-width: 340px !important;
+  padding: 32px 24px !important;
+  text-align: center;
+  background: #0d1117 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8) !important;
 }
 
 .duel-card .modal-title {
-font-size: 20px;
-font-weight: 700;
-letter-spacing: -0.3px;
-color: #fff;
-margin-bottom: 4px;
-padding-right: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: #fff;
+  margin-bottom: 4px;
+  padding-right: 0;
 }
 
 .duel-card .modal-subtitle {
-font-size: 13px;
-color: #6e7681;
-text-transform: none;
-letter-spacing: 0;
-margin-bottom: 28px;
+  font-size: 13px;
+  color: #6e7681;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-bottom: 28px;
 }
 
 .duel-actions-stack {
-display: flex;
-flex-direction: column;
-gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .duel-primary-btn {
-width: 100%;
-padding: 14px;
-background: #fff;
-color: #000;
-border: none;
-border-radius: 12px;
-font-size: 14px;
-font-weight: 600;
-letter-spacing: -0.2px;
-cursor: pointer;
-transition: transform 0.15s ease, opacity 0.15s ease;
+  width: 100%;
+  padding: 14px;
+  background: #fff;
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
 }
 .duel-primary-btn:active { transform: scale(0.97); opacity: 0.9; }
 
 .duel-secondary-btn {
-width: 100%;
-padding: 14px;
-background: rgba(255, 255, 255, 0.05);
-color: #c9d1d9;
-border: 1px solid rgba(255, 255, 255, 0.1);
-border-radius: 12px;
-font-size: 14px;
-font-weight: 500;
-cursor: pointer;
-transition: background 0.15s ease, transform 0.15s ease;
+  width: 100%;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #c9d1d9;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 .duel-secondary-btn:active {
-transform: scale(0.97);
-background: rgba(255, 255, 255, 0.1);
+  transform: scale(0.97);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .duel-big-code {
-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", monospace;
-font-size: 48px;
-font-weight: 800;
-letter-spacing: 10px;
-color: #fff;
-padding: 16px 0;
-margin: 8px 0 20px;
-text-indent: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", monospace;
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: 10px;
+  color: #fff;
+  padding: 16px 0;
+  margin: 8px 0 20px;
+  text-indent: 10px;
 }
 
 .duel-wait-status {
-display: inline-flex;
-align-items: center;
-gap: 8px;
-font-size: 12px;
-color: #8b949e;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #8b949e;
 }
 .wait-dot {
-width: 6px;
-height: 6px;
-border-radius: 50%;
-background: #d4af37;
-animation: pulseWait 1.4s ease-in-out infinite;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d4af37;
+  animation: pulseWait 1.4s ease-in-out infinite;
 }
 
 .duel-pin-input {
-width: 160px;
-padding: 12px 0;
-background: transparent;
-border: none;
-border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-color: #fff;
-font-size: 32px;
-font-weight: 700;
-letter-spacing: 12px;
-text-align: center;
-text-indent: 12px;
-font-family: monospace;
-border-radius: 0;
-margin-bottom: 28px;
-outline: none;
-transition: border-color 0.2s ease;
+  width: 160px;
+  padding: 12px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 12px;
+  text-align: center;
+  text-indent: 12px;
+  font-family: monospace;
+  border-radius: 0;
+  margin-bottom: 28px;
+  outline: none;
+  transition: border-color 0.2s ease;
 }
 .duel-pin-input:focus { border-color: #fff; }
 .duel-pin-input::placeholder { color: #30363d; letter-spacing: 12px; }
 
-/ Боевой оверлей /
-
-net-battle-overlay {
-display: none;
-position: fixed;
-inset: 0;
-z-index: 999;
-flex-direction: column;
-justify-content: space-between;
-padding: 16px 14px;
-box-sizing: border-box;
-background: radial-gradient(circle at center, rgba(10, 14, 22, 0.85) 0%, rgba(5, 7, 10, 0.96) 100%);
+/* Боевой оверлей */
+#net-battle-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 14px;
+  box-sizing: border-box;
+  background: radial-gradient(circle at center, rgba(10, 14, 22, 0.85) 0%, rgba(5, 7, 10, 0.96) 100%);
 }
 
 .duel-actor-panel {
-pointer-events: auto;
-background: rgba(13, 17, 23, 0.9);
-border: 1px solid rgba(255, 255, 255, 0.12);
-border-radius: 12px;
-padding: 12px 14px;
-box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+  pointer-events: auto;
+  background: rgba(13, 17, 23, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
 }
 
 .actor-card-row { display: flex; align-items: center; gap: 12px; }
 .actor-details { flex: 1; }
 
 .actor-avatar {
-width: 44px;
-height: 44px;
-border-radius: 10px;
-overflow: hidden;
-background: #000;
-flex-shrink: 0;
-display: flex;
-align-items: center;
-justify-content: center;
-position: relative;
-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
 }
 
 .enemy-avatar-frame {
-border: 1.5px solid #ef4444;
-box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
+  border: 1.5px solid #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
 }
 
 .player-avatar-frame {
-border: 1.5px solid #00ffcc;
-box-shadow: 0 0 10px rgba(0, 255, 204, 0.35);
+  border: 1.5px solid #00ffcc;
+  box-shadow: 0 0 10px rgba(0, 255, 204, 0.35);
 }
 
 .actor-avatar-img {
-width: 100%;
-height: 100%;
-object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .actor-meta {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
 }
 .actor-title-row { display: flex; align-items: center; gap: 8px; }
 
 .actor-side-badge {
-font-size: 8px;
-font-weight: 800;
-letter-spacing: 1px;
-padding: 2px 6px;
-border-radius: 3px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 3px;
 }
 .actor-side-badge.side-black { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
 .actor-side-badge.side-white { background: #fff; color: #000; }
 
 .actor-name {
-font-size: 13px;
-font-weight: 700;
-letter-spacing: 0.5px;
-color: #fff;
-text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #fff;
+  text-transform: uppercase;
 }
 
 .actor-points {
-font-family: monospace;
-font-size: 11px;
-font-weight: 600;
-color: #8b949e;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8b949e;
 }
 
-/ HP полосы /
+/* HP полосы */
 .meter-track {
-width: 100%;
-height: 5px;
-background: rgba(255, 255, 255, 0.08);
-border-radius: 3px;
-overflow: hidden;
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
 }
 .meter-fill {
-height: 100%;
-transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  height: 100%;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .meter-fill.enemy-fill { background: #ef4444; }
 .meter-fill.player-fill { background: #00ffcc; }
 
-/ Статы карт /
+/* ==========================================================
+   5. BATTLE CENTER, EVAL & ACTION CARDS
+   ========================================================== */
 .tactical-stats-row {
-display: flex;
-align-items: center;
-gap: 6px;
-margin-top: 6px;
-flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
 }
 
-/* ==========================================================
-   4. NET DUEL (CENTER STAGE & ACTIONS DECK) — ПРОДОЛЖЕНИЕ
-   ========================================================== */
 .stat-pill {
   font-family: monospace;
   font-size: 8.5px;
@@ -725,7 +719,6 @@ flex-wrap: wrap;
   border-radius: 12px;
 }
 
-/* Центральная зона: Оценка Stockfish и статус хода */
 .duel-center-stage {
   flex: 1;
   display: flex;
@@ -799,7 +792,6 @@ flex-wrap: wrap;
   line-height: 1.3;
 }
 
-/* Нижняя колода боевых карт действий */
 .tactical-deck {
   display: grid;
   grid-template-columns: 1fr 1fr 1.2fr;
@@ -891,7 +883,7 @@ flex-wrap: wrap;
 }
 
 /* ==========================================================
-   5. PREMIUM CHESS ARENA (LICHESS HUD & CHESSBOARD)
+   6. PREMIUM TACTIC MODAL & LUXURY CHESSBOARD
    ========================================================== */
 .premium-tactic-modal {
   position: absolute;
@@ -968,7 +960,6 @@ flex-wrap: wrap;
   letter-spacing: 0.5px;
 }
 
-/* Рамка и геометрия турнирной доски */
 .board-frame-outer {
   padding: 6px;
   background: #11141c;
@@ -989,7 +980,6 @@ flex-wrap: wrap;
   user-select: none;
 }
 
-/* Клетки доски */
 .sq {
   position: relative;
   display: flex;
@@ -1006,7 +996,6 @@ flex-wrap: wrap;
   box-shadow: inset 0 0 12px rgba(217, 119, 6, 0.8);
 }
 
-/* Фигуры (поддержка как фоновых картинок Lichess, так и Unicode-символов) */
 .piece {
   width: 84%;
   height: 84%;
@@ -1064,9 +1053,8 @@ flex-wrap: wrap;
 }
 
 /* ==========================================================
-   6. COMBAT FX, SHIELDS & ANIMATION KEYFRAMES
+   7. COMBAT FX, SHIELDS & ANIMATIONS (@KEYFRAMES)
    ========================================================== */
-/* Сияющий барьер щита поверх аватара */
 .shield-barrier-fx {
   position: absolute;
   inset: -4px;
@@ -1082,7 +1070,6 @@ flex-wrap: wrap;
   animation: shieldPulse 0.6s infinite alternate;
 }
 
-/* Всплывающие цифры урона */
 .floating-strike-num {
   position: absolute;
   top: -16px;
@@ -1096,7 +1083,6 @@ flex-wrap: wrap;
   animation: floatUp 0.8s ease-out forwards;
 }
 
-/* Полноэкранные вспышки ударов */
 .flash-fx-overlay {
   position: fixed;
   inset: 0;
@@ -1118,7 +1104,6 @@ flex-wrap: wrap;
   box-shadow: inset 0 0 70px rgba(241, 196, 15, 0.9);
 }
 
-/* Классы анимаций ударов и тряски */
 .shake-light {
   animation: shakeLightAnim 0.25s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
@@ -1135,7 +1120,7 @@ flex-wrap: wrap;
   animation: skillBlastAnim 0.85s ease-out;
 }
 
-/* Все Keyframes проекта */
+/* @keyframes */
 @keyframes scanLaser {
   0%   { transform: translateY(10px); opacity: 0.3; }
   50%  { opacity: 1; }
