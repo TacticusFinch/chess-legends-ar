@@ -16,6 +16,34 @@ const NetDuel = {
   enemyHp: 100,
   roundCount: 1,
 
+  // Параметры интерактивной тактической доски
+  pendingAction: null,
+  currentPuzzle: null,
+  selectedSquare: null,
+  isCritEarned: false,
+
+  // База мини-задач (Мат в 1 ход)
+  TACTIC_PUZZLES: [
+    {
+      // Детский мат ферзем на f7
+      fen: "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR",
+      from: "h5",
+      to: "f7"
+    },
+    {
+      // Мат ладьей по 8-й горизонтали
+      fen: "6k1/5ppp/8/8/8/8/8/3R2K1",
+      from: "d1",
+      to: "d8"
+    },
+    {
+      // Мат конем (спертый мат королю на h8)
+      fen: "7k/6pp/8/8/5N2/8/8/6K1",
+      from: "f4",
+      to: "g6"
+    }
+  ],
+
   // Инициализация при загрузке страницы (проверка URL ?duel=XXXX)
   init() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -251,7 +279,7 @@ const NetDuel = {
     this.myChoice = null;
     this.enableButtons(true);
 
-    // Сброс подсветки кнопок и щитов
+    // Сброс подсветки кнопок, щитов и доски
     ["btn-action-atk", "btn-action-def", "btn-action-spc"].forEach(id => {
       const b = document.getElementById(id);
       if (b) b.classList.remove("selected");
@@ -262,6 +290,9 @@ const NetDuel = {
     if (playerShield) playerShield.style.display = "none";
     if (enemyShield) enemyShield.style.display = "none";
 
+    const boardModal = document.getElementById("tactic-board-modal");
+    if (boardModal) boardModal.style.display = "none";
+
     const roundBadge = document.getElementById("round-title-badge");
     if (roundBadge) roundBadge.innerText = `РАУНД ${this.roundCount || 1}`;
 
@@ -269,6 +300,7 @@ const NetDuel = {
     if (logEl) logEl.innerText = "ВАШ ХОД: ВЫБЕРИТЕ ДЕЙСТВИЕ";
   },
 
+  // Выбор действия: если Атака — открываем доску для крита
   chooseAction(action) {
     if (this.myChoice) return;
 
@@ -277,14 +309,121 @@ const NetDuel = {
       return;
     }
 
-    this.myChoice = action;
-
+    this.enableButtons(false);
     const btnMap = { attack: "btn-action-atk", defend: "btn-action-def", skill: "btn-action-spc" };
     const btn = document.getElementById(btnMap[action]);
     if (btn) btn.classList.add("selected");
 
-    this.enableButtons(false);
-    
+    this.pendingAction = action;
+
+    if (action === "attack") {
+      const randPuzzle = this.TACTIC_PUZZLES[Math.floor(Math.random() * this.TACTIC_PUZZLES.length)];
+      this.renderInteractiveBoard(randPuzzle);
+    } else {
+      this.isCritEarned = false;
+      this.executeActionAfterPuzzle();
+    }
+  },
+
+  // Отрисовка интерактивной доски 8х8
+  renderInteractiveBoard(puzzle) {
+    this.currentPuzzle = puzzle;
+    this.selectedSquare = null;
+    this.isCritEarned = false;
+
+    const boardEl = document.getElementById("chess-interactive-board");
+    if (!boardEl) return;
+    boardEl.innerHTML = "";
+
+    const pieceSymbols = {
+      p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚",
+      P: "♙", R: "♖", N: "♘", B: "♗", Q: "♕", K: "♔"
+    };
+
+    const rows = puzzle.fen.split("/");
+    const boardState = [];
+
+    for (let r = 0; r < 8; r++) {
+      const row = rows[r];
+      const parsedRow = [];
+      for (let ch of row) {
+        if (!isNaN(ch)) {
+          for (let i = 0; i < parseInt(ch); i++) parsedRow.push(null);
+        } else {
+          parsedRow.push(ch);
+        }
+      }
+      boardState.push(parsedRow);
+    }
+
+    const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const sqName = `${files[c]}${8 - r}`;
+        const sq = document.createElement("div");
+        sq.className = `sq ${(r + c) % 2 === 0 ? "white" : "black"}`;
+        sq.dataset.square = sqName;
+
+        const pieceChar = boardState[r][c];
+        if (pieceChar) {
+          const isWhite = pieceChar === pieceChar.toUpperCase();
+          const pDiv = document.createElement("div");
+          pDiv.className = `piece ${isWhite ? "white-p" : "black-p"}`;
+          pDiv.innerText = pieceSymbols[pieceChar] || "";
+          sq.appendChild(pDiv);
+        }
+
+        sq.addEventListener("click", () => this.handleBoardClick(sqName));
+        boardEl.appendChild(sq);
+      }
+    }
+
+    const modal = document.getElementById("tactic-board-modal");
+    if (modal) modal.style.display = "flex";
+  },
+
+  // Управление касаниями (Tap-to-Move)
+  handleBoardClick(sqName) {
+    const allSquares = document.querySelectorAll(".sq");
+
+    // 1-й тап: выбор фигуры (белой)
+    if (!this.selectedSquare) {
+      const targetSq = Array.from(allSquares).find(s => s.dataset.square === sqName);
+      if (targetSq && targetSq.querySelector(".white-p")) {
+        this.selectedSquare = sqName;
+        targetSq.classList.add("selected");
+      }
+      return;
+    }
+
+    // 2-й тап: ход на клетку
+    const fromSq = this.selectedSquare;
+    const toSq = sqName;
+    this.selectedSquare = null;
+    allSquares.forEach(s => s.classList.remove("selected"));
+
+    // Проверка правильности мата
+    if (fromSq === this.currentPuzzle.from && toSq === this.currentPuzzle.to) {
+      this.isCritEarned = true;
+      this.triggerFlash("gold");
+      if (typeof sfx !== "undefined" && sfx.playFanfare) sfx.playFanfare();
+      document.getElementById("battle-log").innerText = "💥 ШАХМАТНЫЙ КРИТ! МАТ НАЙДЕН!";
+    } else {
+      document.getElementById("battle-log").innerText = "Мат упущен. Обычная атака.";
+    }
+
+    // Закрываем доску и отправляем ход
+    setTimeout(() => {
+      const modal = document.getElementById("tactic-board-modal");
+      if (modal) modal.style.display = "none";
+      this.executeActionAfterPuzzle();
+    }, 600);
+  },
+
+  // Отправка хода на сервер после решения задачи
+  executeActionAfterPuzzle() {
+    this.myChoice = this.pendingAction;
     const logEl = document.getElementById("battle-log");
     if (logEl) logEl.innerText = "ХОД ЗАФИКСИРОВАН • ОЖИДАНИЕ ХОДА СОПЕРНИКА...";
 
@@ -293,7 +432,8 @@ const NetDuel = {
     this.socket.send(
       JSON.stringify({
         type: "MOVE",
-        action: action,
+        action: this.myChoice,
+        crit: this.isCritEarned
       })
     );
   },
@@ -402,7 +542,7 @@ const NetDuel = {
     const overlay = document.getElementById("net-battle-overlay");
     if (!overlay) return;
     overlay.classList.remove("shake-light", "shake-heavy");
-    void overlay.offsetWidth; // Force reflow для перезапуска CSS-анимации
+    void overlay.offsetWidth;
     overlay.classList.add(intensity === "heavy" ? "shake-heavy" : "shake-light");
     setTimeout(() => overlay.classList.remove("shake-light", "shake-heavy"), 450);
   },

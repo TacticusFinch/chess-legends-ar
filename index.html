@@ -163,17 +163,23 @@
         <div id="duel-eval-score" class="eval-score-text">0.0</div>
       </div>
 
-      <!-- Центральная зона: Ход партии -->
+<!-- Центральная зона: Ход партии -->
       <div class="duel-center-content">
-        <!-- Раунд и статус хода вместо таймера -->
+        <!-- Раунд и статус хода -->
         <div class="round-status-badge" id="round-title-badge">РАУНД 1</div>
         <div id="battle-log" class="tactical-teletype">ВЫБЕРИТЕ ДЕЙСТВИЕ</div>
+
+        <!-- ИНТЕРАКТИВНАЯ ТАКТИЧЕСКАЯ ДОСКА ДЛЯ КРИТА -->
+        <div id="tactic-board-modal" class="tactic-board-box" style="display: none;">
+          <div class="tactic-task-title">МАТ В 1 ХОД: СДЕЛАЙТЕ ХОД НА ДОСКЕ!</div>
+          <div id="chess-interactive-board" class="mini-chessboard"></div>
+          <div class="tactic-sub-hint">Коснитесь фигуры, затем клетки хода</div>
+        </div>
+
         <div id="battle-hint" class="tactical-hint">
-          Следите за статами соперника • Защита режет урон на основе DEF
+          ⚔️ Атака дает шанс на Крит • 🛡️ Защита копит энергию
         </div>
       </div>
-    </div>
-
     <!-- Игрок (Низ) -->
     <div class="duel-actor-panel player-panel">
       <div class="actor-card-row">
