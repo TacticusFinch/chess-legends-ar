@@ -121,9 +121,9 @@
     </div>
   </div>
 
-  <!-- БОЕВОЙ ТУРНИРНЫЙ HUD (В СТИЛЕ CHESS BROADCAST) -->
+  <!-- БОЕВОЙ ТУРНИРНЫЙ HUD -->
   <div id="net-battle-overlay" style="display: none;">
-    <!-- Оппонент (Верхний сектор) -->
+    <!-- Оппонент (Верх) -->
     <div class="duel-actor-panel enemy-panel">
       <div class="actor-meta">
         <div class="actor-title-row">
@@ -133,12 +133,13 @@
         <span id="enemy-hp-text" class="actor-points">100 / 100 HP</span>
       </div>
       <div class="meter-track">
-        <div id="enemy-hp-bar" class="meter-fill enemy-fill"></div>
+        <div id="enemy-hp-bar" class="meter-fill enemy-fill" style="width: 100%;"></div>
       </div>
     </div>
 
-    <!-- Центральный сектор: Оценочный бар (Eval Bar) и Цейтнот-хронометр -->
+    <!-- ЦЕНТР: БОЕВАЯ АРЕНА И РАЗБОР ХОДОВ -->
     <div class="duel-center-stage">
+      <!-- Оценка позиции Stockfish -->
       <div class="eval-meter-container">
         <div class="eval-bar-track">
           <div id="duel-eval-fill" class="eval-bar-fill" style="height: 50%;"></div>
@@ -146,13 +147,36 @@
         <div id="duel-eval-score" class="eval-score-text">0.0</div>
       </div>
 
-      <div class="duel-telemetry-console">
-        <div id="battle-timer" class="chess-timer">10</div>
-        <div id="battle-log" class="tactical-teletype">ИНИЦИАЛИЗАЦИЯ ПАРТИИ...</div>
+      <!-- Центральная зона: Столкновение приемов или таймер -->
+      <div class="duel-center-content">
+        <!-- Столкновение ходов (появляется в момент удара) -->
+        <div id="clash-arena" class="clash-arena" style="display: none;">
+          <div class="clash-fighter enemy-clash">
+            <div id="clash-enemy-icon" class="clash-icon">🛡️</div>
+            <div id="clash-enemy-label" class="clash-label">ЗАЩИТА</div>
+          </div>
+          <div class="clash-vs">VS</div>
+          <div class="clash-fighter my-clash">
+            <div id="clash-my-icon" class="clash-icon">⚔️</div>
+            <div id="clash-my-label" class="clash-label">АТАКА</div>
+          </div>
+        </div>
+
+        <!-- Часы цейтнота -->
+        <div id="battle-timer-wrap">
+          <div id="battle-timer" class="chess-timer">10</div>
+          <div class="timer-sub">СЕКУНД НА ХОД</div>
+        </div>
+
+        <!-- Тактическая шпаргалка / Лог раунда -->
+        <div id="battle-log" class="tactical-teletype">ВЫБЕРИТЕ ДЕЙСТВИЕ</div>
+        <div id="battle-hint" class="tactical-hint">
+          ⚔️ Атакует • 🛡️ Режет урон и копит ⚡ • ⚡ Навык пробивает блок
+        </div>
       </div>
     </div>
 
-    <!-- Игрок (Нижний сектор команд) -->
+    <!-- Игрок (Низ) -->
     <div class="duel-actor-panel player-panel">
       <div class="actor-meta">
         <div class="actor-title-row">
@@ -162,36 +186,36 @@
         <span id="my-hp-text" class="actor-points">100 / 100 HP</span>
       </div>
       <div class="meter-track">
-        <div id="my-hp-bar" class="meter-fill player-fill"></div>
+        <div id="my-hp-bar" class="meter-fill player-fill" style="width: 100%;"></div>
       </div>
 
-      <!-- Тактическая раскладка карты: Атака, Защита, Навык -->
+      <!-- Кнопки действий с понятными эффектами -->
       <div class="tactical-deck">
         <button id="btn-action-atk" class="tactical-card-btn" onclick="NetDuel.chooseAction('attack')">
           <div class="action-top-row">
-            <span class="action-index">01</span>
-            <span class="action-type-code">ATK</span>
+            <span class="action-icon">⚔️</span>
+            <span id="atk-stat-badge" class="action-dmg-badge">~25 УРОНА</span>
           </div>
           <div class="action-name">АТАКА</div>
-          <div class="action-sub">Прямой урон</div>
+          <div class="action-sub">Прямой урон врагу</div>
         </button>
 
         <button id="btn-action-def" class="tactical-card-btn" onclick="NetDuel.chooseAction('defend')">
           <div class="action-top-row">
-            <span class="action-index">02</span>
-            <span class="action-type-code">DEF</span>
+            <span class="action-icon">🛡️</span>
+            <span class="action-energy-gain">+1 ⚡</span>
           </div>
           <div class="action-name">ЗАЩИТА</div>
-          <div class="action-sub">Блок + Энергия</div>
+          <div class="action-sub">Блок 50% урона</div>
         </button>
 
         <button id="btn-action-spc" class="tactical-card-btn skill-card" onclick="NetDuel.chooseAction('skill')">
           <div class="action-top-row">
-            <span class="action-index">03</span>
-            <span id="skill-cd-badge" class="action-energy-badge">1/2</span>
+            <span class="action-icon">⚡</span>
+            <span id="skill-cd-badge" class="action-energy-badge">1/2 ⚡</span>
           </div>
-          <div id="skill-action-title" class="action-name">НАВЫК</div>
-          <div class="action-sub">Секретный прием</div>
+          <div id="skill-action-title" class="action-name">КОРОННЫЙ ХОД</div>
+          <div id="skill-action-sub" class="action-sub">Нужно 2⚡ энергии</div>
         </button>
       </div>
     </div>

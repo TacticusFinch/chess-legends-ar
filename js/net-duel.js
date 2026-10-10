@@ -153,20 +153,27 @@ showJoinInput() {
     }
   },
 
-  // ==========================================
-  // БОЕВАЯ АРЕНА И РАСЧЕТ ТАКТИКИ
-  // ==========================================
-  startBattle() {
+ startBattle() {
     this.myHp = 100;
     this.enemyHp = 100;
     this.currentEnergy = 1;
 
     const overlay = document.getElementById("net-battle-overlay");
-    overlay.style.display = "flex";
+    overlay.style.setProperty("display", "flex", "important");
 
-    // Установка имен гроссмейстеров
+    // Имена
     document.getElementById("my-hero-name").innerText = this.myHero.name;
     document.getElementById("enemy-hero-name").innerText = this.enemyHero.name || "ГРОССМЕЙСТЕР";
+
+    // Вычисляем примерный урон карты игрока и пишем на кнопке Атаки
+    let myAtk = 75;
+    if (this.myHero.stats) {
+      const atkObj = this.myHero.stats.find(s => s.name.toLowerCase().includes("атак"));
+      if (atkObj) myAtk = parseInt(atkObj.val);
+    }
+    const approxDmg = Math.round(myAtk * 0.34);
+    const atkDmgEl = document.getElementById("atk-stat-badge");
+    if (atkDmgEl) atkDmgEl.innerText = `~${approxDmg} УРОНА`;
 
     // Привязка названия коронного навыка конкретной карты
     const skillTitleEl = document.getElementById("skill-action-title");
@@ -182,6 +189,17 @@ showJoinInput() {
   startRound() {
     this.myChoice = null;
     this.enableButtons(true);
+
+    // Сбрасываем выделение кнопок
+    ["btn-action-atk", "btn-action-def", "btn-action-spc"].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) b.classList.remove("selected");
+    });
+
+    // Прячем арену удара, показываем таймер
+    const clashEl = document.getElementById("clash-arena");
+    if (clashEl) clashEl.style.display = "none";
+    document.getElementById("battle-timer-wrap").style.display = "block";
     document.getElementById("battle-log").innerText = "ОЦЕНКА ПОЗИЦИИ: СДЕЛАЙТЕ ХОД";
 
     let sec = 10;
@@ -197,7 +215,7 @@ showJoinInput() {
       if (sec <= 0) {
         clearInterval(this.timerInterval);
         if (!this.myChoice) {
-          this.chooseAction("defend"); // Автоматический позиционный блок в цейтноте
+          this.chooseAction("defend"); // Авто-блок при цейтноте
         }
       }
     }, 1000);
@@ -207,15 +225,20 @@ showJoinInput() {
     if (this.myChoice) return;
 
     if (action === "skill" && this.currentEnergy < 2) {
-      alert("Секретный навык не заряжен. Успешная Защита накапливает заряд.");
+      alert("Коронный ход требует 2⚡ энергии! Нажмите Защиту 🛡️, чтобы накопить заряд.");
       return;
     }
 
     clearInterval(this.timerInterval);
     this.myChoice = action;
-    this.enableButtons(false);
 
-    document.getElementById("battle-log").innerText = "ХОД ЗАФИКСИРОВАН. ОЖИДАНИЕ СОПЕРНИКА...";
+    // Подсвечиваем нажатую кнопку
+    const btnMap = { attack: "btn-action-atk", defend: "btn-action-def", skill: "btn-action-spc" };
+    const btn = document.getElementById(btnMap[action]);
+    if (btn) btn.classList.add("selected");
+
+    this.enableButtons(false);
+    document.getElementById("battle-log").innerText = "ХОД ЗАФИКСИРОВАН • ОЖИДАНИЕ ХОДА СОПЕРНИКА...";
 
     if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
 
@@ -233,7 +256,37 @@ showJoinInput() {
     this.myHp = res.my_hp;
     this.enemyHp = res.enemy_hp;
 
-    // Кинематографичный отклик при уроне
+    // Скрываем таймер и показываем красочное столкновение приемов в центре
+    document.getElementById("battle-timer-wrap").style.display = "none";
+    const clashEl = document.getElementById("clash-arena");
+    if (clashEl) clashEl.style.display = "flex";
+
+    const icons = { attack: "⚔️", defend: "🛡️", skill: "⚡" };
+    const titles = { 
+      attack: "АТАКА", 
+      defend: "ЗАЩИТА", 
+      skill: (this.enemyHero.skillName || "НАВЫК").toUpperCase() 
+    };
+
+    document.getElementById("clash-my-icon").innerText = icons[this.myChoice] || "⚔️";
+    document.getElementById("clash-my-label").innerText = titles[this.myChoice] || "ХОД";
+
+    document.getElementById("clash-enemy-icon").innerText = icons[res.enemy_action] || "⚔️";
+    document.getElementById("clash-enemy-label").innerText = titles[res.enemy_action] || "ХОД";
+
+    // Понятное текстовое резюме исхода
+    let summary = "";
+    if (this.myChoice === "defend" && res.enemy_action === "attack") {
+      summary = `🛡️ Ваш блок сдержал урон! Получено всего -${res.dmg_taken} HP (+1⚡)`;
+    } else if (this.myChoice === "attack" && res.enemy_action === "defend") {
+      summary = `🛡️ Соперник ушел в глухую защиту (-${res.dmg_dealt} HP)`;
+    } else if (this.myChoice === "skill") {
+      summary = `⚡ Вы пробили защиту сокрушительным приемом! (-${res.dmg_dealt} HP)`;
+    } else {
+      summary = `⚔️ Размен ударами: вы нанесли -${res.dmg_dealt} HP, враг нанес -${res.dmg_taken} HP`;
+    }
+    document.getElementById("battle-log").innerText = summary;
+
     if (res.dmg_taken > 0) {
       this.triggerImpact();
       this.showDamageStrike("my", res.dmg_taken);
@@ -245,22 +298,9 @@ showJoinInput() {
       if (typeof sfx !== "undefined" && sfx.playCorrect) sfx.playCorrect();
     }
 
-    // Обновление шкал HP и Stockfish Eval-Bar
     this.updateHUD(this.myHp, this.enemyHp, res.energy);
     this.updateEvalBar(this.myHp, this.enemyHp);
 
-    // Гроссмейстерская сводка раунда
-    const actionNames = {
-      attack: "АТАКА",
-      defend: "ЗАЩИТА",
-      skill: (this.enemyHero.skillName || "НАВЫК").toUpperCase()
-    };
-
-    const enemyAct = actionNames[res.enemy_action] || "ХОД";
-    document.getElementById("battle-log").innerText = 
-      `ОТВЕТ: ${enemyAct} | УРОН: -${res.dmg_dealt} HP | ПРИНЯТО: -${res.dmg_taken} HP`;
-
-    // Завершение партии или переход к следующему тактическому рубежу
     if (this.myHp <= 0 || this.enemyHp <= 0) {
       setTimeout(() => {
         const isWin = this.myHp > this.enemyHp;
@@ -268,47 +308,11 @@ showJoinInput() {
           if (isWin && sfx.playFanfare) sfx.playFanfare();
           else if (!isWin && sfx.playWrong) sfx.playWrong();
         }
-        alert(isWin ? "ШАХ И МАТ. Победа по итогам тактического противостояния." : "ПОРАЖЕНИЕ. Ваш король капитулировал.");
+        alert(isWin ? "🏆 ШАХ И МАТ! Ваш гроссмейстер одержал победу!" : "ПОРАЖЕНИЕ. Ваш король повержен.");
         this.endBattle();
-      }, 1200);
+      }, 1500);
     } else {
-      setTimeout(() => this.startRound(), 2600);
-    }
-  },
-
-  // Мягкая виньетка удара
-  triggerImpact() {
-    const v = document.createElement("div");
-    v.className = "flash-impact-vignette";
-    document.body.appendChild(v);
-    setTimeout(() => v.remove(), 400);
-  },
-
-  // Числовая нотация урона
-  showDamageStrike(target, val) {
-    const bar = target === "my" ? document.getElementById("my-hp-bar") : document.getElementById("enemy-hp-bar");
-    if (!bar) return;
-
-    const el = document.createElement("div");
-    el.className = "floating-strike-num";
-    el.innerText = `-${val}`;
-    bar.parentElement.appendChild(el);
-    setTimeout(() => el.remove(), 800);
-  },
-
-  // Расчет перевеса позиции (Eval Bar)
-  updateEvalBar(myHp, enemyHp) {
-    const total = myHp + enemyHp;
-    const myPercent = total > 0 ? (myHp / total) * 100 : 50;
-
-    const fill = document.getElementById("duel-eval-fill");
-    const score = document.getElementById("duel-eval-score");
-
-    if (fill) fill.style.height = `${myPercent}%`;
-    if (score) {
-      const diff = ((myHp - enemyHp) / 10).toFixed(1);
-      score.innerText = diff > 0 ? `+${diff}` : `${diff}`;
-      score.style.color = diff >= 0 ? "#ffffff" : "#ef4444";
+      setTimeout(() => this.startRound(), 3200);
     }
   },
 
@@ -320,37 +324,19 @@ showJoinInput() {
 
     const cdBadge = document.getElementById("skill-cd-badge");
     const skillBtn = document.getElementById("btn-action-spc");
+    const skillSub = document.getElementById("skill-action-sub");
 
-    if (cdBadge) cdBadge.innerText = `${energy}/2`;
+    if (cdBadge) cdBadge.innerText = `${energy}/2 ⚡`;
     if (skillBtn) {
       if (energy >= 2) {
         skillBtn.classList.add("ready");
+        if (skillSub) skillSub.innerText = "ГОТОВ! ПРОБИВАЕТ БЛОК";
       } else {
         skillBtn.classList.remove("ready");
+        if (skillSub) skillSub.innerText = `Нужно 2⚡ (Защита дает +1⚡)`;
       }
     }
   },
-
-  enableButtons(enable) {
-    ["btn-action-atk", "btn-action-def", "btn-action-spc"].forEach((id) => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.disabled = !enable;
-        btn.style.pointerEvents = enable ? "auto" : "none";
-        btn.style.opacity = enable ? "1" : "0.35";
-      }
-    });
-  },
-
-  endBattle() {
-    clearInterval(this.timerInterval);
-    document.getElementById("net-battle-overlay").style.display = "none";
-    if (this.socket) {
-      this.socket.close();
-      this.socket = null;
-    }
-  },
-};
 
 // Запуск прослушивания при старте
 document.addEventListener("DOMContentLoaded", () => NetDuel.init());
