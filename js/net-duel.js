@@ -27,30 +27,42 @@ const NetDuel = {
     }
   },
 
-  // Открытие лобби и привязка параметров распознанной карты
+  // Открытие лобби и привязка параметров карты
   openLobby() {
-    if (currentHeroId === null || typeof HEROES === "undefined" || !HEROES[currentHeroId]) {
-      alert("Наведите камеру на карту гроссмейстера для инициализации дуэли.");
-      return;
+    // Безопасное определение текущего героя с запасным вариантом (по умолчанию герой 0)
+    let hid = 0;
+    if (typeof currentHeroId !== "undefined" && currentHeroId !== null) {
+      hid = currentHeroId;
     }
-    this.myHero = HEROES[currentHeroId];
+    
+    if (typeof HEROES !== "undefined" && HEROES[hid]) {
+      this.myHero = HEROES[hid];
+    } else {
+      this.myHero = { name: "Гроссмейстер", stats: [{ name: "Атака", val: 80 }, { name: "Защита", val: 75 }], skillName: "Коронный удар" };
+    }
 
-    document.getElementById("lobby-step-select").style.display = "block";
-    document.getElementById("lobby-step-host").style.display = "none";
-    document.getElementById("lobby-step-join").style.display = "none";
-    document.getElementById("duel-lobby-modal").classList.add("active");
+    const selectStep = document.getElementById("lobby-step-select");
+    const hostStep = document.getElementById("lobby-step-host");
+    const joinStep = document.getElementById("lobby-step-join");
+    const modal = document.getElementById("duel-lobby-modal");
+
+    if (selectStep) selectStep.style.display = "block";
+    if (hostStep) hostStep.style.display = "none";
+    if (joinStep) joinStep.style.display = "none";
+    if (modal) modal.classList.add("active");
   },
 
-  // Закрытие лобби. disconnect = false при старте матча, чтобы не убить WebSocket
+  // Закрытие лобби
   closeLobby(disconnect = true) {
-    document.getElementById("duel-lobby-modal").classList.remove("active");
+    const modal = document.getElementById("duel-lobby-modal");
+    if (modal) modal.classList.remove("active");
     if (disconnect && this.socket && this.socket.readyState === WebSocket.OPEN) {
       this.socket.close();
       this.socket = null;
     }
   },
 
-showJoinInput() {
+  showJoinInput() {
     document.getElementById("lobby-step-select").style.display = "none";
     document.getElementById("lobby-step-join").style.display = "block";
     const input = document.getElementById("join-room-input");
@@ -60,7 +72,7 @@ showJoinInput() {
     }
   },
 
- // 1. Создание сессии (Хост)
+  // 1. Создание сессии (Хост)
   createRoom() {
     this.roomCode = Math.floor(1000 + Math.random() * 9000).toString();
 
@@ -83,6 +95,10 @@ showJoinInput() {
   },
 
   joinDuel(code) {
+    if (!this.myHero) {
+      let hid = (typeof currentHeroId !== "undefined" && currentHeroId !== null) ? currentHeroId : 0;
+      this.myHero = (typeof HEROES !== "undefined" && HEROES[hid]) ? HEROES[hid] : { name: "Гроссмейстер", stats: [], skillName: "Коронный удар" };
+    }
     this.roomCode = code;
     this.connectWebSocket(code);
   },
@@ -96,11 +112,11 @@ showJoinInput() {
     this.socket = new WebSocket(`${this.WS_URL}${code}`);
 
     this.socket.onopen = () => {
-      // Отправляем серверу боевые характеристики из heroes-data.js
+      let hid = (typeof currentHeroId !== "undefined" && currentHeroId !== null) ? currentHeroId : 0;
       this.socket.send(
         JSON.stringify({
           type: "READY",
-          hero_id: currentHeroId,
+          hero_id: hid,
           hero: {
             name: this.myHero.name,
             stats: this.myHero.stats,
@@ -128,12 +144,12 @@ showJoinInput() {
     };
   },
 
-  // Диспетчер турнирных событий
+  // Диспетчер сообщений от сервера
   handleServerMessage(data) {
     switch (data.type) {
       case "MATCH_START":
         this.enemyHero = data.enemy;
-        this.closeLobby(false); // Закрываем модалку БЕЗ закрытия сокета
+        this.closeLobby(false);
         this.startBattle();
         break;
 
@@ -153,19 +169,19 @@ showJoinInput() {
     }
   },
 
- startBattle() {
+  startBattle() {
     this.myHp = 100;
     this.enemyHp = 100;
     this.currentEnergy = 1;
 
     const overlay = document.getElementById("net-battle-overlay");
-    overlay.style.setProperty("display", "flex", "important");
+    if (overlay) overlay.style.setProperty("display", "flex", "important");
 
     // Имена
     document.getElementById("my-hero-name").innerText = this.myHero.name;
     document.getElementById("enemy-hero-name").innerText = this.enemyHero.name || "ГРОССМЕЙСТЕР";
 
-    // Вычисляем примерный урон карты игрока и пишем на кнопке Атаки
+    // Расчет примерного урона для отображения на кнопке Атаки
     let myAtk = 75;
     if (this.myHero.stats) {
       const atkObj = this.myHero.stats.find(s => s.name.toLowerCase().includes("атак"));
@@ -175,7 +191,7 @@ showJoinInput() {
     const atkDmgEl = document.getElementById("atk-stat-badge");
     if (atkDmgEl) atkDmgEl.innerText = `~${approxDmg} УРОНА`;
 
-    // Привязка названия коронного навыка конкретной карты
+    // Привязка названия коронного навыка
     const skillTitleEl = document.getElementById("skill-action-title");
     if (skillTitleEl && this.myHero.skillName) {
       skillTitleEl.innerText = this.myHero.skillName.toUpperCase();
@@ -190,16 +206,17 @@ showJoinInput() {
     this.myChoice = null;
     this.enableButtons(true);
 
-    // Сбрасываем выделение кнопок
     ["btn-action-atk", "btn-action-def", "btn-action-spc"].forEach(id => {
       const b = document.getElementById(id);
       if (b) b.classList.remove("selected");
     });
 
-    // Прячем арену удара, показываем таймер
     const clashEl = document.getElementById("clash-arena");
     if (clashEl) clashEl.style.display = "none";
-    document.getElementById("battle-timer-wrap").style.display = "block";
+    
+    const timerWrap = document.getElementById("battle-timer-wrap");
+    if (timerWrap) timerWrap.style.display = "block";
+    
     document.getElementById("battle-log").innerText = "ОЦЕНКА ПОЗИЦИИ: СДЕЛАЙТЕ ХОД";
 
     let sec = 10;
@@ -232,7 +249,6 @@ showJoinInput() {
     clearInterval(this.timerInterval);
     this.myChoice = action;
 
-    // Подсвечиваем нажатую кнопку
     const btnMap = { attack: "btn-action-atk", defend: "btn-action-def", skill: "btn-action-spc" };
     const btn = document.getElementById(btnMap[action]);
     if (btn) btn.classList.add("selected");
@@ -256,8 +272,9 @@ showJoinInput() {
     this.myHp = res.my_hp;
     this.enemyHp = res.enemy_hp;
 
-    // Скрываем таймер и показываем красочное столкновение приемов в центре
-    document.getElementById("battle-timer-wrap").style.display = "none";
+    const timerWrap = document.getElementById("battle-timer-wrap");
+    if (timerWrap) timerWrap.style.display = "none";
+
     const clashEl = document.getElementById("clash-arena");
     if (clashEl) clashEl.style.display = "flex";
 
@@ -268,22 +285,25 @@ showJoinInput() {
       skill: (this.enemyHero.skillName || "НАВЫК").toUpperCase() 
     };
 
-    document.getElementById("clash-my-icon").innerText = icons[this.myChoice] || "⚔️";
-    document.getElementById("clash-my-label").innerText = titles[this.myChoice] || "ХОД";
+    const myIcon = document.getElementById("clash-my-icon");
+    const myLabel = document.getElementById("clash-my-label");
+    const enemyIcon = document.getElementById("clash-enemy-icon");
+    const enemyLabel = document.getElementById("clash-enemy-label");
 
-    document.getElementById("clash-enemy-icon").innerText = icons[res.enemy_action] || "⚔️";
-    document.getElementById("clash-enemy-label").innerText = titles[res.enemy_action] || "ХОД";
+    if (myIcon) myIcon.innerText = icons[this.myChoice] || "⚔️";
+    if (myLabel) myLabel.innerText = titles[this.myChoice] || "ХОД";
+    if (enemyIcon) enemyIcon.innerText = icons[res.enemy_action] || "⚔️";
+    if (enemyLabel) enemyLabel.innerText = titles[res.enemy_action] || "ХОД";
 
-    // Понятное текстовое резюме исхода
     let summary = "";
     if (this.myChoice === "defend" && res.enemy_action === "attack") {
-      summary = `🛡️ Ваш блок сдержал урон! Получено всего -${res.dmg_taken} HP (+1⚡)`;
+      summary = `🛡️ Ваш блок сдержал удар! Получено всего -${res.dmg_taken} HP (+1⚡)`;
     } else if (this.myChoice === "attack" && res.enemy_action === "defend") {
-      summary = `🛡️ Соперник ушел в глухую защиту (-${res.dmg_dealt} HP)`;
+      summary = `🛡️ Соперник закрылся щитом (-${res.dmg_dealt} HP)`;
     } else if (this.myChoice === "skill") {
-      summary = `⚡ Вы пробили защиту сокрушительным приемом! (-${res.dmg_dealt} HP)`;
+      summary = `⚡ Вы пробили защиту коронным приемом! (-${res.dmg_dealt} HP)`;
     } else {
-      summary = `⚔️ Размен ударами: вы нанесли -${res.dmg_dealt} HP, враг нанес -${res.dmg_taken} HP`;
+      summary = `⚔️ Размен ударами: вы -${res.dmg_dealt} HP | враг -${res.dmg_taken} HP`;
     }
     document.getElementById("battle-log").innerText = summary;
 
@@ -316,6 +336,39 @@ showJoinInput() {
     }
   },
 
+  triggerImpact() {
+    const v = document.createElement("div");
+    v.className = "flash-impact-vignette";
+    document.body.appendChild(v);
+    setTimeout(() => v.remove(), 400);
+  },
+
+  showDamageStrike(target, val) {
+    const bar = target === "my" ? document.getElementById("my-hp-bar") : document.getElementById("enemy-hp-bar");
+    if (!bar) return;
+
+    const el = document.createElement("div");
+    el.className = "floating-strike-num";
+    el.innerText = `-${val}`;
+    bar.parentElement.appendChild(el);
+    setTimeout(() => el.remove(), 800);
+  },
+
+  updateEvalBar(myHp, enemyHp) {
+    const total = myHp + enemyHp;
+    const myPercent = total > 0 ? (myHp / total) * 100 : 50;
+
+    const fill = document.getElementById("duel-eval-fill");
+    const score = document.getElementById("duel-eval-score");
+
+    if (fill) fill.style.height = `${myPercent}%`;
+    if (score) {
+      const diff = ((myHp - enemyHp) / 10).toFixed(1);
+      score.innerText = diff > 0 ? `+${diff}` : `${diff}`;
+      score.style.color = diff >= 0 ? "#ffffff" : "#ef4444";
+    }
+  },
+
   updateHUD(myHp, enemyHp, energy) {
     document.getElementById("my-hp-bar").style.width = `${myHp}%`;
     document.getElementById("my-hp-text").innerText = `${myHp} / 100 HP`;
@@ -337,6 +390,28 @@ showJoinInput() {
       }
     }
   },
+
+  enableButtons(enable) {
+    ["btn-action-atk", "btn-action-def", "btn-action-spc"].forEach((id) => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.disabled = !enable;
+        btn.style.pointerEvents = enable ? "auto" : "none";
+        btn.style.opacity = enable ? "1" : "0.35";
+      }
+    });
+  },
+
+  endBattle() {
+    clearInterval(this.timerInterval);
+    const overlay = document.getElementById("net-battle-overlay");
+    if (overlay) overlay.style.setProperty("display", "none", "important");
+    if (this.socket) {
+      this.socket.close();
+      this.socket = null;
+    }
+  }
+};
 
 // Запуск прослушивания при старте
 document.addEventListener("DOMContentLoaded", () => NetDuel.init());
