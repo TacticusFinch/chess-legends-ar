@@ -17,13 +17,14 @@ const NetDuel = {
   enemyHp: 100,
   roundCount: 1,
 
-  // Параметры интерактивной тактической доски
+  // Параметры тактической доски
   pendingAction: null,
   currentPuzzle: null,
   selectedSquare: null,
   isCritEarned: false,
+  puzzleTimer: null,
 
-// Вшитые векторные SVG Data URI (работают всегда, автономно и без внешних серверов)
+  // Вшитые векторные SVG Data URI (работают автономно, 0 мс задержки, независимы от внешних хостингов)
   PIECE_SVGS: {
     'K': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><path d='M22.5 11.63V6M20 8h5' stroke='%23000' stroke-width='1.5'/><path d='M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5' fill='%23fff' stroke='%23000' stroke-width='1.5'/><path d='M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-1-6 2-6 2s-3-7-10-7-10 7-10 7-2-3-6-2c-3 6 6 10.5 6 10.5v7z' fill='%23fff' stroke='%23000' stroke-width='1.5'/><path d='M11.5 30c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0' stroke='%23000' stroke-width='1.5'/></svg>",
     'Q': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><path d='M9 26c8.5-1.5 21-1.5 27 0l2-12-7 11V11l-5.5 13.5-3-15-3 15-5.5-13.5V25l-7-11 2 12z' fill='%23fff' stroke='%23000' stroke-width='1.5'/><path d='M9 26c0 2 1.5 2 2.5 4 2.5 1 1 5.5 1 5.5h20s-1.5-4.5 1-5.5c1-2 2.5-2 2.5-4 0 0-6.5-1.5-13.5-1.5S9 26 9 26z' fill='%23fff' stroke='%23000' stroke-width='1.5'/><circle cx='6' cy='12' r='2' fill='%23fff' stroke='%23000'/><circle cx='14' cy='9' r='2' fill='%23fff' stroke='%23000'/><circle cx='22.5' cy='8' r='2' fill='%23fff' stroke='%23000'/><circle cx='31' cy='9' r='2' fill='%23fff' stroke='%23000'/><circle cx='39' cy='12' r='2' fill='%23fff' stroke='%23000'/></svg>",
@@ -39,9 +40,266 @@ const NetDuel = {
     'p': "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><path d='M22 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38-1.95 1.12-3.28 3.21-3.28 5.62 0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z' fill='%23222' stroke='%23fff' stroke-width='1.5'/></svg>"
   },
 
-  puzzleTimer: null,
+  // Локальный пул на случай оффлайна
+  TACTIC_PUZZLES: [
+    { fen: "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR", from: "h5", to: "f7" },
+    { fen: "6k1/5ppp/8/8/8/8/8/3R2K1", from: "d1", to: "d8" },
+    { fen: "7k/6pp/8/8/5N2/8/8/6K1", from: "f4", to: "g6" }
+  ],
 
-  async chooseAction(action) {
+  init() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("duel");
+    if (code) {
+      setTimeout(() => {
+        this.openLobby();
+        this.joinDuel(code);
+      }, 700);
+    }
+  },
+
+  openLobby() {
+    let hid = 0;
+    if (typeof currentHeroId !== "undefined" && currentHeroId !== null) {
+      hid = currentHeroId;
+    }
+    
+    if (typeof HEROES !== "undefined" && HEROES[hid]) {
+      this.myHero = HEROES[hid];
+    } else {
+      this.myHero = { 
+        name: "Гроссмейстер", 
+        stats: [{ name: "Атака", val: 80 }, { name: "Защита", val: 75 }], 
+        skillName: "Коронный удар" 
+      };
+    }
+
+    const selectStep = document.getElementById("lobby-step-select");
+    const hostStep = document.getElementById("lobby-step-host");
+    const joinStep = document.getElementById("lobby-step-join");
+    const modal = document.getElementById("duel-lobby-modal");
+
+    if (selectStep) selectStep.style.display = "block";
+    if (hostStep) hostStep.style.display = "none";
+    if (joinStep) joinStep.style.display = "none";
+    if (modal) modal.classList.add("active");
+  },
+
+  closeLobby(disconnect = true) {
+    const modal = document.getElementById("duel-lobby-modal");
+    if (modal) modal.classList.remove("active");
+    if (disconnect && this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.close();
+      this.socket = null;
+    }
+  },
+
+  showJoinInput() {
+    document.getElementById("lobby-step-select").style.display = "none";
+    document.getElementById("lobby-step-join").style.display = "block";
+    const input = document.getElementById("join-room-input");
+    if (input) {
+      input.value = "";
+      setTimeout(() => input.focus(), 100);
+    }
+  },
+
+  createRoom() {
+    this.roomCode = Math.floor(1000 + Math.random() * 9000).toString();
+
+    document.getElementById("lobby-step-select").style.display = "none";
+    document.getElementById("lobby-step-host").style.display = "block";
+    document.getElementById("host-room-id").innerText = this.roomCode;
+
+    this.connectWebSocket(this.roomCode);
+  },
+
+  joinRoomById() {
+    const input = document.getElementById("join-room-input");
+    const code = input ? input.value.trim() : "";
+    if (code.length === 4) {
+      const btn = document.querySelector("#lobby-step-join .duel-primary-btn");
+      if (btn) {
+        btn.innerText = "Подключение...";
+        btn.disabled = true;
+      }
+      this.joinDuel(code);
+    } else {
+      alert("Введите 4 цифры номера стола.");
+    }
+  },
+
+  joinDuel(code) {
+    if (!this.myHero) {
+      let hid = (typeof currentHeroId !== "undefined" && currentHeroId !== null) ? currentHeroId : 0;
+      this.myHero = (typeof HEROES !== "undefined" && HEROES[hid]) 
+        ? HEROES[hid] 
+        : { name: "Гроссмейстер", stats: [], skillName: "Коронный удар" };
+    }
+    this.roomCode = code;
+    this.connectWebSocket(code);
+  },
+
+  connectWebSocket(code) {
+    if (this.socket) {
+      this.socket.close();
+    }
+
+    this.socket = new WebSocket(`${this.WS_URL}${code}`);
+
+    this.socket.onopen = () => {
+      let hid = (typeof currentHeroId !== "undefined" && currentHeroId !== null) ? currentHeroId : 0;
+      this.socket.send(
+        JSON.stringify({
+          type: "READY",
+          hero_id: hid,
+          hero: {
+            name: this.myHero.name,
+            stats: this.myHero.stats,
+            skillName: this.myHero.skillName,
+            avatar: this.myHero.avatar || this.myHero.photo || this.myHero.image || this.myHero.img || ""
+          }
+        })
+      );
+    };
+
+    this.socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        this.handleServerMessage(data);
+      } catch (err) {
+        console.error("Ошибка парсинга пакета дуэли:", err);
+      }
+    };
+
+    this.socket.onerror = (err) => {
+      console.error("Сбой соединения дуэли:", err);
+      const btn = document.querySelector("#lobby-step-join .duel-primary-btn");
+      if (btn) {
+        btn.innerText = "Начать";
+        btn.disabled = false;
+      }
+      alert("Не удалось подключиться к столу. Проверьте код.");
+    };
+
+    this.socket.onclose = () => {
+      console.log("Сессия дуэли закрыта");
+    };
+  },
+
+  handleServerMessage(data) {
+    switch (data.type) {
+      case "MATCH_START":
+        this.enemyHero = data.enemy;
+        this.closeLobby(false);
+        this.startBattle();
+        break;
+
+      case "ROUND_RESULT":
+        this.applyRoundResults(data);
+        break;
+
+      case "OPPONENT_DISCONNECTED":
+        alert("Оппонент покинул партию.");
+        this.endBattle();
+        break;
+
+      case "ERROR":
+        alert(data.message);
+        this.closeLobby(true);
+        break;
+    }
+  },
+
+startBattle() {
+    this.myHp = 100;
+    this.enemyHp = 100;
+    this.currentEnergy = 1;
+    this.enemyEnergy = 1;
+    this.roundCount = 1;
+
+    const overlay = document.getElementById("net-battle-overlay");
+    if (overlay) overlay.style.setProperty("display", "flex", "important");
+
+    const myNameEl = document.getElementById("my-hero-name");
+    const enemyNameEl = document.getElementById("enemy-hero-name");
+    if (myNameEl) myNameEl.innerText = this.myHero.name;
+    if (enemyNameEl) enemyNameEl.innerText = this.enemyHero.name || "ГРОССМЕЙСТЕР";
+
+    const getHeroAvatar = (h) => (h ? (h.avatar || h.photo || h.image || h.img || "") : "");
+    const myImg = document.getElementById("my-avatar-img");
+    const enemyImg = document.getElementById("enemy-avatar-img");
+    if (myImg) myImg.src = getHeroAvatar(this.myHero);
+    if (enemyImg) enemyImg.src = getHeroAvatar(this.enemyHero);
+
+    const getStat = (h, key, defVal) => {
+      if (!h || !h.stats) return defVal;
+      const s = h.stats.find(item => item.name && item.name.toLowerCase().includes(key));
+      return s ? parseInt(s.val) : defVal;
+    };
+
+    const myAtk = getStat(this.myHero, "атак", 75);
+    const myDef = getStat(this.myHero, "защит", 70);
+    const enemyAtk = getStat(this.enemyHero, "атак", 75);
+    const enemyDef = getStat(this.enemyHero, "защит", 70);
+
+    const myAtkEl = document.getElementById("my-atk-val");
+    const myDefEl = document.getElementById("my-def-val");
+    const enemyAtkEl = document.getElementById("enemy-atk-val");
+    const enemyDefEl = document.getElementById("enemy-def-val");
+
+    if (myAtkEl) myAtkEl.innerText = myAtk;
+    if (myDefEl) myDefEl.innerText = myDef;
+    if (enemyAtkEl) enemyAtkEl.innerText = enemyAtk;
+    if (enemyDefEl) enemyDefEl.innerText = enemyDef;
+
+    const enemySkillEl = document.getElementById("enemy-skill-name");
+    if (enemySkillEl) {
+      enemySkillEl.innerText = (this.enemyHero.skillName || "НАВЫК").substring(0, 10).toUpperCase();
+    }
+
+    const atkBadge = document.getElementById("atk-stat-badge");
+    const defBadge = document.getElementById("def-stat-badge");
+    if (atkBadge) atkBadge.innerText = `~${Math.round(myAtk * 0.34)} УРОНА`;
+    if (defBadge) defBadge.innerText = `Блок ~${Math.round(myDef / 2)}%`;
+
+    const skillTitleEl = document.getElementById("skill-action-title");
+    if (skillTitleEl) {
+      skillTitleEl.innerText = (this.myHero.skillName || "КОРОННЫЙ ХОД").toUpperCase();
+    }
+
+    this.updateHUD(100, 100, 1);
+    this.updateEvalBar(100, 100);
+    this.startRound();
+  },
+
+  startRound() {
+    this.myChoice = null;
+    this.enableButtons(true);
+
+    if (this.puzzleTimer) clearInterval(this.puzzleTimer);
+
+    ["btn-action-atk", "btn-action-def", "btn-action-spc"].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) b.classList.remove("selected");
+    });
+
+    const playerShield = document.getElementById("player-shield-fx");
+    const enemyShield = document.getElementById("enemy-shield-fx");
+    if (playerShield) playerShield.style.display = "none";
+    if (enemyShield) enemyShield.style.display = "none";
+
+    const boardModal = document.getElementById("tactic-board-modal");
+    if (boardModal) boardModal.style.display = "none";
+
+    const roundBadge = document.getElementById("round-title-badge");
+    if (roundBadge) roundBadge.innerText = `РАУНД ${this.roundCount || 1}`;
+
+    const logEl = document.getElementById("battle-log");
+    if (logEl) logEl.innerText = "ВАШ ХОД: ВЫБЕРИТЕ ДЕЙСТВИЕ";
+  },
+
+async chooseAction(action) {
     if (this.myChoice) return;
 
     if (action === "skill" && this.currentEnergy < 2) {
@@ -59,7 +317,7 @@ const NetDuel = {
     if (action === "attack") {
       let puzzle = null;
 
-      // Защищенный запрос с таймаутом 1.5 секунды: никогда не подвесит игру
+      // Защищенный запрос с таймаутом 1.5 секунды (игра никогда не зависнет)
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 1500);
@@ -92,7 +350,6 @@ const NetDuel = {
     this.selectedSquare = null;
     this.isCritEarned = false;
 
-    // Очищаем предыдущий таймер, если остался
     if (this.puzzleTimer) clearInterval(this.puzzleTimer);
 
     const srcTag = document.getElementById("tactic-source-tag");
@@ -102,7 +359,7 @@ const NetDuel = {
     if (!boardEl) return;
     boardEl.innerHTML = "";
 
-    // Парсим только часть доски до пробела
+    // Парсим только поле фигур FEN (до первого пробела)
     const fenBoardPart = puzzle.fen.split(" ")[0];
     const rows = fenBoardPart.split("/");
     const boardState = [];
@@ -146,7 +403,7 @@ const NetDuel = {
     const modal = document.getElementById("tactic-board-modal");
     if (modal) modal.style.display = "flex";
 
-    // Запуск таймера решения на 10 секунд
+    // Обратный отсчет на 10 секунд
     let timeLeft = 10;
     const timerEl = document.getElementById("tactic-timer-num");
     if (timerEl) timerEl.innerText = `⏳ ${timeLeft}с`;
@@ -230,13 +487,12 @@ const NetDuel = {
     );
   },
 
-
 applyRoundResults(res) {
     this.currentEnergy = res.energy;
     this.myHp = res.my_hp;
     this.enemyHp = res.enemy_hp;
 
-    // Трекер энергии противника
+    // Трекер энергии соперника
     if (res.enemy_action === "defend") {
       this.enemyEnergy = Math.min(2, (this.enemyEnergy || 1) + 1);
     } else if (res.enemy_action === "skill") {
@@ -245,7 +501,7 @@ applyRoundResults(res) {
     const enemyEnergyEl = document.getElementById("enemy-energy-tracker");
     if (enemyEnergyEl) enemyEnergyEl.innerText = `${this.enemyEnergy}/2 ⚡`;
 
-    // 1. Анимация карточек и щитов
+    // 1. Анимации карточек и щитов
     const playerCard = document.getElementById("player-card-anchor");
     const enemyCard = document.getElementById("enemy-card-anchor");
     const playerShield = document.getElementById("player-shield-fx");
@@ -285,7 +541,7 @@ applyRoundResults(res) {
       if (navigator.vibrate) navigator.vibrate([30, 40]);
     }
 
-    // 3. Вылетающие цифры урона
+    // 3. Всплывающие цифры урона
     if (res.dmg_taken > 0) this.showDamageStrike("my", res.dmg_taken);
     if (res.dmg_dealt > 0) {
       this.showDamageStrike("enemy", res.dmg_dealt);
@@ -411,6 +667,7 @@ applyRoundResults(res) {
   },
 
   endBattle() {
+    if (this.puzzleTimer) clearInterval(this.puzzleTimer);
     const overlay = document.getElementById("net-battle-overlay");
     if (overlay) overlay.style.setProperty("display", "none", "important");
     if (this.socket) {
