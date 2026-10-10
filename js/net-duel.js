@@ -10,10 +10,11 @@ const NetDuel = {
   myHero: null,
   enemyHero: null,
   myChoice: null,
-  timerInterval: null,
   currentEnergy: 1,
+  enemyEnergy: 1,
   myHp: 100,
   enemyHp: 100,
+  roundCount: 1,
 
   // Инициализация при загрузке страницы (проверка URL ?duel=XXXX)
   init() {
@@ -29,7 +30,6 @@ const NetDuel = {
 
   // Открытие лобби и привязка параметров карты
   openLobby() {
-    // Безопасное определение текущего героя с запасным вариантом (по умолчанию герой 0)
     let hid = 0;
     if (typeof currentHeroId !== "undefined" && currentHeroId !== null) {
       hid = currentHeroId;
@@ -38,7 +38,11 @@ const NetDuel = {
     if (typeof HEROES !== "undefined" && HEROES[hid]) {
       this.myHero = HEROES[hid];
     } else {
-      this.myHero = { name: "Гроссмейстер", stats: [{ name: "Атака", val: 80 }, { name: "Защита", val: 75 }], skillName: "Коронный удар" };
+      this.myHero = { 
+        name: "Гроссмейстер", 
+        stats: [{ name: "Атака", val: 80 }, { name: "Защита", val: 75 }], 
+        skillName: "Коронный удар" 
+      };
     }
 
     const selectStep = document.getElementById("lobby-step-select");
@@ -72,7 +76,7 @@ const NetDuel = {
     }
   },
 
-  // 1. Создание сессии (Хост)
+  // 1. Создание стола (Хост)
   createRoom() {
     this.roomCode = Math.floor(1000 + Math.random() * 9000).toString();
 
@@ -83,27 +87,29 @@ const NetDuel = {
     this.connectWebSocket(this.roomCode);
   },
 
-  // 2. Подключение к сессии (Гость)
+  // 2. Вход по 4-значному коду (Гость)
   joinRoomById() {
     const input = document.getElementById("join-room-input");
     const code = input ? input.value.trim() : "";
     if (code.length === 4) {
       this.joinDuel(code);
     } else {
-      alert("Введите 4 цифры идентификатора стола.");
+      alert("Введите 4 цифры номера стола.");
     }
   },
 
   joinDuel(code) {
     if (!this.myHero) {
       let hid = (typeof currentHeroId !== "undefined" && currentHeroId !== null) ? currentHeroId : 0;
-      this.myHero = (typeof HEROES !== "undefined" && HEROES[hid]) ? HEROES[hid] : { name: "Гроссмейстер", stats: [], skillName: "Коронный удар" };
+      this.myHero = (typeof HEROES !== "undefined" && HEROES[hid]) 
+        ? HEROES[hid] 
+        : { name: "Гроссмейстер", stats: [], skillName: "Коронный удар" };
     }
     this.roomCode = code;
     this.connectWebSocket(code);
   },
 
-  // 3. Сетевое подключение
+  // 3. Сетевое подключение WebSocket
   connectWebSocket(code) {
     if (this.socket) {
       this.socket.close();
@@ -111,7 +117,7 @@ const NetDuel = {
 
     this.socket = new WebSocket(`${this.WS_URL}${code}`);
 
-this.socket.onopen = () => {
+    this.socket.onopen = () => {
       let hid = (typeof currentHeroId !== "undefined" && currentHeroId !== null) ? currentHeroId : 0;
       this.socket.send(
         JSON.stringify({
@@ -121,8 +127,7 @@ this.socket.onopen = () => {
             name: this.myHero.name,
             stats: this.myHero.stats,
             skillName: this.myHero.skillName,
-            // Передаем изображение или аватарку из базы героев:
-            avatar: this.myHero.avatar || this.myHero.photo || this.myHero.image || ""
+            avatar: this.myHero.avatar || this.myHero.photo || this.myHero.image || this.myHero.img || ""
           }
         })
       );
@@ -146,7 +151,7 @@ this.socket.onopen = () => {
     };
   },
 
-  // Диспетчер сообщений от сервера
+  // Диспетчер турнирных событий
   handleServerMessage(data) {
     switch (data.type) {
       case "MATCH_START":
@@ -171,97 +176,97 @@ this.socket.onopen = () => {
     }
   },
 
+  // ==========================================
+  // БОЕВАЯ АРЕНА
+  // ==========================================
   startBattle() {
     this.myHp = 100;
     this.enemyHp = 100;
     this.currentEnergy = 1;
+    this.enemyEnergy = 1;
+    this.roundCount = 1;
 
     const overlay = document.getElementById("net-battle-overlay");
     if (overlay) overlay.style.setProperty("display", "flex", "important");
 
-    // 1. Имена чемпионов
+    // 1. Имена
     const myNameEl = document.getElementById("my-hero-name");
     const enemyNameEl = document.getElementById("enemy-hero-name");
     if (myNameEl) myNameEl.innerText = this.myHero.name;
     if (enemyNameEl) enemyNameEl.innerText = this.enemyHero.name || "ГРОССМЕЙСТЕР";
 
-    // 2. Портреты чемпионов (проверяем все возможные ключи в базе данных героев)
+    // 2. Портреты гроссмейстеров
+    const getHeroAvatar = (h) => (h ? (h.avatar || h.photo || h.image || h.img || "") : "");
     const myImg = document.getElementById("my-avatar-img");
     const enemyImg = document.getElementById("enemy-avatar-img");
+    if (myImg) myImg.src = getHeroAvatar(this.myHero);
+    if (enemyImg) enemyImg.src = getHeroAvatar(this.enemyHero);
 
-    const getHeroAvatar = (hero) => {
-      if (!hero) return "";
-      return hero.avatar || hero.photo || hero.image || hero.img || "";
+    // 3. Вычисление и отображение статов карт
+    const getStat = (h, key, defVal) => {
+      if (!h || !h.stats) return defVal;
+      const s = h.stats.find(item => item.name && item.name.toLowerCase().includes(key));
+      return s ? parseInt(s.val) : defVal;
     };
 
-    const myAvatarSrc = getHeroAvatar(this.myHero);
-    const enemyAvatarSrc = getHeroAvatar(this.enemyHero);
+    const myAtk = getStat(this.myHero, "атак", 75);
+    const myDef = getStat(this.myHero, "защит", 70);
+    const enemyAtk = getStat(this.enemyHero, "атак", 75);
+    const enemyDef = getStat(this.enemyHero, "защит", 70);
 
-    if (myImg && myAvatarSrc) {
-      myImg.src = myAvatarSrc;
-      myImg.style.display = "block";
-    }
-    if (enemyImg && enemyAvatarSrc) {
-      enemyImg.src = enemyAvatarSrc;
-      enemyImg.style.display = "block";
+    const myAtkEl = document.getElementById("my-atk-val");
+    const myDefEl = document.getElementById("my-def-val");
+    const enemyAtkEl = document.getElementById("enemy-atk-val");
+    const enemyDefEl = document.getElementById("enemy-def-val");
+
+    if (myAtkEl) myAtkEl.innerText = myAtk;
+    if (myDefEl) myDefEl.innerText = myDef;
+    if (enemyAtkEl) enemyAtkEl.innerText = enemyAtk;
+    if (enemyDefEl) enemyDefEl.innerText = enemyDef;
+
+    // Название супернавыка соперника
+    const enemySkillEl = document.getElementById("enemy-skill-name");
+    if (enemySkillEl) {
+      enemySkillEl.innerText = (this.enemyHero.skillName || "НАВЫК").substring(0, 10).toUpperCase();
     }
 
-    // 3. Расчет примерного урона атаки на основе параметров карточки
-    let myAtk = 75;
-    if (this.myHero && this.myHero.stats) {
-      const atkObj = this.myHero.stats.find(s => s.name && s.name.toLowerCase().includes("атак"));
-      if (atkObj) myAtk = parseInt(atkObj.val) || 75;
-    }
-    const approxDmg = Math.round(myAtk * 0.34);
-    const atkDmgEl = document.getElementById("atk-stat-badge");
-    if (atkDmgEl) atkDmgEl.innerText = `~${approxDmg} УРОНА`;
+    // Подсказки на боевых кнопках игрока
+    const atkBadge = document.getElementById("atk-stat-badge");
+    const defBadge = document.getElementById("def-stat-badge");
+    if (atkBadge) atkBadge.innerText = `~${Math.round(myAtk * 0.34)} УРОНА`;
+    if (defBadge) defBadge.innerText = `Блок ~${Math.round(myDef / 2)}%`;
 
-    // 4. Привязка названия коронного суперудара
     const skillTitleEl = document.getElementById("skill-action-title");
     if (skillTitleEl) {
       skillTitleEl.innerText = (this.myHero.skillName || "КОРОННЫЙ ХОД").toUpperCase();
     }
 
-    // 5. Инициализация панелей, шкал здоровья и старт первого раунда
     this.updateHUD(100, 100, 1);
     this.updateEvalBar(100, 100);
     this.startRound();
   },
 
+  // Начало раунда (БЕЗ ТАЙМЕРА — игра ждет решений игроков)
   startRound() {
     this.myChoice = null;
     this.enableButtons(true);
 
+    // Сброс подсветки кнопок и щитов
     ["btn-action-atk", "btn-action-def", "btn-action-spc"].forEach(id => {
       const b = document.getElementById(id);
       if (b) b.classList.remove("selected");
     });
 
-    const clashEl = document.getElementById("clash-arena");
-    if (clashEl) clashEl.style.display = "none";
-    
-    const timerWrap = document.getElementById("battle-timer-wrap");
-    if (timerWrap) timerWrap.style.display = "block";
-    
-    document.getElementById("battle-log").innerText = "ОЦЕНКА ПОЗИЦИИ: СДЕЛАЙТЕ ХОД";
+    const playerShield = document.getElementById("player-shield-fx");
+    const enemyShield = document.getElementById("enemy-shield-fx");
+    if (playerShield) playerShield.style.display = "none";
+    if (enemyShield) enemyShield.style.display = "none";
 
-    let sec = 10;
-    const timerEl = document.getElementById("battle-timer");
-    timerEl.innerText = sec;
-    timerEl.classList.remove("urgent");
-    clearInterval(this.timerInterval);
+    const roundBadge = document.getElementById("round-title-badge");
+    if (roundBadge) roundBadge.innerText = `РАУНД ${this.roundCount || 1}`;
 
-    this.timerInterval = setInterval(() => {
-      sec--;
-      timerEl.innerText = sec;
-      if (sec <= 3) timerEl.classList.add("urgent");
-      if (sec <= 0) {
-        clearInterval(this.timerInterval);
-        if (!this.myChoice) {
-          this.chooseAction("defend"); // Авто-блок при цейтноте
-        }
-      }
-    }, 1000);
+    const logEl = document.getElementById("battle-log");
+    if (logEl) logEl.innerText = "ВАШ ХОД: ВЫБЕРИТЕ ДЕЙСТВИЕ";
   },
 
   chooseAction(action) {
@@ -272,7 +277,6 @@ this.socket.onopen = () => {
       return;
     }
 
-    clearInterval(this.timerInterval);
     this.myChoice = action;
 
     const btnMap = { attack: "btn-action-atk", defend: "btn-action-def", skill: "btn-action-spc" };
@@ -280,7 +284,9 @@ this.socket.onopen = () => {
     if (btn) btn.classList.add("selected");
 
     this.enableButtons(false);
-    document.getElementById("battle-log").innerText = "ХОД ЗАФИКСИРОВАН • ОЖИДАНИЕ ХОДА СОПЕРНИКА...";
+    
+    const logEl = document.getElementById("battle-log");
+    if (logEl) logEl.innerText = "ХОД ЗАФИКСИРОВАН • ОЖИДАНИЕ ХОДА СОПЕРНИКА...";
 
     if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
 
@@ -292,77 +298,89 @@ this.socket.onopen = () => {
     );
   },
 
-applyRoundResults(res) {
-    clearInterval(this.timerInterval);
+  // Применение и анимация результатов раунда
+  applyRoundResults(res) {
     this.currentEnergy = res.energy;
     this.myHp = res.my_hp;
     this.enemyHp = res.enemy_hp;
 
-    const timerWrap = document.getElementById("battle-timer-wrap");
-    if (timerWrap) timerWrap.style.display = "none";
+    // Трекер заряда навыка у соперника
+    if (res.enemy_action === "defend") {
+      this.enemyEnergy = Math.min(2, (this.enemyEnergy || 1) + 1);
+    } else if (res.enemy_action === "skill") {
+      this.enemyEnergy = 0;
+    }
+    const enemyEnergyEl = document.getElementById("enemy-energy-tracker");
+    if (enemyEnergyEl) enemyEnergyEl.innerText = `${this.enemyEnergy}/2 ⚡`;
 
-    const clashEl = document.getElementById("clash-arena");
-    if (clashEl) clashEl.style.display = "flex";
+    // 1. АНИМАЦИИ ВЫПАДОВ КАРТ И НЕОНОВЫХ ЩИТОВ
+    const playerCard = document.getElementById("player-card-anchor");
+    const enemyCard = document.getElementById("enemy-card-anchor");
+    const playerShield = document.getElementById("player-shield-fx");
+    const enemyShield = document.getElementById("enemy-shield-fx");
 
-    const icons = { attack: "⚔️", defend: "🛡️", skill: "⚡" };
-    const titles = { 
-      attack: "АТАКА", 
-      defend: "ЗАЩИТА", 
-      skill: (this.enemyHero.skillName || "НАВЫК").toUpperCase() 
-    };
-
-    const myIcon = document.getElementById("clash-my-icon");
-    const myLabel = document.getElementById("clash-my-label");
-    const enemyIcon = document.getElementById("clash-enemy-icon");
-    const enemyLabel = document.getElementById("clash-enemy-label");
-
-    if (myIcon) myIcon.innerText = icons[this.myChoice] || "⚔️";
-    if (myLabel) myLabel.innerText = titles[this.myChoice] || "ХОД";
-    if (enemyIcon) enemyIcon.innerText = icons[res.enemy_action] || "⚔️";
-    if (enemyLabel) enemyLabel.innerText = titles[res.enemy_action] || "ХОД";
-
-    // Спецэффекты ударов: Вспышки, виброотклик и тряска экрана
-    const isSkillUsed = this.myChoice === "skill" || res.enemy_action === "skill";
-
-    if (isSkillUsed) {
-      // Сокрушительный навык: Золотая вспышка + мощная тряска
-      this.triggerFlash("gold");
-      this.triggerShake("heavy");
-      if (navigator.vibrate) navigator.vibrate([80, 40, 140]);
-    } else if (res.dmg_taken > 0) {
-      // Игрок получил урон: Красная вспышка + тряска
-      this.triggerFlash("red");
-      this.triggerShake(res.dmg_taken > 18 ? "heavy" : "light");
-      if (navigator.vibrate) navigator.vibrate(120);
-    } else if (this.myChoice === "defend") {
-      // Успешный блок: Бирюзовая вспышка щита + мягкий вибро-импульс
-      this.triggerFlash("cyan");
-      if (navigator.vibrate) navigator.vibrate([30, 30]);
+    // Анимация действий игрока
+    if (this.myChoice === "attack" && playerCard) {
+      playerCard.classList.add("anim-lunge-up");
+      setTimeout(() => playerCard.classList.remove("anim-lunge-up"), 700);
+    } else if (this.myChoice === "skill" && playerCard) {
+      playerCard.classList.add("anim-skill-blast");
+      setTimeout(() => playerCard.classList.remove("anim-skill-blast"), 900);
+    } else if (this.myChoice === "defend" && playerShield) {
+      playerShield.style.display = "flex";
     }
 
-    // Всплывающие цифры урона
+    // Анимация действий соперника
+    if (res.enemy_action === "attack" && enemyCard) {
+      enemyCard.classList.add("anim-lunge-down");
+      setTimeout(() => enemyCard.classList.remove("anim-lunge-down"), 700);
+    } else if (res.enemy_action === "skill" && enemyCard) {
+      enemyCard.classList.add("anim-skill-blast");
+      setTimeout(() => enemyCard.classList.remove("anim-skill-blast"), 900);
+    } else if (res.enemy_action === "defend" && enemyShield) {
+      enemyShield.style.display = "flex";
+    }
+
+    // 2. Вспышки и тактильная отдача
+    if (this.myChoice === "skill" || res.enemy_action === "skill") {
+      this.triggerFlash("gold");
+      this.triggerShake("heavy");
+      if (navigator.vibrate) navigator.vibrate([80, 50, 150]);
+    } else if (res.dmg_taken > 0) {
+      this.triggerFlash("red");
+      this.triggerShake("light");
+      if (navigator.vibrate) navigator.vibrate(120);
+    } else if (this.myChoice === "defend") {
+      this.triggerFlash("cyan");
+      if (navigator.vibrate) navigator.vibrate([30, 40]);
+    }
+
+    // 3. Вылетающие цифры урона
     if (res.dmg_taken > 0) this.showDamageStrike("my", res.dmg_taken);
     if (res.dmg_dealt > 0) {
       this.showDamageStrike("enemy", res.dmg_dealt);
       if (typeof sfx !== "undefined" && sfx.playCorrect) sfx.playCorrect();
     }
 
-    // Текстовая сводка раунда
+    // 4. Понятная сводка раунда для детей
     let summary = "";
     if (this.myChoice === "defend" && res.enemy_action === "attack") {
-      summary = `🛡️ Ваш блок сдержал удар! Получено всего -${res.dmg_taken} HP (+1⚡)`;
+      summary = `🛡️ Ваш щит поглотил удар! (-${res.dmg_taken} HP) | +1⚡`;
     } else if (this.myChoice === "attack" && res.enemy_action === "defend") {
-      summary = `🛡️ Соперник закрылся щитом (-${res.dmg_dealt} HP)`;
+      summary = `🛡️ Соперник выставил блок (-${res.dmg_dealt} HP)`;
     } else if (this.myChoice === "skill") {
-      summary = `⚡ Вы пробили защиту коронным приемом! (-${res.dmg_dealt} HP)`;
+      summary = `⚡ СУПЕРАТАКА ПРОБИЛА ЗАЩИТУ! (-${res.dmg_dealt} HP)`;
     } else {
-      summary = `⚔️ Размен ударами: вы -${res.dmg_dealt} HP | враг -${res.dmg_taken} HP`;
+      summary = `⚔️ Размен: вы -${res.dmg_dealt} HP | вам -${res.dmg_taken} HP`;
     }
-    document.getElementById("battle-log").innerText = summary;
+    
+    const logEl = document.getElementById("battle-log");
+    if (logEl) logEl.innerText = summary;
 
     this.updateHUD(this.myHp, this.enemyHp, res.energy);
     this.updateEvalBar(this.myHp, this.enemyHp);
 
+    // Завершение или переход к следующему раунду
     if (this.myHp <= 0 || this.enemyHp <= 0) {
       setTimeout(() => {
         const isWin = this.myHp > this.enemyHp;
@@ -374,20 +392,22 @@ applyRoundResults(res) {
         this.endBattle();
       }, 1500);
     } else {
+      this.roundCount = (this.roundCount || 1) + 1;
       setTimeout(() => this.startRound(), 3200);
     }
   },
 
-  // Вспомогательные функции вспышки и тряски
+  // Тряска экрана (Screen Shake)
   triggerShake(intensity = "light") {
     const overlay = document.getElementById("net-battle-overlay");
     if (!overlay) return;
     overlay.classList.remove("shake-light", "shake-heavy");
-    void overlay.offsetWidth; // Force reflow для перезапуска CSS анимации
+    void overlay.offsetWidth; // Force reflow для перезапуска CSS-анимации
     overlay.classList.add(intensity === "heavy" ? "shake-heavy" : "shake-light");
     setTimeout(() => overlay.classList.remove("shake-light", "shake-heavy"), 450);
   },
 
+  // Цветные вспышки ударов
   triggerFlash(color = "red") {
     const flash = document.createElement("div");
     flash.className = `flash-fx-overlay flash-${color}`;
@@ -395,13 +415,7 @@ applyRoundResults(res) {
     setTimeout(() => flash.remove(), 450);
   },
 
-  triggerImpact() {
-    const v = document.createElement("div");
-    v.className = "flash-impact-vignette";
-    document.body.appendChild(v);
-    setTimeout(() => v.remove(), 400);
-  },
-
+  // Нотация вылетающего урона
   showDamageStrike(target, val) {
     const bar = target === "my" ? document.getElementById("my-hp-bar") : document.getElementById("enemy-hp-bar");
     if (!bar) return;
@@ -413,6 +427,7 @@ applyRoundResults(res) {
     setTimeout(() => el.remove(), 800);
   },
 
+  // Оценочная шкала перевеса сил (Eval Bar)
   updateEvalBar(myHp, enemyHp) {
     const total = myHp + enemyHp;
     const myPercent = total > 0 ? (myHp / total) * 100 : 50;
@@ -428,11 +443,20 @@ applyRoundResults(res) {
     }
   },
 
+  // Обновление шкал здоровья и готовности суперудара
   updateHUD(myHp, enemyHp, energy) {
-    document.getElementById("my-hp-bar").style.width = `${myHp}%`;
-    document.getElementById("my-hp-text").innerText = `${myHp} / 100 HP`;
-    document.getElementById("enemy-hp-bar").style.width = `${enemyHp}%`;
-    document.getElementById("enemy-hp-text").innerText = `${enemyHp} / 100 HP`;
+    const myBar = document.getElementById("my-hp-bar");
+    const myText = document.getElementById("my-hp-text");
+    const enemyBar = document.getElementById("enemy-hp-bar");
+    const enemyText = document.getElementById("enemy-hp-text");
+
+    if (myBar) myBar.style.width = `${myHp}%`;
+    if (myText) myText.innerText = `${myHp} / 100 HP`;
+    if (enemyBar) enemyBar.style.width = `${enemyHp}%`;
+    if (enemyText) enemyText.innerText = `${enemyHp} / 100 HP`;
+
+    const energyValEl = document.getElementById("my-energy-val");
+    if (energyValEl) energyValEl.innerText = `${energy}/2 ⚡`;
 
     const cdBadge = document.getElementById("skill-cd-badge");
     const skillBtn = document.getElementById("btn-action-spc");
@@ -462,7 +486,6 @@ applyRoundResults(res) {
   },
 
   endBattle() {
-    clearInterval(this.timerInterval);
     const overlay = document.getElementById("net-battle-overlay");
     if (overlay) overlay.style.setProperty("display", "none", "important");
     if (this.socket) {

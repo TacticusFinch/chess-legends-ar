@@ -121,14 +121,16 @@
     </div>
   </div>
 
-  <!-- БОЕВОЙ ТУРНИРНЫЙ HUD -->
+<!-- БОЕВОЙ ТУРНИРНЫЙ HUD -->
   <div id="net-battle-overlay" style="display: none;">
-<!-- Оппонент (Верх) -->
+    
+    <!-- Оппонент (Верх) -->
     <div class="duel-actor-panel enemy-panel">
       <div class="actor-card-row">
-        <!-- Аватар соперника -->
-        <div class="actor-avatar enemy-avatar-frame">
+        <div class="actor-avatar enemy-avatar-frame" id="enemy-card-anchor">
           <img id="enemy-avatar-img" class="actor-avatar-img" src="" alt="Оппонент">
+          <!-- Сияющий щит защиты соперника -->
+          <div id="enemy-shield-fx" class="shield-barrier-fx">🛡️</div>
         </div>
         <div class="actor-details">
           <div class="actor-meta">
@@ -141,11 +143,17 @@
           <div class="meter-track">
             <div id="enemy-hp-bar" class="meter-fill enemy-fill" style="width: 100%;"></div>
           </div>
+          <!-- Показатели соперника для тактики -->
+          <div class="tactical-stats-row">
+            <span class="stat-pill atk-pill">⚔️ <b id="enemy-atk-val">--</b></span>
+            <span class="stat-pill def-pill">🛡️ <b id="enemy-def-val">--</b></span>
+            <span class="stat-pill skill-pill">⚡ <span id="enemy-skill-name">НАВЫК</span>: <b id="enemy-energy-tracker">1/2</b></span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- ЦЕНТР: БОЕВАЯ АРЕНА И РАЗБОР ХОДОВ -->
+    <!-- ЦЕНТР: Stockfish + Арена разбора и статус хода -->
     <div class="duel-center-stage">
       <!-- Оценка позиции Stockfish -->
       <div class="eval-meter-container">
@@ -155,41 +163,24 @@
         <div id="duel-eval-score" class="eval-score-text">0.0</div>
       </div>
 
-      <!-- Центральная зона: Столкновение приемов или таймер -->
+      <!-- Центральная зона: Ход партии -->
       <div class="duel-center-content">
-        <!-- Столкновение ходов (появляется в момент удара) -->
-        <div id="clash-arena" class="clash-arena" style="display: none;">
-          <div class="clash-fighter enemy-clash">
-            <div id="clash-enemy-icon" class="clash-icon">🛡️</div>
-            <div id="clash-enemy-label" class="clash-label">ЗАЩИТА</div>
-          </div>
-          <div class="clash-vs">VS</div>
-          <div class="clash-fighter my-clash">
-            <div id="clash-my-icon" class="clash-icon">⚔️</div>
-            <div id="clash-my-label" class="clash-label">АТАКА</div>
-          </div>
-        </div>
-
-        <!-- Часы цейтнота -->
-        <div id="battle-timer-wrap">
-          <div id="battle-timer" class="chess-timer">10</div>
-          <div class="timer-sub">СЕКУНД НА ХОД</div>
-        </div>
-
-        <!-- Тактическая шпаргалка / Лог раунда -->
+        <!-- Раунд и статус хода вместо таймера -->
+        <div class="round-status-badge" id="round-title-badge">РАУНД 1</div>
         <div id="battle-log" class="tactical-teletype">ВЫБЕРИТЕ ДЕЙСТВИЕ</div>
         <div id="battle-hint" class="tactical-hint">
-          ⚔️ Атакует • 🛡️ Режет урон и копит ⚡ • ⚡ Навык пробивает блок
+          Следите за статами соперника • Защита режет урон на основе DEF
         </div>
       </div>
     </div>
 
-<!-- Игрок (Низ) -->
+    <!-- Игрок (Низ) -->
     <div class="duel-actor-panel player-panel">
       <div class="actor-card-row">
-        <!-- Ваш аватар -->
-        <div class="actor-avatar player-avatar-frame">
+        <div class="actor-avatar player-avatar-frame" id="player-card-anchor">
           <img id="my-avatar-img" class="actor-avatar-img" src="" alt="Ваш герой">
+          <!-- Сияющий щит защиты игрока -->
+          <div id="player-shield-fx" class="shield-barrier-fx">🛡️</div>
         </div>
         <div class="actor-details">
           <div class="actor-meta">
@@ -202,10 +193,16 @@
           <div class="meter-track">
             <div id="my-hp-bar" class="meter-fill player-fill" style="width: 100%;"></div>
           </div>
+          <!-- Ваши показатели -->
+          <div class="tactical-stats-row">
+            <span class="stat-pill atk-pill">⚔️ АТАКА: <b id="my-atk-val">--</b></span>
+            <span class="stat-pill def-pill">🛡️ ЗАЩИТА: <b id="my-def-val">--</b></span>
+            <span class="stat-pill skill-pill">⚡ ЗАРЯД: <b id="my-energy-val">1/2</b></span>
+          </div>
         </div>
       </div>
 
-      <!-- Кнопки действий с понятными эффектами -->
+      <!-- Кнопки действий -->
       <div class="tactical-deck">
         <button id="btn-action-atk" class="tactical-card-btn" onclick="NetDuel.chooseAction('attack')">
           <div class="action-top-row">
@@ -213,7 +210,7 @@
             <span id="atk-stat-badge" class="action-dmg-badge">~25 УРОНА</span>
           </div>
           <div class="action-name">АТАКА</div>
-          <div class="action-sub">Прямой урон врагу</div>
+          <div class="action-sub">Прямой урон</div>
         </button>
 
         <button id="btn-action-def" class="tactical-card-btn" onclick="NetDuel.chooseAction('defend')">
@@ -222,7 +219,7 @@
             <span class="action-energy-gain">+1 ⚡</span>
           </div>
           <div class="action-name">ЗАЩИТА</div>
-          <div class="action-sub">Блок 50% урона</div>
+          <div id="def-stat-badge" class="action-sub">Блок урона</div>
         </button>
 
         <button id="btn-action-spc" class="tactical-card-btn skill-card" onclick="NetDuel.chooseAction('skill')">

@@ -954,3 +954,97 @@ body {
   0% { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* ==========================================================
+   ПОКАЗАТЕЛИ СТАТОВ КАРТЫ (ATK / DEF / НАВЫК)
+   ========================================================== */
+.tactical-stats-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.stat-pill {
+  font-family: monospace;
+  font-size: 8.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #c9d1d9;
+}
+
+.stat-pill.atk-pill { color: #f87171; border-color: rgba(239, 68, 68, 0.25); }
+.stat-pill.def-pill { color: #38bdf8; border-color: rgba(56, 189, 248, 0.25); }
+.stat-pill.skill-pill { color: #fbbf24; border-color: rgba(251, 191, 36, 0.25); }
+
+.round-status-badge {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #00ffcc;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding: 4px 12px;
+  background: rgba(0, 255, 204, 0.08);
+  border: 1px solid rgba(0, 255, 204, 0.2);
+  border-radius: 12px;
+}
+
+/* ==========================================================
+   КИНЕМАТОГРАФИЧНАЯ БОЕВКА: ВЫПАД КАРТ И ЩИТЫ
+   ========================================================== */
+
+/* Сияющий неоновый щит поверх аватара */
+.shield-barrier-fx {
+  position: absolute;
+  inset: -4px;
+  border-radius: 12px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.35) 0%, rgba(0, 255, 204, 0.5) 100%);
+  border: 2px solid #38bdf8;
+  box-shadow: 0 0 20px #00ffcc;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  z-index: 10;
+  animation: shieldPulse 0.6s infinite alternate;
+}
+
+@keyframes shieldPulse {
+  0% { transform: scale(0.96); opacity: 0.85; }
+  100% { transform: scale(1.05); opacity: 1; }
+}
+
+/* 1. Атакующий выпад карты игрока (вверх в сторону соперника) */
+.anim-lunge-up {
+  animation: lungeUpAnim 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes lungeUpAnim {
+  0% { transform: translateY(0); }
+  45% { transform: translateY(-70px) scale(1.18); filter: drop-shadow(0 0 15px #f87171); }
+  100% { transform: translateY(0); }
+}
+
+/* 2. Атакующий выпад карты соперника (вниз в сторону игрока) */
+.anim-lunge-down {
+  animation: lungeDownAnim 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes lungeDownAnim {
+  0% { transform: translateY(0); }
+  45% { transform: translateY(70px) scale(1.18); filter: drop-shadow(0 0 15px #f87171); }
+  100% { transform: translateY(0); }
+}
+
+/* 3. Золотой коронный суперудар (увеличение и сокрушительная вспышка) */
+.anim-skill-blast {
+  animation: skillBlastAnim 0.85s ease-out;
+}
+@keyframes skillBlastAnim {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); filter: drop-shadow(0 0 25px #f1c40f); }
+  100% { transform: scale(1); }
+}
