@@ -37,17 +37,16 @@ const QTEFocusEngine = {
     if (!this.active) return false;
     this.active = false;
     cancelAnimationFrame(this.raf);
-    // Зона CRIT в центре трека (110px..150px)
+
+    // Центр трека 130px. Зона CRIT: 110px..150px
     const isCrit = Math.abs(this.pos + 7 - 130) <= 20;
-    setTimeout(() => {
-      const modal = document.getElementById("qte-focus-modal");
-      if (modal) modal.style.display = "none";
-    }, 300);
+    const modal = document.getElementById("qte-focus-modal");
+    if (modal) modal.style.display = "none";
     return isCrit;
   }
 };
 
-/* ================= 2. КОНТРОЛЛЕР СЕТЕВОЙ ДУЭЛИ ================= */
+/* ================= 2. КОНТРОЛЛЕР СЕТЕВОЙ И ИИ ДУЭЛИ ================= */
 window.NetDuel = {
   ws: null,
   isNet: false,
@@ -61,16 +60,14 @@ window.NetDuel = {
   myHero: null,
   enemyHero: null,
 
-  // Получение актуального героя
+  // Получение активного чемпиона
   getHero() {
     let h = window.currentHeroData;
 
-    // Резерв 1: из app.js
     if (!h && typeof currentHeroId !== "undefined" && currentHeroId !== null && typeof HEROES !== "undefined") {
       h = { ...HEROES[currentHeroId], id: currentHeroId };
     }
 
-    // Резерв 2: из локального кэша последнего сканирования
     if (!h) {
       try {
         const cached = localStorage.getItem("last_active_hero");
@@ -98,12 +95,29 @@ window.NetDuel = {
   openLobby() {
     this.myHero = this.getHero();
     if (!this.myHero) return;
+
+    // Кнопка одиночной игры с ботом прямо в окне выбора
+    const actionsStack = document.querySelector(".duel-actions-stack");
+    if (actionsStack && !document.getElementById("btn-ai-duel")) {
+      const aiBtn = document.createElement("button");
+      aiBtn.id = "btn-ai-duel";
+      aiBtn.className = "duel-secondary-btn";
+      aiBtn.style.borderColor = "var(--accent-color)";
+      aiBtn.style.color = "var(--accent-color)";
+      aiBtn.textContent = "🤖 Бой с Ботвинником (Одиночный)";
+      aiBtn.onclick = () => NetDuel.startOfflineAiMatch();
+      actionsStack.appendChild(aiBtn);
+    }
+
     document.getElementById("duel-lobby-modal")?.classList.add("active");
     this.setStep("lobby-step-select");
   },
 
   closeLobby() {
-    if (this.ws) { this.ws.close(); this.ws = null; }
+    if (this.ws) {
+      try { this.ws.close(); } catch (e) {}
+      this.ws = null;
+    }
     document.getElementById("duel-lobby-modal")?.classList.remove("active");
   },
 
@@ -164,14 +178,24 @@ window.NetDuel = {
   },
 
   askOffline() {
-    if (confirm("Сетевой сервер Amvera недоступен. Сыграть бой против ИИ?")) {
-      this.isNet = false;
-      this.enemyHero = { name: "Михаил Ботвинник", atk: 24, def: 18, skillName: "Железная логика", img: "./assets/avatars/7.jpg" };
-      this.closeLobby();
-      this.startBattle();
+    if (confirm("Сетевой сервер Amvera недоступен. Сыграть тренировку с ботом?")) {
+      this.startOfflineAiMatch();
     } else {
       this.closeLobby();
     }
+  },
+
+  startOfflineAiMatch() {
+    this.isNet = false;
+    this.enemyHero = {
+      name: "Михаил Ботвинник",
+      atk: 22,
+      def: 18,
+      skillName: "Железная логика",
+      img: "./assets/avatars/7.jpg"
+    };
+    this.closeLobby();
+    this.startBattle();
   },
 
   startBattle() {
@@ -211,7 +235,7 @@ window.NetDuel = {
     set("enemy-skill-name", (this.enemyHero.skillName || "НАВЫК").toUpperCase());
     document.getElementById("enemy-shield-fx").style.display = this.enemyShield ? "flex" : "none";
 
-    // Кнопка ульты
+    // Кнопка коронного приема
     const spcBtn = document.getElementById("btn-action-spc");
     if (spcBtn) {
       spcBtn.classList.toggle("ready", this.myEnergy >= 2);
@@ -306,7 +330,9 @@ window.NetDuel = {
         this.enemyEnergy = Math.min(2, this.enemyEnergy + 1);
       }
 
-      if (this.enemyShield && playerAct === "attack") pDmg = Math.max(5, pDmg - this.enemyHero.def);
+      if (this.enemyShield && playerAct === "attack") {
+        pDmg = Math.max(5, pDmg - this.enemyHero.def);
+      }
 
       this.enemyHp = Math.max(0, this.enemyHp - pDmg);
       this.myHp = Math.max(0, this.myHp - eDmg);
@@ -317,13 +343,15 @@ window.NetDuel = {
       setTimeout(() => {
         eCard?.classList.remove("anim-lunge-down", "anim-skill-blast");
         this.updateHUD();
-        if (this.enemyHp <= 0 || this.myHp <= 0) this.endBattle(this.myHp > 0);
-        else this.setLog("ВАШ ХОД! ВЫБЕРИТЕ ДЕЙСТВИЕ");
+        if (this.enemyHp <= 0 || this.myHp <= 0) {
+          this.endBattle(this.myHp > 0);
+        } else {
+          this.setLog("ВАШ ХОД! ВЫБЕРИТЕ ДЕЙСТВИЕ");
+        }
       }, 600);
     }, 500);
   },
 
-  // Прием сетевого раунда
   applyRoundResult(res) {
     this.myHp = res.my_hp;
     this.enemyHp = res.enemy_hp;
@@ -334,7 +362,9 @@ window.NetDuel = {
     this.setLog(`УРОН: -${res.dmg_dealt} | ПОЛУЧЕНО: -${res.dmg_taken}`);
     this.fx(res.dmg_dealt >= res.dmg_taken ? "gold" : "red");
 
-    if (this.myHp <= 0 || this.enemyHp <= 0) this.endBattle(this.myHp > 0);
+    if (this.myHp <= 0 || this.enemyHp <= 0) {
+      this.endBattle(this.myHp > 0);
+    }
   },
 
   endBattle(isWin) {
