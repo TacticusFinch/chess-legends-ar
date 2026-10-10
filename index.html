@@ -166,18 +166,35 @@
         <div class="round-status-badge" id="round-title-badge">РАУНД 1</div>
         <div id="battle-log" class="tactical-teletype">ВЫБЕРИТЕ ДЕЙСТВИЕ</div>
 
-        <!-- ИНТЕРАКТИВНАЯ ТАКТИЧЕСКАЯ ДОСКА ДЛЯ КРИТА -->
-        <div id="tactic-board-modal" class="tactic-board-box" style="display: none;">
-          <div class="tactic-task-title">МАТ В 1 ХОД: СДЕЛАЙТЕ ХОД НА ДОСКЕ!</div>
-          <div id="chess-interactive-board" class="mini-chessboard"></div>
-          <div class="tactic-sub-hint">Коснитесь фигуры, затем клетки хода</div>
-        </div>
+        <!-- ПРЕМИАЛЬНАЯ ТАКТИЧЕСКАЯ АРЕНА LICHESS С ТАЙМЕРОМ И ЗАЩИТОЙ ОТ ЗАВИСАНИЯ -->
+<div id="tactic-board-modal" class="premium-tactic-modal" style="display: none;">
+  <div class="tactic-glass-card">
+    <div class="tactic-header">
+      <div class="tactic-badge-row">
+        <span class="live-pulse-dot"></span>
+        <span class="tactic-badge" id="tactic-source-tag">ШАХМАТНЫЙ КРИТ</span>
+        <span class="tactic-timer-badge" id="tactic-timer-num">⏳ 10с</span>
+      </div>
+      <div class="tactic-task-title">МАТ В 1 ХОД БЕЛЫМИ!</div>
+    </div>
+
+    <!-- Интерактивная доска -->
+    <div class="board-frame-outer">
+      <div id="chess-interactive-board" class="luxury-chessboard"></div>
+    </div>
+
+    <div class="tactic-footer-status">
+      <span id="tactic-sub-status" class="tactic-sub-hint">Коснитесь белой фигуры для хода</span>
+      <button class="tactic-skip-btn" onclick="NetDuel.skipPuzzle()">Обычная атака ✕</button>
+    </div>
+  </div>
+</div>
 
         <div id="battle-hint" class="tactical-hint">
           ⚔️ Атака дает шанс на Крит • 🛡️ Защита копит энергию
         </div>
       </div>
-    </div> <!-- ВОТ ЭТОГО ТЕГА НЕ БЫЛО (закрывает duel-center-stage) -->
+    </div>
 
     <!-- Игрок (Низ) -->
     <div class="duel-actor-panel player-panel">
