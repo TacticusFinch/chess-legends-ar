@@ -223,6 +223,8 @@ window.NetDuel = {
 
   startBattle() {
     document.getElementById("net-battle-overlay").style.display = "flex";
+    document.getElementById("duel-victory-modal")?.classList.remove("active");
+
     this.round = 1;
     this.myHp = 100;
     this.enemyHp = 100;
@@ -231,6 +233,11 @@ window.NetDuel = {
     this.myShield = false;
     this.enemyShield = false;
     this.isWaitingOpponent = false;
+
+    // Включаем приятный звуковой сигнал колоколов при старте дуэли
+    if (typeof sfx !== "undefined" && sfx.playBattleStart) {
+      sfx.playBattleStart();
+    }
 
     // Синхронизация стороны (Белые / Черные)
     const mySideBadge = document.querySelector(".player-panel .actor-side-badge");
@@ -251,7 +258,7 @@ window.NetDuel = {
 
     this.lockActions(false);
     this.updateHUD();
-    this.setLog("ВЫБЕРИТЕ ДЕЙСТВИЕ");
+    this.setLog("БИТВА НАЧАЛАСЬ! ВЫБЕРИТЕ ХОД");
   },
 
   lockActions(state) {
@@ -454,26 +461,53 @@ window.NetDuel = {
   },
 
   endBattle(isWin) {
-    this.setLog(isWin ? "🏆 ПОБЕДА ГРОССМЕЙСТЕРА!" : "ПОРАЖЕНИЕ...");
+    this.lockActions(true);
     this.fx(isWin ? "gold" : "red");
-    if (typeof sfx !== "undefined") {
-      if (isWin && sfx.playFanfare) sfx.playFanfare();
-      else if (!isWin && sfx.playWrong) sfx.playWrong();
-    }
-    setTimeout(() => {
-      document.getElementById("net-battle-overlay").style.display = "none";
-      if (this.ws) {
-        try { this.ws.close(); } catch (e) {}
-        this.ws = null;
+
+    const victoryModal = document.getElementById("duel-victory-modal");
+    const titleEl = document.getElementById("victory-title");
+    const subEl = document.getElementById("victory-subtitle");
+    const avatarEl = document.getElementById("victory-avatar-img");
+    const nameEl = document.getElementById("victory-winner-name");
+    const detailsEl = document.getElementById("victory-details-text");
+    const crownEl = document.getElementById("victory-crown");
+
+    const winner = isWin ? this.myHero : this.enemyHero;
+
+    if (isWin) {
+      if (typeof sfx !== "undefined" && sfx.playFanfare) sfx.playFanfare();
+      if (crownEl) crownEl.innerText = "👑";
+      if (titleEl) {
+        titleEl.innerText = "ШАХ И МАТ!";
+        titleEl.style.color = "#f1c40f";
       }
-      this.lockActions(false);
-    }, 2800);
+      if (subEl) subEl.innerText = "ВЕЛИКОЛЕПНАЯ ПОБЕДА!";
+      if (detailsEl) detailsEl.innerHTML = `Вы одержали триумф на <b>${this.round} раунде</b>!`;
+    } else {
+      if (typeof sfx !== "undefined" && sfx.playCheckmate) sfx.playCheckmate();
+      if (crownEl) crownEl.innerText = "⚔️";
+      if (titleEl) {
+        titleEl.innerText = "ПАРТИЯ ОКОНЧЕНА";
+        titleEl.style.color = "#ff4d6d";
+      }
+      if (subEl) subEl.innerText = "ПОБЕДИЛ СОПЕРНИК";
+      if (detailsEl) detailsEl.innerHTML = `Победу одержал оппонент на <b>${this.round} раунде</b>.`;
+    }
+
+    if (avatarEl) avatarEl.src = winner.img;
+    if (nameEl) nameEl.innerText = winner.name;
+
+    setTimeout(() => {
+      victoryModal?.classList.add("active");
+    }, 450);
   },
 
-  fx(color) {
-    const div = document.createElement("div");
-    div.className = `flash-fx-overlay flash-${color}`;
-    document.body.appendChild(div);
-    setTimeout(() => div.remove(), 400);
-  }
-};
+  closeVictoryModal() {
+    document.getElementById("duel-victory-modal")?.classList.remove("active");
+    document.getElementById("net-battle-overlay").style.display = "none";
+    if (this.ws) {
+      try { this.ws.close(); } catch (e) {}
+      this.ws = null;
+    }
+    this.lockActions(false);
+  },

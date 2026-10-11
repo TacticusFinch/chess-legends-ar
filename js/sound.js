@@ -223,4 +223,33 @@ class SoundController {
   }
 }
 
+// 7. Мелодичный шахматный гонг/колокол при старте дуэли
+  playBattleStart() {
+    if (!this.enabled || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    
+    // Аккорд: F4 (349Hz) -> A4 (440Hz) -> C5 (523Hz) -> E5 (659Hz)
+    const chimeNotes = [349.23, 440.00, 523.25, 659.25];
+
+    chimeNotes.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+      // Плавное затухание как у колокольчика
+      gain.gain.setValueAtTime(0.22, now + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 1.2);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now + idx * 0.08);
+      osc.stop(now + idx * 0.08 + 1.2);
+    });
+  }
+
+
+
 const sfx = new SoundController();
