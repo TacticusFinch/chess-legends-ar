@@ -3,13 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Тактикус Финч — Чемпионы мира по шахматам</title>
+  <title>Тактикус Финч — Шахматные легенды</title>
 
   <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.4/dist/mindar-image-aframe.prod.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css">
+
 </head>
 
 <body>
@@ -135,7 +137,7 @@
       </div>
     </div>
 
-    <!-- Центр -->
+<!-- Центр -->
     <div class="duel-center-stage">
       <div class="eval-meter-container">
         <div class="eval-bar-track">
@@ -148,25 +150,25 @@
         <div class="round-status-badge" id="round-title-badge">РАУНД 1</div>
         <div id="battle-log" class="tactical-teletype">ВЫБЕРИТЕ ДЕЙСТВИЕ</div>
 
-        <!-- АРЕНА QTE: «ФОКУС ГРОССМЕЙСТЕРА» -->
-        <div id="qte-focus-modal" class="qte-strike-modal" style="display: none;">
-          <div class="qte-card">
-            <div class="qte-title">ФОКУС ГРОССМЕЙСТЕРА</div>
-            <div class="qte-sub">Тапните в зоне CRIT для сокрушительного удара!</div>
-            
-            <div class="qte-track-container" id="qte-tap-area">
-              <div class="qte-track">
-                <div class="qte-zone-crit"></div>
-                <div id="qte-cursor" class="qte-cursor"></div>
-              </div>
+        <!-- АРЕНА ШАХМАТНОЙ АТАКИ: МАТ В 1 ХОД -->
+        <div id="tactical-board-modal" class="qte-strike-modal" style="display: none;">
+          <div class="qte-card" style="width: 310px; max-width: 95vw; padding: 14px 10px; background: #0f1420; border: 1.5px solid var(--accent-color); border-radius: 16px; box-shadow: 0 0 30px rgba(0,0,0,0.9);">
+            <div class="qte-title" style="color: var(--accent-color); font-size: 13px; font-weight: 800; letter-spacing: 1px;">🎯 ТАКТИЧЕСКИЙ УДАР</div>
+            <div id="tactical-task-title" style="font-size: 11px; color: #8a99ad; margin: 4px 0 10px 0;">Поставьте мат в 1 ход!</div>
+
+            <!-- Шахматная доска -->
+            <div style="display: flex; justify-content: center;">
+              <div id="strike-board" style="width: 270px;"></div>
             </div>
 
-            <button class="duel-primary-btn qte-strike-btn" onclick="NetDuel.resolveQTE()">УДАР!</button>
+            <div id="tactical-board-status" style="margin-top: 10px; font-size: 11px; font-weight: 800; color: #f1c40f; min-height: 16px;">
+              1 попытка: перетащите фигуру пальцем
+            </div>
           </div>
         </div>
 
         <div id="battle-hint" class="tactical-hint">
-          ⚔️ Атака дает шанс на Крит • 🛡️ Защита копит энергию
+          ⚔️ Мат дает Крит (+60%) • 🛡️ Защита копит энергию
         </div>
       </div>
     </div>
@@ -243,7 +245,7 @@
         </div>
 
         <button class="duel-primary-btn" onclick="NetDuel.closeVictoryModal()" style="background: #f1c40f; color: #000; font-weight: 800;">
-          ВЕРНУТЬСЯ ✕
+          ВЕРНУТЬСЯ
         </button>
       </div>
     </div>
@@ -304,11 +306,20 @@
     <a-entity id="target-17" mindar-image-target="targetIndex: 17"><a-video src="#vid-17" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;"></a-video></a-entity>
   </a-scene>
 
+<!-- Библиотеки шахматной логики и доски -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+
+  <!-- Скрипты проекта -->
   <script src="js/heroes-data.js"></script>
+  <script src="js/duel-puzzles.js"></script>
   <script src="js/sound.js"></script>
   <script src="js/passport.js"></script>
   <script src="js/ai-chat.js"></script>
   <script src="js/net-duel.js"></script>
   <script src="js/app.js"></script>
+</body>
+</html>
 </body>
 </html>

@@ -3,46 +3,114 @@
  */
 const AMVERA_WS = "wss://chesslegendsai-tacticusfinch.mia0.amvera.tech";
 
-/* ================= 1. ДВИЖОК QTE «ФОКУС ГРОССМЕЙСТЕРА» ================= */
-const QTEFocusEngine = {
-  cursor: null,
-  trackWidth: 260,
-  pos: 0,
-  dir: 1,
-  raf: null,
+/* ================= 1. ДВИЖОК ТАКТИЧЕСКОЙ ДОСКИ (1 ПОПЫТКА) ================= */
+const InteractiveBoardEngine = {
+  board: null,
+  game: null,
+  currentPuzzle: null,
   active: false,
 
   start() {
-    const modal = document.getElementById("qte-focus-modal");
-    this.cursor = document.getElementById("qte-cursor");
-    if (!modal || !this.cursor) return;
+    const modal = document.getElementById("tactical-board-modal");
+    const statusEl = document.getElementById("tactical-board-status");
+    const descEl = document.getElementById("tactical-task-title");
+    if (!modal) return;
 
     modal.style.display = "flex";
-    this.pos = 0;
-    this.dir = 1;
     this.active = true;
 
-    const tick = () => {
-      if (!this.active) return;
-      this.pos += 4.5 * this.dir;
-      if (this.pos >= this.trackWidth - 14) this.dir = -1;
-      if (this.pos <= 0) this.dir = 1;
-      this.cursor.style.transform = `translateX(${this.pos}px)`;
-      this.raf = requestAnimationFrame(tick);
-    };
-    this.raf = requestAnimationFrame(tick);
+    // Случайная задача из duel-puzzles.js
+    this.currentPuzzle = (typeof getRandomDuelPuzzle === "function")
+      ? getRandomDuelPuzzle()
+      : {
+          fen: "6k1/5ppp/8/8/8/8/8/1R4K1 w - - 0 1",
+          move: { from: "b1", to: "b8" },
+          desc: "Ход белых. Поставьте мат в 1 ход!"
+        };
+
+    this.game = new Chess(this.currentPuzzle.fen);
+
+    if (descEl) descEl.textContent = this.currentPuzzle.desc;
+    if (statusEl) {
+      statusEl.textContent = "1 попытка: перетащите фигуру пальцем";
+      statusEl.style.color = "#00ffcc";
+    }
+
+    setTimeout(() => {
+      this.initBoard();
+    }, 60);
   },
 
-  hit() {
-    if (!this.active) return false;
-    this.active = false;
-    cancelAnimationFrame(this.raf);
+  initBoard() {
+    const self = this;
 
-    // Центр трека 130px. Зона CRIT: 110px..150px
-    const isCrit = Math.abs(this.pos + 7 - 130) <= 20;
-    const modal = document.getElementById("qte-focus-modal");
-    if (modal) modal.style.display = "none";
-    return isCrit;
+    const config = {
+      draggable: true,
+      position: this.currentPuzzle.fen,
+      orientation: this.game.turn() === 'w' ? 'white' : 'black',
+      pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+      onDragStart: (source, piece) => {
+        if (!self.active) return false;
+        if ((self.game.turn() === 'w' && piece.search(/^b/) !== -1) ||
+            (self.game.turn() === 'b' && piece.search(/^w/) !== -1)) {
+          return false;
+        }
+      },
+      onDrop: (source, target) => {
+        if (!self.active) return 'snapback';
+
+        const targetMove = self.currentPuzzle.move;
+        const isCorrect = (source === targetMove.from && target === targetMove.to);
+
+        // Ровно одна попытка
+        self.active = false;
+
+        if (isCorrect) {
+          self.game.move({ from: source, to: target });
+          self.onSuccess();
+        } else {
+          self.onError();
+          return 'snapback';
+        }
+      }
+    };
+
+    if (this.board) {
+      this.board.destroy();
+    }
+    this.board = Chessboard('strike-board', config);
+  },
+
+  onSuccess() {
+    const statusEl = document.getElementById("tactical-board-status");
+    if (statusEl) {
+      statusEl.textContent = "🎯 ШАХ И МАТ! КРИТ-УРОН (+60%)!";
+      statusEl.style.color = "#f1c40f";
+    }
+
+    if (typeof sfx !== "undefined" && sfx.playCorrect) sfx.playCorrect();
+
+    setTimeout(() => {
+      const modal = document.getElementById("tactical-board-modal");
+      if (modal) modal.style.display = "none";
+      NetDuel.resolveTacticalStrike(true);
+    }, 700);
+  },
+
+  onError() {
+    const statusEl = document.getElementById("tactical-board-status");
+    if (statusEl) {
+      statusEl.textContent = "❌ ЗЕВОК! УДАР БЕЗ БОНУСА";
+      statusEl.style.color = "#ff4d6d";
+    }
+
+    if (typeof sfx !== "undefined" && sfx.playWrong) sfx.playWrong();
+
+    setTimeout(() => {
+      const modal = document.getElementById("tactical-board-modal");
+      if (modal) modal.style.display = "none";
+      NetDuel.resolveTacticalStrike(false);
+    }, 700);
   }
 };
 
@@ -62,7 +130,6 @@ window.NetDuel = {
   mySide: "white",
   isWaitingOpponent: false,
 
-  // Получение активного чемпиона
   getHero() {
     let h = window.currentHeroData;
 
@@ -98,7 +165,6 @@ window.NetDuel = {
     this.myHero = this.getHero();
     if (!this.myHero) return;
 
-    // Кнопка одиночной игры с ботом прямо в окне выбора
     const actionsStack = document.querySelector(".duel-actions-stack");
     if (actionsStack && !document.getElementById("btn-ai-duel")) {
       const aiBtn = document.createElement("button");
@@ -115,12 +181,10 @@ window.NetDuel = {
     this.setStep("lobby-step-select");
   },
 
-  // Просто спрятать окно лобби (не разрывая сокет!)
   hideLobbyModal() {
     document.getElementById("duel-lobby-modal")?.classList.remove("active");
   },
 
-  // Полное закрытие пользователем по крестику
   closeLobby() {
     if (this.ws) {
       try { this.ws.close(); } catch (e) {}
@@ -171,7 +235,7 @@ window.NetDuel = {
           if (msg.type === "MATCH_START") {
             this.enemyHero = msg.enemy;
             this.mySide = msg.side || "white";
-            this.hideLobbyModal(); // Скрываем окно, сокет держим открытым
+            this.hideLobbyModal(); // Сокет не закрываем!
             this.startBattle();
           } else if (msg.type === "ROUND_RESULT") {
             this.applyRoundResult(msg);
@@ -221,7 +285,7 @@ window.NetDuel = {
     this.startBattle();
   },
 
-  startBattle() {
+startBattle() {
     document.getElementById("net-battle-overlay").style.display = "flex";
     document.getElementById("duel-victory-modal")?.classList.remove("active");
 
@@ -234,12 +298,11 @@ window.NetDuel = {
     this.enemyShield = false;
     this.isWaitingOpponent = false;
 
-    // Мелодичный перезвон колоколов при старте дуэли
+    // Звук гонга колоколов
     if (typeof sfx !== "undefined" && sfx.playBattleStart) {
       sfx.playBattleStart();
     }
 
-    // Синхронизация стороны (Белые / Черные)
     const mySideBadge = document.querySelector(".player-panel .actor-side-badge");
     const enemySideBadge = document.querySelector(".enemy-panel .actor-side-badge");
     if (mySideBadge && enemySideBadge) {
@@ -296,7 +359,7 @@ window.NetDuel = {
     set("enemy-skill-name", (this.enemyHero.skillName || "НАВЫК").toUpperCase());
     document.getElementById("enemy-shield-fx").style.display = this.enemyShield ? "flex" : "none";
 
-    // Кнопка коронного приема
+    // Кнопка ультимейта
     const spcBtn = document.getElementById("btn-action-spc");
     if (spcBtn) {
       spcBtn.classList.toggle("ready", this.myEnergy >= 2);
@@ -319,12 +382,13 @@ window.NetDuel = {
     if (this.isWaitingOpponent) return;
 
     if (type === "attack") {
-      QTEFocusEngine.start();
+      InteractiveBoardEngine.start(); // Запуск шахматной доски
       return;
     }
     if (type === "defend") {
       this.lockActions(true);
-if (typeof sfx !== "undefined" && sfx.playShield) sfx.playShield(); // <-- Звук щита
+      if (typeof sfx !== "undefined" && sfx.playShield) sfx.playShield();
+
       if (this.isNet) {
         this.myShield = true;
         this.updateHUD();
@@ -342,7 +406,8 @@ if (typeof sfx !== "undefined" && sfx.playShield) sfx.playShield(); // <-- Зв�
     if (type === "skill") {
       if (this.myEnergy < 2) return this.setLog("НЕДОСТАТОЧНО ЭНЕРГИИ!");
       this.lockActions(true);
-if (typeof sfx !== "undefined" && sfx.playUltimate) sfx.playUltimate(); // <-- Звук ультимейта
+      if (typeof sfx !== "undefined" && sfx.playUltimate) sfx.playUltimate();
+
       if (this.isNet) {
         this.ws.send(JSON.stringify({ type: "MOVE", action: "skill" }));
         this.setLog("КОРОННЫЙ ХОД! ЖДЕМ ХОД...");
@@ -355,24 +420,23 @@ if (typeof sfx !== "undefined" && sfx.playUltimate) sfx.playUltimate(); // <-- �
     }
   },
 
-  resolveQTE() {
-    const isCrit = QTEFocusEngine.hit();
+  resolveTacticalStrike(isCrit) {
     this.lockActions(true);
 
-  if (typeof sfx !== "undefined") {
-       if (isCrit && sfx.playCritHit) sfx.playCritHit(); // <-- Звук Крита
-       else if (sfx.playAttackHit) sfx.playAttackHit();   // <-- Звук обычной атаки
-     }
+    if (typeof sfx !== "undefined") {
+      if (isCrit && sfx.playCritHit) sfx.playCritHit();
+      else if (sfx.playAttackHit) sfx.playAttackHit();
+    }
 
     if (this.isNet) {
       this.ws.send(JSON.stringify({ type: "MOVE", action: "attack", crit: isCrit }));
-      this.setLog(isCrit ? "🔥 КРИТ! ЖДЕМ ХОД..." : "⚔️ АТАКА! ЖДЕМ ХОД...");
+      this.setLog(isCrit ? "🔥 МАТ НАЙДЕН! КРИТ-УРОН!" : "⚔️ АТАКА! ЖДЕМ ХОД...");
     } else {
       this.runAiTurn("attack", isCrit);
     }
   },
 
-  applyRoundResult(res) {
+applyRoundResult(res) {
     const pCard = document.getElementById("player-card-anchor");
     const eCard = document.getElementById("enemy-card-anchor");
 
@@ -385,13 +449,10 @@ if (typeof sfx !== "undefined" && sfx.playUltimate) sfx.playUltimate(); // <-- �
     setTimeout(() => {
       eCard?.classList.remove("anim-lunge-down", "anim-skill-blast");
 
-      // === ОЗВУЧКА УРОНА ===
+      // Звуки урона в сетевом бою
       if (typeof sfx !== "undefined") {
-        if (res.dmg_taken > 0) {
-          sfx.playDamageTaken(); // Наш герой получил урон!
-        } else if (res.dmg_dealt > 0) {
-          sfx.playDamageDealt(); // Мы нанесли урон врагу!
-        }
+        if (res.dmg_taken > 0) sfx.playDamageTaken();
+        else if (res.dmg_dealt > 0) sfx.playDamageDealt();
       }
 
       this.myHp = res.my_hp;
@@ -459,13 +520,10 @@ if (typeof sfx !== "undefined" && sfx.playUltimate) sfx.playUltimate(); // <-- �
       this.myHp = Math.max(0, this.myHp - eDmg);
       this.round++;
 
-	// === ОЗВУЧКА УРОНА В БОЮ С БОТОМ ===
+      // Звуки урона в тренировочном бою
       if (typeof sfx !== "undefined") {
-        if (eDmg > 0) {
-          sfx.playDamageTaken();
-        } else if (pDmg > 0) {
-          sfx.playDamageDealt();
-        }
+        if (eDmg > 0) sfx.playDamageTaken();
+        else if (pDmg > 0) sfx.playDamageDealt();
       }
 
       setTimeout(() => {
@@ -484,8 +542,7 @@ if (typeof sfx !== "undefined" && sfx.playUltimate) sfx.playUltimate(); // <-- �
     }, 500);
   },
 
-  // Торжественное объявление победы или поражения
-  endBattle(isWin) {
+endBattle(isWin) {
     this.lockActions(true);
     this.fx(isWin ? "gold" : "red");
 
