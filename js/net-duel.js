@@ -61,19 +61,18 @@ const InteractiveBoardEngine = {
   },
 
   removeHighlights() {
-    $('#strike-board .square-55d63').removeClass('highlight-selected highlight-dest');
+    $('#strike-board .square-55d63').removeClass('highlight-selected highlight-dest highlight-dest-capture');
   },
 
   bindSquareClicks() {
     const self = this;
     const boardEl = $('#strike-board');
 
-    // Очищаем старые слушатели
     boardEl.off('click touchstart', '.square-55d63');
 
     boardEl.on('click touchstart', '.square-55d63', function(e) {
       if (!self.active) return;
-      e.preventDefault(); // Предотвращаем двойные тапы на мобилках
+      e.preventDefault();
 
       const square = $(this).attr('data-square');
       if (!square) return;
@@ -87,10 +86,16 @@ const InteractiveBoardEngine = {
         self.removeHighlights();
         $(this).addClass('highlight-selected');
 
-        // Подсвечиваем возможные ходы выбранной фигуры
+        // Подсвечиваем ходы (точки для пустых полей, кольца для взятий)
         const moves = self.game.moves({ square: square, verbose: true });
         moves.forEach(m => {
-          $(`#strike-board .square-${m.to}`).addClass('highlight-dest');
+          const isCapture = !!self.game.get(m.to);
+          const targetEl = $(`#strike-board .square-${m.to}`);
+          if (isCapture) {
+            targetEl.addClass('highlight-dest-capture');
+          } else {
+            targetEl.addClass('highlight-dest');
+          }
         });
 
         const statusEl = document.getElementById("tactical-board-status");
@@ -100,13 +105,12 @@ const InteractiveBoardEngine = {
         return;
       }
 
-      // 2-й ТАП: Попытка сделать ход на выбранную клетку
+      // 2-й ТАП: Совершение хода
       if (self.selectedSquare) {
         const source = self.selectedSquare;
         const target = square;
         const targetMove = self.currentPuzzle.move;
 
-        // Попытка только ОДНА
         self.active = false;
         self.removeHighlights();
 
@@ -117,7 +121,6 @@ const InteractiveBoardEngine = {
           self.board.position(self.game.fen());
           self.onSuccess();
         } else {
-          // Показываем ход и сразу возвращаем назад
           self.game.move({ from: source, to: target });
           self.board.position(self.game.fen());
           self.onError(source);
@@ -519,7 +522,11 @@ applyRoundResult(res) {
 
       setTimeout(() => {
         if (this.myHp <= 0 || this.enemyHp <= 0) {
-          this.endBattle(this.myHp > 0);
+          let outcome = 'lose';
+          if (this.myHp <= 0 && this.enemyHp <= 0) outcome = 'draw';
+          else if (this.myHp > 0) outcome = 'win';
+
+          this.endBattle(outcome);
         } else {
           this.lockActions(false);
           this.setLog("ВАШ ХОД! ВЫБЕРИТЕ ДЕЙСТВИЕ");
@@ -583,7 +590,11 @@ applyRoundResult(res) {
         this.updateHUD();
 
         if (this.enemyHp <= 0 || this.myHp <= 0) {
-          this.endBattle(this.myHp > 0);
+          let outcome = 'lose';
+          if (this.myHp <= 0 && this.enemyHp <= 0) outcome = 'draw';
+          else if (this.myHp > 0) outcome = 'win';
+
+          this.endBattle(outcome);
         } else {
           this.lockActions(false);
           this.setLog("ВАШ ХОД! ВЫБЕРИТЕ ДЕЙСТВИЕ");
@@ -592,9 +603,13 @@ applyRoundResult(res) {
     }, 500);
   },
 
-endBattle(isWin) {
+endBattle(outcome) {
     this.lockActions(true);
-    this.fx(isWin ? "gold" : "red");
+
+    const isWin = (outcome === 'win');
+    const isDraw = (outcome === 'draw');
+
+    this.fx(isWin ? "gold" : (isDraw ? "cyan" : "red"));
 
     const victoryModal = document.getElementById("duel-victory-modal");
     const titleEl = document.getElementById("victory-title");
@@ -604,9 +619,20 @@ endBattle(isWin) {
     const detailsEl = document.getElementById("victory-details-text");
     const crownEl = document.getElementById("victory-crown");
 
-    const winner = isWin ? this.myHero : this.enemyHero;
-
-    if (isWin) {
+    if (isDraw) {
+      // === БОЕВАЯ НИЧЬЯ ===
+      if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
+      if (crownEl) crownEl.innerText = "🤝";
+      if (titleEl) {
+        titleEl.innerText = "БОЕВАЯ НИЧЬЯ!";
+        titleEl.style.color = "#00ffcc";
+      }
+      if (subEl) subEl.innerText = "НИКТО НЕ УСТУПИЛ";
+      if (avatarEl) avatarEl.src = this.myHero.img;
+      if (nameEl) nameEl.innerText = `${this.myHero.name} & ${this.enemyHero.name}`;
+      if (detailsEl) detailsEl.innerHTML = `Оба короля пали в ожесточенной битве на <b>${this.round} раунде</b>!`;
+    } else if (isWin) {
+      // === ПОБЕДА ИГРОКА ===
       if (typeof sfx !== "undefined" && sfx.playFanfare) sfx.playFanfare();
       if (crownEl) crownEl.innerText = "👑";
       if (titleEl) {
@@ -614,8 +640,11 @@ endBattle(isWin) {
         titleEl.style.color = "#f1c40f";
       }
       if (subEl) subEl.innerText = "ВЕЛИКОЛЕПНАЯ ПОБЕДА!";
+      if (avatarEl) avatarEl.src = this.myHero.img;
+      if (nameEl) nameEl.innerText = this.myHero.name;
       if (detailsEl) detailsEl.innerHTML = `Вы одержали триумф на <b>${this.round} раунде</b>!`;
     } else {
+      // === ПОРАЖЕНИЕ ===
       if (typeof sfx !== "undefined" && sfx.playCheckmate) sfx.playCheckmate();
       if (crownEl) crownEl.innerText = "⚔️";
       if (titleEl) {
@@ -623,11 +652,10 @@ endBattle(isWin) {
         titleEl.style.color = "#ff4d6d";
       }
       if (subEl) subEl.innerText = "ПОБЕДИЛ СОПЕРНИК";
+      if (avatarEl) avatarEl.src = this.enemyHero.img;
+      if (nameEl) nameEl.innerText = this.enemyHero.name;
       if (detailsEl) detailsEl.innerHTML = `Победу одержал оппонент на <b>${this.round} раунде</b>.`;
     }
-
-    if (avatarEl) avatarEl.src = winner.img;
-    if (nameEl) nameEl.innerText = winner.name;
 
     setTimeout(() => {
       victoryModal?.classList.add("active");

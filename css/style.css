@@ -1111,12 +1111,49 @@ body {
   100% { transform: scale(1); }
 }
 
-/* Подсветка клеток при тапе на фигуру */
+/* ==========================================================
+   ЭЛЕГАНТНАЯ ПОДСВЕТКА КЛЕТОК (LICHESS / CHESS.COM СТИЛЬ)
+   ========================================================== */
+
+/* 1. Выбранная фигура: мягкое благородное янтарное свечение */
 .highlight-selected {
-  box-shadow: inset 0 0 0 3px #00ffcc, inset 0 0 12px rgba(0, 255, 204, 0.6) !important;
+  background-color: rgba(245, 158, 11, 0.45) !important;
 }
 
+/* 2. Доступное поле для тихого хода: аккуратная круглая точка в центре */
 .highlight-dest {
-  background: radial-gradient(circle, rgba(0, 255, 204, 0.5) 25%, transparent 28%) !important;
+  position: relative;
   cursor: pointer;
+}
+.highlight-dest::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 26%;
+  height: 26%;
+  background: rgba(15, 23, 42, 0.35);
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 3. Доступное поле для взятия фигуры: изящное кольцо по периметру */
+.highlight-dest-capture {
+  position: relative;
+  cursor: pointer;
+}
+.highlight-dest-capture::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 82%;
+  height: 82%;
+  border: 3.5px solid rgba(239, 68, 68, 0.55);
+  border-radius: 50%;
+  box-sizing: border-box;
+  pointer-events: none;
 }
