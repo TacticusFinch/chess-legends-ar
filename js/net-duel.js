@@ -3,12 +3,13 @@
  */
 const AMVERA_WS = "wss://chesslegendsai-tacticusfinch.mia0.amvera.tech";
 
-/* ================= 1. ДВИЖОК ТАКТИЧЕСКОЙ ДОСКИ (1 ПОПЫТКА) ================= */
+/* ================= 1. ДВИЖОК ТАКТИЧЕСКОЙ ДОСКИ (ТАПАМИ: 1 ПОПЫТКА) ================= */
 const InteractiveBoardEngine = {
   board: null,
   game: null,
   currentPuzzle: null,
   active: false,
+  selectedSquare: null,
 
   start() {
     const modal = document.getElementById("tactical-board-modal");
@@ -18,8 +19,9 @@ const InteractiveBoardEngine = {
 
     modal.style.display = "flex";
     this.active = true;
+    this.selectedSquare = null;
 
-    // Случайная задача из duel-puzzles.js
+    // Получаем задачу из duel-puzzles.js
     this.currentPuzzle = (typeof getRandomDuelPuzzle === "function")
       ? getRandomDuelPuzzle()
       : {
@@ -32,7 +34,7 @@ const InteractiveBoardEngine = {
 
     if (descEl) descEl.textContent = this.currentPuzzle.desc;
     if (statusEl) {
-      statusEl.textContent = "1 попытка: перетащите фигуру пальцем";
+      statusEl.textContent = "Тапните фигуру, затем клетку мата";
       statusEl.style.color = "#00ffcc";
     }
 
@@ -42,49 +44,92 @@ const InteractiveBoardEngine = {
   },
 
   initBoard() {
-    const self = this;
-
     const config = {
-      draggable: true,
+      draggable: false, // Отключаем drag&drop в пользу удобных тапов
       position: this.currentPuzzle.fen,
       orientation: this.game.turn() === 'w' ? 'white' : 'black',
-      pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
-      onDragStart: (source, piece) => {
-        if (!self.active) return false;
-        if ((self.game.turn() === 'w' && piece.search(/^b/) !== -1) ||
-            (self.game.turn() === 'b' && piece.search(/^w/) !== -1)) {
-          return false;
-        }
-      },
-      onDrop: (source, target) => {
-        if (!self.active) return 'snapback';
-
-        const targetMove = self.currentPuzzle.move;
-        const isCorrect = (source === targetMove.from && target === targetMove.to);
-
-        // Ровно одна попытка
-        self.active = false;
-
-        if (isCorrect) {
-          self.game.move({ from: source, to: target });
-          self.onSuccess();
-        } else {
-          self.onError();
-          return 'snapback';
-        }
-      }
+      pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
     };
 
     if (this.board) {
       this.board.destroy();
     }
     this.board = Chessboard('strike-board', config);
+
+    // Подключаем клики/тапы по клеткам доски
+    this.bindSquareClicks();
+  },
+
+  removeHighlights() {
+    $('#strike-board .square-55d63').removeClass('highlight-selected highlight-dest');
+  },
+
+  bindSquareClicks() {
+    const self = this;
+    const boardEl = $('#strike-board');
+
+    // Очищаем старые слушатели
+    boardEl.off('click touchstart', '.square-55d63');
+
+    boardEl.on('click touchstart', '.square-55d63', function(e) {
+      if (!self.active) return;
+      e.preventDefault(); // Предотвращаем двойные тапы на мобилках
+
+      const square = $(this).attr('data-square');
+      if (!square) return;
+
+      const pieceOnSquare = self.game.get(square);
+      const isMyPiece = pieceOnSquare && pieceOnSquare.color === self.game.turn();
+
+      // 1-й ТАП: Выбор своей фигуры
+      if (isMyPiece) {
+        self.selectedSquare = square;
+        self.removeHighlights();
+        $(this).addClass('highlight-selected');
+
+        // Подсвечиваем возможные ходы выбранной фигуры
+        const moves = self.game.moves({ square: square, verbose: true });
+        moves.forEach(m => {
+          $(`#strike-board .square-${m.to}`).addClass('highlight-dest');
+        });
+
+        const statusEl = document.getElementById("tactical-board-status");
+        if (statusEl) statusEl.textContent = `Выбрано: ${square.toUpperCase()}. Куда пойти?`;
+
+        if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
+        return;
+      }
+
+      // 2-й ТАП: Попытка сделать ход на выбранную клетку
+      if (self.selectedSquare) {
+        const source = self.selectedSquare;
+        const target = square;
+        const targetMove = self.currentPuzzle.move;
+
+        // Попытка только ОДНА
+        self.active = false;
+        self.removeHighlights();
+
+        const isCorrect = (source === targetMove.from && target === targetMove.to);
+
+        if (isCorrect) {
+          self.game.move({ from: source, to: target });
+          self.board.position(self.game.fen());
+          self.onSuccess();
+        } else {
+          // Показываем ход и сразу возвращаем назад
+          self.game.move({ from: source, to: target });
+          self.board.position(self.game.fen());
+          self.onError(source);
+        }
+      }
+    });
   },
 
   onSuccess() {
     const statusEl = document.getElementById("tactical-board-status");
     if (statusEl) {
-      statusEl.textContent = "🎯 ШАХ И МАТ! КРИТ-УРОН (+60%)!";
+      statusEl.textContent = "🎯 ПОБЕДА! КРИТ-УРОН (+60%)!";
       statusEl.style.color = "#f1c40f";
     }
 
@@ -93,11 +138,11 @@ const InteractiveBoardEngine = {
     setTimeout(() => {
       const modal = document.getElementById("tactical-board-modal");
       if (modal) modal.style.display = "none";
-      NetDuel.resolveTacticalStrike(true);
+      NetDuel.resolveTacticalStrike(true); // Крит!
     }, 700);
   },
 
-  onError() {
+  onError(originalSquare) {
     const statusEl = document.getElementById("tactical-board-status");
     if (statusEl) {
       statusEl.textContent = "❌ ЗЕВОК! УДАР БЕЗ БОНУСА";
@@ -106,11 +151,16 @@ const InteractiveBoardEngine = {
 
     if (typeof sfx !== "undefined" && sfx.playWrong) sfx.playWrong();
 
+    // Возвращаем позицию обратно
+    setTimeout(() => {
+      if (this.board) this.board.position(this.currentPuzzle.fen);
+    }, 400);
+
     setTimeout(() => {
       const modal = document.getElementById("tactical-board-modal");
       if (modal) modal.style.display = "none";
-      NetDuel.resolveTacticalStrike(false);
-    }, 700);
+      NetDuel.resolveTacticalStrike(false); // Удар без крита
+    }, 850);
   }
 };
 
