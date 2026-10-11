@@ -1157,3 +1157,30 @@ body {
   box-sizing: border-box;
   pointer-events: none;
 }
+
+.voice-bubble-fx {
+  position: absolute;
+  top: -38px;
+  left: 50%;
+  transform: translateX(-50%) scale(0.85);
+  background: rgba(10, 16, 28, 0.92);
+  color: #fff;
+  border: 1px solid var(--accent-color, #00ffcc);
+  box-shadow: 0 4px 18px rgba(0, 255, 204, 0.35);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+  animation: bubblePop 2.6s forwards ease-out;
+}
+
+@keyframes bubblePop {
+  0% { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.7); }
+  15% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.05); }
+  25% { transform: translateX(-50%) translateY(0) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.9); }
+}

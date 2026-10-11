@@ -24,7 +24,7 @@ class SoundController {
     return this.enabled;
   }
 
-  // 1. Стук деревянной шахматной фигуры
+  // 1. Стук деревянной шахматной фигуры (UI-клик)
   playMove() {
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
@@ -172,7 +172,7 @@ class SoundController {
   playCorrect() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
-    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+ [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'sine';
@@ -226,8 +226,6 @@ class SoundController {
   playBattleStart() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
-
-    // Благородный мажорный перезвон: F4 -> A4 -> C5 -> E5
     const chimeNotes = [349.23, 440.00, 523.25, 659.25];
 
     chimeNotes.forEach((freq, idx) => {
@@ -247,118 +245,162 @@ class SoundController {
       osc.stop(now + idx * 0.08 + 1.2);
     });
   }
-// 8. Обычный тактический удар (хлёсткий звук атаки)
+
+  // 8. ПРЕМИАЛЬНЫЙ ТАКТИЧЕСКИЙ УДАР (Плотный щелчок утяжеленной фигуры + резонатор доски)
   playAttackHit() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
-    
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(280, now);
-    osc.frequency.exponentialRampToValueAtTime(50, now + 0.12);
 
-    gain.gain.setValueAtTime(0.4, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    // Слой А: Хлесткий щелчок дерева (High Transient)
+    const click = this.ctx.createOscillator();
+    const clickGain = this.ctx.createGain();
+    click.type = 'triangle';
+    click.frequency.setValueAtTime(900, now);
+    click.frequency.exponentialRampToValueAtTime(80, now + 0.035);
+    clickGain.gain.setValueAtTime(0.5, now);
+    clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+    click.connect(clickGain);
+    clickGain.connect(this.ctx.destination);
+    click.start(now);
+    click.stop(now + 0.035);
 
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.12);
+    // Слой Б: Глубокое тело дубовой доски (Wood Resonance Body)
+    const body = this.ctx.createOscillator();
+    const bodyGain = this.ctx.createGain();
+    body.type = 'sine';
+    body.frequency.setValueAtTime(160, now);
+    body.frequency.exponentialRampToValueAtTime(45, now + 0.14);
+    bodyGain.gain.setValueAtTime(0.7, now);
+    bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+    body.connect(bodyGain);
+    bodyGain.connect(this.ctx.destination);
+    body.start(now);
+    body.stop(now + 0.14);
   }
 
-  // 9. КРИТИЧЕСКИЙ УДАР (Стеклянный звон + глубокий саб-бас)
+  // 9. КРИТИЧЕСКИЙ УДАР (Кинематографичный крит: хрусталь + саб-дроп 808 + треск)
   playCritHit() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
 
-    // Звонкий крит-щелчок (высокие частоты)
-    const chime = this.ctx.createOscillator();
-    const chimeGain = this.ctx.createGain();
-    chime.type = 'sine';
-    chime.frequency.setValueAtTime(1760, now);
-    chime.frequency.exponentialRampToValueAtTime(880, now + 0.25);
-    chimeGain.gain.setValueAtTime(0.35, now);
-    chimeGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-    chime.connect(chimeGain);
-    chimeGain.connect(this.ctx.destination);
-    chime.start(now);
-    chime.stop(now + 0.25);
+    // Слой А: Звон хрусталя/раскола стекла
+    [2093.00, 2637.02, 3135.96].forEach((f, i) => {
+      const glass = this.ctx.createOscillator();
+      const glassGain = this.ctx.createGain();
+      glass.type = 'sine';
+      glass.frequency.setValueAtTime(f, now + i * 0.015);
+      glassGain.gain.setValueAtTime(0.25, now + i * 0.015);
+      glassGain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.015 + 0.35);
+      glass.connect(glassGain);
+      glassGain.connect(this.ctx.destination);
+      glass.start(now + i * 0.015);
+      glass.stop(now + i * 0.015 + 0.35);
+    });
 
-    // Мощный низкий импульс удара
+    // Слой Б: Мощный саб-бас импульс (808 Drop)
     const sub = this.ctx.createOscillator();
     const subGain = this.ctx.createGain();
-    sub.type = 'triangle';
-    sub.frequency.setValueAtTime(220, now);
-    sub.frequency.exponentialRampToValueAtTime(30, now + 0.28);
-    subGain.gain.setValueAtTime(0.5, now);
-    subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(150, now);
+    sub.frequency.exponentialRampToValueAtTime(32, now + 0.45);
+    subGain.gain.setValueAtTime(0.8, now);
+    subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
     sub.connect(subGain);
     subGain.connect(this.ctx.destination);
     sub.start(now);
-    sub.stop(now + 0.28);
+    sub.stop(now + 0.45);
+
+    // Слой В: Искрящийся щелчок рассеивания энергии
+    const buffLen = Math.floor(this.ctx.sampleRate * 0.08);
+    const buf = this.ctx.createBuffer(1, buffLen, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < buffLen; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (buffLen * 0.3));
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buf;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(3500, now);
+    const nGain = this.ctx.createGain();
+    nGain.gain.setValueAtTime(0.3, now);
+    noise.connect(filter);
+    filter.connect(nGain);
+    nGain.connect(this.ctx.destination);
+    noise.start(now);
   }
 
-  // 10. Активация Щита / Защиты (гул силового поля)
+  // 10. АКТИВАЦИЯ ЩИТА / ЗАЩИТЫ (Благородный аккорд F# колокола + барьер)
   playShield() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
 
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    // Плавное нарастание и стабилизация как у силового поля
-    osc.frequency.setValueAtTime(180, now);
-    osc.frequency.exponentialRampToValueAtTime(360, now + 0.15);
+    [369.99, 554.37, 880.00].forEach((freq, idx) => {
+      const bell = this.ctx.createOscillator();
+      const bellGain = this.ctx.createGain();
+      bell.type = 'sine';
+      bell.frequency.setValueAtTime(freq, now);
 
-    gain.gain.setValueAtTime(0.01, now);
-    gain.gain.linearRampToValueAtTime(0.28, now + 0.08);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      bellGain.gain.setValueAtTime(0.001, now);
+      bellGain.gain.linearRampToValueAtTime(0.2 / (idx + 1), now + 0.04);
+      bellGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
 
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.35);
+      bell.connect(bellGain);
+      bellGain.connect(this.ctx.destination);
+      bell.start(now);
+      bell.stop(now + 0.6);
+    });
   }
 
-  // 11. Коронный прием / Ультимейт (заряд энергии + взрыв)
+  // 11. КОРОННЫЙ ПРИЕМ / УЛЬТИМЕЙТ (Кинематографичный Swell + величественный аккорд)
   playUltimate() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
 
-    // Взлёт частоты (Riser)
+    // Взлёт энергии с динамическим фильтром
     const sweep = this.ctx.createOscillator();
     const sweepGain = this.ctx.createGain();
     sweep.type = 'sawtooth';
-    sweep.frequency.setValueAtTime(120, now);
-    sweep.frequency.exponentialRampToValueAtTime(800, now + 0.25);
-    sweepGain.gain.setValueAtTime(0.15, now);
-    sweepGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-    sweep.connect(sweepGain);
+    sweep.frequency.setValueAtTime(90, now);
+    sweep.frequency.exponentialRampToValueAtTime(950, now + 0.32);
+
+    const sweepFilter = this.ctx.createBiquadFilter();
+    sweepFilter.type = 'lowpass';
+    sweepFilter.frequency.setValueAtTime(300, now);
+    sweepFilter.frequency.exponentialRampToValueAtTime(4500, now + 0.32);
+
+    sweepGain.gain.setValueAtTime(0.01, now);
+    sweepGain.gain.linearRampToValueAtTime(0.28, now + 0.28);
+    sweepGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+
+    sweep.connect(sweepFilter);
+    sweepFilter.connect(sweepGain);
     sweepGain.connect(this.ctx.destination);
     sweep.start(now);
-    sweep.stop(now + 0.25);
+    sweep.stop(now + 0.35);
 
-    // Мощный аккорд вспышки
-    [440, 554.37, 659.25, 880].forEach((f, idx) => {
+    // Мощный триумфальный аккорд
+    const chordTime = now + 0.30;
+    const chord = [220, 277.18, 329.63, 440, 659.25];
+    chord.forEach((f) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(f, now + 0.22);
-      gain.gain.setValueAtTime(0.25, now + 0.22);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22 + 0.6);
+      osc.frequency.setValueAtTime(f, chordTime);
+
+      gain.gain.setValueAtTime(0.22, chordTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, chordTime + 0.85);
+
       osc.connect(gain);
       gain.connect(this.ctx.destination);
-      osc.start(now + 0.22);
-      osc.stop(now + 0.22 + 0.6);
+      osc.start(chordTime);
+      osc.stop(chordTime + 0.85);
     });
   }
 
-  // 12. Разблокировка новой легенды в коллекции (сверкающий хрусталь)
+  // 12. Разблокировка новой легенды в коллекции
   playCardUnlock() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
-    const notes = [587.33, 739.99, 880.00, 1174.66, 1479.98]; // Ре-мажорное арпеджио
+    const notes = [587.33, 739.99, 880.00, 1174.66, 1479.98];
 
     notes.forEach((freq, idx) => {
       const osc = this.ctx.createOscillator();
@@ -376,72 +418,51 @@ class SoundController {
     });
   }
 
-// 13. Успешный урон по сопернику (сочный шахматный удар / раскол)
+  // 13. УСПЕШНЫЙ УРОН ПО СОПЕРНИКУ (Сочный деревянно-хрустящий раскол)
   playDamageDealt() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
 
-    // Плотный деревянно-хрустящий щелчок
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(320, now);
-    osc.frequency.exponentialRampToValueAtTime(70, now + 0.15);
-
-    gain.gain.setValueAtTime(0.45, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc.frequency.setValueAtTime(340, now);
+    osc.frequency.exponentialRampToValueAtTime(65, now + 0.12);
+    gain.gain.setValueAtTime(0.5, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.15);
-
-    // Дополнительный низкочастотный «тум»
-    const punch = this.ctx.createOscillator();
-    const punchGain = this.ctx.createGain();
-    punch.type = 'sine';
-    punch.frequency.setValueAtTime(140, now);
-    punch.frequency.exponentialRampToValueAtTime(35, now + 0.18);
-
-    punchGain.gain.setValueAtTime(0.5, now);
-    punchGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-
-    punch.connect(punchGain);
-    punchGain.connect(this.ctx.destination);
-    punch.start(now);
-    punch.stop(now + 0.18);
+    osc.stop(now + 0.12);
   }
 
-  // 14. Игрок пропустил удар (глухой болезненный урон)
+  // 14. ПОЛУЧЕННЫЙ УРОН (Глухой резонансный контузящий бас со срезом частот)
   playDamageTaken() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
 
-    // Тяжелый резонансный низкий саб-удар
     const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(130, now);
-    osc.frequency.linearRampToValueAtTime(45, now + 0.28);
-
-    // Срезаем ядовитые высокие частоты фильтром, оставляя глухой удар
     const filter = this.ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(400, now);
+    const gain = this.ctx.createGain();
 
-    gain.gain.setValueAtTime(0.4, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(95, now);
+    osc.frequency.linearRampToValueAtTime(35, now + 0.35);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(260, now);
+    filter.frequency.exponentialRampToValueAtTime(70, now + 0.35);
+
+    gain.gain.setValueAtTime(0.65, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
 
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(this.ctx.destination);
-
     osc.start(now);
-    osc.stop(now + 0.28);
+    osc.stop(now + 0.35);
   }
-
-
-
 }
 
 const sfx = new SoundController();
