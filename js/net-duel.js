@@ -115,12 +115,12 @@ window.NetDuel = {
     this.setStep("lobby-step-select");
   },
 
-  // Просто скрыть модальное окно лобби (не трогая WebSocket!)
+  // Просто спрятать окно лобби (не разрывая сокет!)
   hideLobbyModal() {
     document.getElementById("duel-lobby-modal")?.classList.remove("active");
   },
 
-  // Полное закрытие лобби пользователем по крестику
+  // Полное закрытие пользователем по крестику
   closeLobby() {
     if (this.ws) {
       try { this.ws.close(); } catch (e) {}
@@ -171,7 +171,7 @@ window.NetDuel = {
           if (msg.type === "MATCH_START") {
             this.enemyHero = msg.enemy;
             this.mySide = msg.side || "white";
-            this.hideLobbyModal(); // Скрываем лобби, НЕ разрывая сокет
+            this.hideLobbyModal(); // Скрываем окно, сокет держим открытым
             this.startBattle();
           } else if (msg.type === "ROUND_RESULT") {
             this.applyRoundResult(msg);
@@ -234,7 +234,7 @@ window.NetDuel = {
     this.enemyShield = false;
     this.isWaitingOpponent = false;
 
-    // Включаем приятный звуковой сигнал колоколов при старте дуэли
+    // Мелодичный перезвон колоколов при старте дуэли
     if (typeof sfx !== "undefined" && sfx.playBattleStart) {
       sfx.playBattleStart();
     }
@@ -369,7 +369,6 @@ window.NetDuel = {
     const pCard = document.getElementById("player-card-anchor");
     const eCard = document.getElementById("enemy-card-anchor");
 
-    // Визуализируем щит оппонента, если он защищался
     this.enemyShield = (res.enemy_action === "defend");
     if (res.enemy_action === "attack") eCard?.classList.add("anim-lunge-down");
     if (res.enemy_action === "skill") eCard?.classList.add("anim-skill-blast");
@@ -383,7 +382,7 @@ window.NetDuel = {
       this.enemyHp = res.enemy_hp;
       this.myEnergy = res.my_energy;
       this.enemyEnergy = res.enemy_energy;
-      this.round = res.round; // Раунд синхронизируем напрямую с бэкендом
+      this.round = res.round;
       this.myShield = false;
       this.enemyShield = false;
 
@@ -460,6 +459,7 @@ window.NetDuel = {
     }, 500);
   },
 
+  // Торжественное объявление победы или поражения
   endBattle(isWin) {
     this.lockActions(true);
     this.fx(isWin ? "gold" : "red");
@@ -511,3 +511,11 @@ window.NetDuel = {
     }
     this.lockActions(false);
   },
+
+  fx(color) {
+    const div = document.createElement("div");
+    div.className = `flash-fx-overlay flash-${color}`;
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 400);
+  }
+};
