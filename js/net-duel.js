@@ -1,3 +1,51 @@
+/**
+ * Тактикус Финч — Модуль Дуэлей на WebSocket Amvera
+ */
+const AMVERA_WS = "wss://chesslegendsai-tacticusfinch.mia0.amvera.tech";
+
+/* ================= 1. ДВИЖОК QTE «ФОКУС ГРОССМЕЙСТЕРА» ================= */
+const QTEFocusEngine = {
+  cursor: null,
+  trackWidth: 260,
+  pos: 0,
+  dir: 1,
+  raf: null,
+  active: false,
+
+  start() {
+    const modal = document.getElementById("qte-focus-modal");
+    this.cursor = document.getElementById("qte-cursor");
+    if (!modal || !this.cursor) return;
+
+    modal.style.display = "flex";
+    this.pos = 0;
+    this.dir = 1;
+    this.active = true;
+
+    const tick = () => {
+      if (!this.active) return;
+      this.pos += 4.5 * this.dir;
+      if (this.pos >= this.trackWidth - 14) this.dir = -1;
+      if (this.pos <= 0) this.dir = 1;
+      this.cursor.style.transform = `translateX(${this.pos}px)`;
+      this.raf = requestAnimationFrame(tick);
+    };
+    this.raf = requestAnimationFrame(tick);
+  },
+
+  hit() {
+    if (!this.active) return false;
+    this.active = false;
+    cancelAnimationFrame(this.raf);
+
+    // Центр трека 130px. Зона CRIT: 110px..150px
+    const isCrit = Math.abs(this.pos + 7 - 130) <= 20;
+    const modal = document.getElementById("qte-focus-modal");
+    if (modal) modal.style.display = "none";
+    return isCrit;
+  }
+};
+
 /* ================= 2. КОНТРОЛЛЕР СЕТЕВОЙ И ИИ ДУЭЛИ ================= */
 window.NetDuel = {
   ws: null,
@@ -14,17 +62,21 @@ window.NetDuel = {
   mySide: "white",
   isWaitingOpponent: false,
 
+  // Получение активного чемпиона
   getHero() {
     let h = window.currentHeroData;
+
     if (!h && typeof currentHeroId !== "undefined" && currentHeroId !== null && typeof HEROES !== "undefined") {
       h = { ...HEROES[currentHeroId], id: currentHeroId };
     }
+
     if (!h) {
       try {
         const cached = localStorage.getItem("last_active_hero");
         if (cached) h = JSON.parse(cached);
       } catch (e) {}
     }
+
     if (!h) {
       alert("Сначала наведите камеру на карту чемпиона!");
       return null;
@@ -46,6 +98,7 @@ window.NetDuel = {
     this.myHero = this.getHero();
     if (!this.myHero) return;
 
+    // Кнопка одиночной игры с ботом прямо в окне выбора
     const actionsStack = document.querySelector(".duel-actions-stack");
     if (actionsStack && !document.getElementById("btn-ai-duel")) {
       const aiBtn = document.createElement("button");
@@ -62,12 +115,12 @@ window.NetDuel = {
     this.setStep("lobby-step-select");
   },
 
-// Просто спрятать модальное окно лобби
+  // Просто скрыть модальное окно лобби (не трогая WebSocket!)
   hideLobbyModal() {
     document.getElementById("duel-lobby-modal")?.classList.remove("active");
   },
 
-  // Закрытие лобби пользователем по крестику
+  // Полное закрытие лобби пользователем по крестику
   closeLobby() {
     if (this.ws) {
       try { this.ws.close(); } catch (e) {}
@@ -112,14 +165,15 @@ window.NetDuel = {
         this.ws.send(JSON.stringify({ type: "READY", hero: this.myHero }));
       };
 
-this.ws.onmessage = (e) => {
-        const msg = JSON.parse(e.data);
-        if (msg.type === "MATCH_START") {
-          this.enemyHero = msg.enemy;
-          this.mySide = msg.side || "white";
-          this.hideLobbyModal(); 
-          this.startBattle();
-        } else if (msg.type === "ROUND_RESULT") {
+      this.ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === "MATCH_START") {
+            this.enemyHero = msg.enemy;
+            this.mySide = msg.side || "white";
+            this.hideLobbyModal(); // Скрываем лобби, НЕ разрывая сокет
+            this.startBattle();
+          } else if (msg.type === "ROUND_RESULT") {
             this.applyRoundResult(msg);
           } else if (msg.type === "OPPONENT_DISCONNECTED") {
             this.setLog("СОПЕРНИК ВЫШЕЛ ИЗ БОЯ");
@@ -133,9 +187,12 @@ this.ws.onmessage = (e) => {
         }
       };
 
-      this.ws.onerror = () => this.askOffline();
+      this.ws.onerror = () => {
+        if (!this.isNet) this.askOffline();
+      };
+      
       this.ws.onclose = () => {
-        if (this.isWaitingOpponent) this.askOffline();
+        if (!this.isNet) this.askOffline();
       };
     } catch {
       this.askOffline();
@@ -158,7 +215,7 @@ this.ws.onmessage = (e) => {
       atk: 22,
       def: 18,
       skillName: "Железная логика",
-      img: "./assets/avatars/botvinnik.png" // Исправлено на PNG
+      img: "./assets/avatars/botvinnik.png"
     };
     this.hideLobbyModal();
     this.startBattle();
@@ -175,7 +232,7 @@ this.ws.onmessage = (e) => {
     this.enemyShield = false;
     this.isWaitingOpponent = false;
 
-    // Стороны фигур (Белые / Черные)
+    // Синхронизация стороны (Белые / Черные)
     const mySideBadge = document.querySelector(".player-panel .actor-side-badge");
     const enemySideBadge = document.querySelector(".enemy-panel .actor-side-badge");
     if (mySideBadge && enemySideBadge) {
@@ -305,7 +362,7 @@ this.ws.onmessage = (e) => {
     const pCard = document.getElementById("player-card-anchor");
     const eCard = document.getElementById("enemy-card-anchor");
 
-    // Показываем, что сделал соперник
+    // Визуализируем щит оппонента, если он защищался
     this.enemyShield = (res.enemy_action === "defend");
     if (res.enemy_action === "attack") eCard?.classList.add("anim-lunge-down");
     if (res.enemy_action === "skill") eCard?.classList.add("anim-skill-blast");
@@ -314,12 +371,12 @@ this.ws.onmessage = (e) => {
 
     setTimeout(() => {
       eCard?.classList.remove("anim-lunge-down", "anim-skill-blast");
-      
+
       this.myHp = res.my_hp;
       this.enemyHp = res.enemy_hp;
       this.myEnergy = res.my_energy;
       this.enemyEnergy = res.enemy_energy;
-      this.round = res.round; // Раунд синхронизируем с сервером без +1!
+      this.round = res.round; // Раунд синхронизируем напрямую с бэкендом
       this.myShield = false;
       this.enemyShield = false;
 
