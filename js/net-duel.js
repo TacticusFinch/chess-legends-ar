@@ -1,45 +1,8 @@
 /**
- * Тактикус Финч — Модуль Дуэлей на WebSocket Amvera + Динамический TTS Чемпионов
+ * Тактикус Финч — Модуль Дуэлей на WebSocket Amvera
+ * Кинематографичные аркадные эффекты (Floating Dmg, Screen Shake, Super Cut-in, Haptics)
  */
 const AMVERA_WS = "wss://chesslegendsai-tacticusfinch.mia0.amvera.tech";
-const AMVERA_TTS_API = "https://chesslegendsai-tacticusfinch.mia0.amvera.tech/api/ask";
-
-// ================= ДИНАМИЧЕСКИЙ ГЕНЕРАТОР РЕПЛИК ДЛЯ TTS =================
-const BattleTTSGenerator = {
-  // Генерация живой фразы на основе контекста
-  generatePhrase(heroName, eventType, context = {}) {
-    const templates = {
-      start: [
-        `${heroName} приветствует соперника. Покажите вашу игру!`,
-        `За доской ${heroName}. Начнем партию!`,
-        `${heroName} готов к борьбе. Ваш первый ход!`
-      ],
-      crit: [
-        `Мат в один ход! Сокрушительный удар!`,
-        `Блестящая тактика от ${heroName}! Прямо в цель!`,
-        `Критический удар! Позиция соперника трещит по швам!`
-      ],
-      skill: [
-        `${heroName} применяет ${context.skillName || "коронный удар"}!`,
-        `Энергия на максимуме! Форсированная атака!`,
-        `Смертоносная комбинация от ${heroName}!`
-      ],
-      win: [
-        `Шах и мат! Победа за ${heroName}!`,
-        `Король повержен! Партию выиграл ${heroName}!`,
-        `Партия завершена триумфом ${heroName}!`
-      ],
-      lose: [
-        `Король пал. Признаю поражение.`,
-        `Тонкая игра соперника. Партия окончена.`,
-        `Партия сдана. Поздравляю с победой.`
-      ]
-    };
-
-    const list = templates[eventType] || [`${heroName} делает ход!`];
-    return list[Math.floor(Math.random() * list.length)];
-  }
-};
 
 /* ================= 1. ДВИЖОК ТАКТИЧЕСКОЙ ДОСКИ (ТАПАМИ) ================= */
 const InteractiveBoardEngine = {
@@ -214,54 +177,54 @@ window.NetDuel = {
   mySide: "white",
   isWaitingOpponent: false,
 
-  // Универсальный TTS модуль для дуэли
-  speakTTS(hero, eventType, isEnemy = false, context = {}) {
-    if (!hero) return;
-    const phrase = BattleTTSGenerator.generatePhrase(hero.name, eventType, context);
+  // ================= АРКАДНЫЕ ВАУ-ЭФФЕКТЫ =================
+  vibrate(ms) {
+    if (navigator.vibrate) {
+      try { navigator.vibrate(ms); } catch (e) {}
+    }
+  },
 
-    // 1. Показываем речевой комикс-бабл над персонажем
-    const anchorId = isEnemy ? "enemy-card-anchor" : "player-card-anchor";
+  screenShake(heavy = false) {
+    const overlay = document.getElementById("net-battle-overlay");
+    if (!overlay) return;
+    const cls = heavy ? "screen-shake-heavy" : "screen-shake-light";
+    overlay.classList.remove("screen-shake-light", "screen-shake-heavy");
+    void overlay.offsetWidth; // Force Reflow
+    overlay.classList.add(cls);
+    setTimeout(() => overlay.classList.remove(cls), 450);
+  },
+
+  spawnDamageNumber(anchorId, amount, isCrit = false) {
     const anchor = document.getElementById(anchorId);
-    if (anchor) {
-      const oldBubble = anchor.querySelector(".voice-bubble-fx");
-      if (oldBubble) oldBubble.remove();
+    if (!anchor || amount <= 0) return;
 
-      const bubble = document.createElement("div");
-      bubble.className = "voice-bubble-fx";
-      bubble.innerHTML = `💬 <i>«${phrase}»</i>`;
-      anchor.appendChild(bubble);
+    const el = document.createElement("div");
+    el.className = `floating-dmg-num ${isCrit ? "crit" : ""}`;
+    el.textContent = isCrit ? `💥 -${amount}` : `-${amount}`;
+    anchor.appendChild(el);
+    setTimeout(() => el.remove(), 950);
+  },
 
-      setTimeout(() => bubble.remove(), 2800);
-    }
+  showSuperCutIn(hero, skillName) {
+    const overlay = document.getElementById("net-battle-overlay");
+    if (!overlay) return;
 
-    // 2. Синтез через Web Speech API (без ожидания сети, мгновенно)
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance(phrase);
-      utter.lang = "ru-RU";
-      utter.rate = 1.05;
+    const cutin = document.createElement("div");
+    cutin.className = "super-cutin-overlay";
+    cutin.innerHTML = `
+      <div class="super-cutin-banner">
+        <img class="cutin-avatar" src="${hero.img}" alt="${hero.name}">
+        <div class="cutin-text-group">
+          <span class="cutin-hero-name">⚡ ${hero.name}</span>
+          <span class="cutin-skill-name">«${skillName || "КОРОННЫЙ ХОД"}»</span>
+        </div>
+      </div>
+    `;
 
-      // Мягкая и приятная для детей подстройка тона (без демонического баса)
-      if (hero.id === 6) {
-        utter.pitch = 0.9; // Дружелюбный электронный помощник
-        utter.rate = 1.15;
-      } else if (hero.id === 10 || hero.id === 11) {
-        utter.pitch = 1.1; // Звонкий, бодрый юношеский голос
-        utter.rate = 1.05;
-      } else {
-        utter.pitch = 0.95; // Естественный, тёплый голос взрослого наставника
-        utter.rate = 1.0;
-      }
-
-      const voices = window.speechSynthesis.getVoices();
-      const ruVoice = voices.find(v => 
-        v.lang.includes("ru") && 
-        (v.name.toLowerCase().includes("dmitry") || v.name.toLowerCase().includes("male") || v.name.toLowerCase().includes("pavel"))
-      );
-      if (ruVoice) utter.voice = ruVoice;
-
-      window.speechSynthesis.speak(utter);
-    }
+    overlay.appendChild(cutin);
+    this.screenShake(true);
+    this.vibrate([60, 40, 90]);
+    setTimeout(() => cutin.remove(), 800);
   },
 
   getHero() {
@@ -437,11 +400,7 @@ startBattle() {
     if (typeof sfx !== "undefined" && sfx.playBattleStart) {
       sfx.playBattleStart();
     }
-
-    // TTS: Реплика чемпиона в начале партии
-    setTimeout(() => {
-      this.speakTTS(this.myHero, "start", false);
-    }, 500);
+    this.vibrate(60);
 
     const mySideBadge = document.querySelector(".player-panel .actor-side-badge");
     const enemySideBadge = document.querySelector(".enemy-panel .actor-side-badge");
@@ -528,6 +487,7 @@ startBattle() {
     if (type === "defend") {
       this.lockActions(true);
       if (typeof sfx !== "undefined" && sfx.playShield) sfx.playShield();
+      this.vibrate(35);
 
       if (this.isNet) {
         this.myShield = true;
@@ -546,10 +506,11 @@ startBattle() {
     if (type === "skill") {
       if (this.myEnergy < 2) return this.setLog("НЕДОСТАТОЧНО ЭНЕРГИИ!");
       this.lockActions(true);
-      if (typeof sfx !== "undefined" && sfx.playUltimate) sfx.playUltimate();
 
-      // TTS: Голос коронного удара
-      this.speakTTS(this.myHero, "skill", false, { skillName: this.myHero.skillName });
+      // ВАУ-ЭФФЕКТ: Кинематографичный Super Cut-in баннер
+      this.showSuperCutIn(this.myHero, this.myHero.skillName);
+
+      if (typeof sfx !== "undefined" && sfx.playUltimate) sfx.playUltimate();
 
       if (this.isNet) {
         this.ws.send(JSON.stringify({ type: "MOVE", action: "skill" }));
@@ -571,9 +532,11 @@ startBattle() {
       else if (sfx.playAttackHit) sfx.playAttackHit();
     }
 
-    // TTS: Голос критического удара
     if (isCrit) {
-      this.speakTTS(this.myHero, "crit", false);
+      this.screenShake(true);
+      this.vibrate([50, 40, 80]);
+    } else {
+      this.vibrate(35);
     }
 
     if (this.isNet) {
@@ -584,7 +547,7 @@ startBattle() {
     }
   },
 
-applyRoundResult(res) {
+  applyRoundResult(res) {
     const pCard = document.getElementById("player-card-anchor");
     const eCard = document.getElementById("enemy-card-anchor");
 
@@ -592,9 +555,8 @@ applyRoundResult(res) {
     if (res.enemy_action === "attack") eCard?.classList.add("anim-lunge-down");
     if (res.enemy_action === "skill") {
       eCard?.classList.add("anim-skill-blast");
-      // Озвучка применения коронного хода оппонентом в сетевом бою
       if (this.enemyHero) {
-        this.speakTTS(this.enemyHero, "skill", true, { skillName: this.enemyHero.skillName });
+        this.showSuperCutIn(this.enemyHero, this.enemyHero.skillName);
       }
     }
 
@@ -603,10 +565,25 @@ applyRoundResult(res) {
     setTimeout(() => {
       eCard?.classList.remove("anim-lunge-down", "anim-skill-blast");
 
-      // Звуки урона (премиум-движок из sound.js)
+      // Всплывающие цифры урона над персонажами
+      const isCritAtk = res.dmg_dealt > (this.myHero.atk * 1.2);
+      if (res.dmg_dealt > 0) {
+        this.spawnDamageNumber("enemy-card-anchor", res.dmg_dealt, isCritAtk);
+      }
+      if (res.dmg_taken > 0) {
+        this.spawnDamageNumber("player-card-anchor", res.dmg_taken, false);
+      }
+
+      // Звуки урона и тряска
       if (typeof sfx !== "undefined") {
-        if (res.dmg_taken > 0) sfx.playDamageTaken();
-        else if (res.dmg_dealt > 0) sfx.playDamageDealt();
+        if (res.dmg_taken > 0) {
+          sfx.playDamageTaken();
+          this.screenShake(false);
+          this.vibrate(50);
+        } else if (res.dmg_dealt > 0) {
+          sfx.playDamageDealt();
+          if (isCritAtk) this.screenShake(true);
+        }
       }
 
       this.myHp = res.my_hp;
@@ -665,10 +642,8 @@ applyRoundResult(res) {
         eDmg = Math.round(this.enemyHero.atk * 1.7);
         this.enemyEnergy = 0;
         this.fx("red");
-        // Озвучка коронного хода Ботвинника в оффлайн-тренировке
-        if (this.enemyHero) {
-          this.speakTTS(this.enemyHero, "skill", true, { skillName: this.enemyHero.skillName });
-        }
+        // Super Cut-in для Ботвинника
+        this.showSuperCutIn(this.enemyHero, this.enemyHero.skillName);
       } else {
         this.enemyShield = true;
         this.enemyEnergy = Math.min(2, this.enemyEnergy + 1);
@@ -678,13 +653,27 @@ applyRoundResult(res) {
         pDmg = Math.max(5, pDmg - this.enemyHero.def);
       }
 
+      // Всплывающие цифры урона
+      if (pDmg > 0) {
+        this.spawnDamageNumber("enemy-card-anchor", pDmg, isCrit);
+      }
+      if (eDmg > 0) {
+        this.spawnDamageNumber("player-card-anchor", eDmg, false);
+      }
+
       this.enemyHp = Math.max(0, this.enemyHp - pDmg);
       this.myHp = Math.max(0, this.myHp - eDmg);
       this.round++;
 
       if (typeof sfx !== "undefined") {
-        if (eDmg > 0) sfx.playDamageTaken();
-        else if (pDmg > 0) sfx.playDamageDealt();
+        if (eDmg > 0) {
+          sfx.playDamageTaken();
+          this.screenShake(false);
+          this.vibrate(50);
+        } else if (pDmg > 0) {
+          sfx.playDamageDealt();
+          if (isCrit) this.screenShake(true);
+        }
       }
 
       setTimeout(() => {
@@ -736,6 +725,7 @@ applyRoundResult(res) {
       if (detailsEl) detailsEl.innerHTML = `Оба короля пали в ожесточенной битве на <b>${this.round} раунде</b>!`;
     } else if (isWin) {
       if (typeof sfx !== "undefined" && sfx.playFanfare) sfx.playFanfare();
+      this.vibrate([100, 50, 150]);
       if (crownEl) crownEl.innerText = "👑";
       if (titleEl) {
         titleEl.innerText = "ШАХ И МАТ!";
@@ -745,13 +735,9 @@ applyRoundResult(res) {
       if (avatarEl) avatarEl.src = this.myHero.img;
       if (nameEl) nameEl.innerText = this.myHero.name;
       if (detailsEl) detailsEl.innerHTML = `Вы одержали триумф на <b>${this.round} раунде</b>!`;
-
-      // Реплика победителя через TTS
-      setTimeout(() => {
-        this.speakTTS(this.myHero, "win", false);
-      }, 400);
     } else {
       if (typeof sfx !== "undefined" && sfx.playCheckmate) sfx.playCheckmate();
+      this.vibrate(200);
       if (crownEl) crownEl.innerText = "⚔️";
       if (titleEl) {
         titleEl.innerText = "ПАРТИЯ ОКОНЧЕНА";
@@ -761,11 +747,6 @@ applyRoundResult(res) {
       if (avatarEl) avatarEl.src = this.enemyHero.img;
       if (nameEl) nameEl.innerText = this.enemyHero.name;
       if (detailsEl) detailsEl.innerHTML = `Победу одержал оппонент на <b>${this.round} раунде</b>.`;
-
-      // Реплика поражения
-      setTimeout(() => {
-        this.speakTTS(this.myHero, "lose", false);
-      }, 400);
     }
 
     setTimeout(() => {
@@ -776,9 +757,6 @@ applyRoundResult(res) {
   closeVictoryModal() {
     document.getElementById("duel-victory-modal")?.classList.remove("active");
     document.getElementById("net-battle-overlay").style.display = "none";
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
     if (this.ws) {
       try { this.ws.close(); } catch (e) {}
       this.ws = null;
