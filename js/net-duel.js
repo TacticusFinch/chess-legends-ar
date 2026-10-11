@@ -324,6 +324,7 @@ window.NetDuel = {
     }
     if (type === "defend") {
       this.lockActions(true);
+if (typeof sfx !== "undefined" && sfx.playShield) sfx.playShield(); // <-- Звук щита
       if (this.isNet) {
         this.myShield = true;
         this.updateHUD();
@@ -341,6 +342,7 @@ window.NetDuel = {
     if (type === "skill") {
       if (this.myEnergy < 2) return this.setLog("НЕДОСТАТОЧНО ЭНЕРГИИ!");
       this.lockActions(true);
+if (typeof sfx !== "undefined" && sfx.playUltimate) sfx.playUltimate(); // <-- Звук ультимейта
       if (this.isNet) {
         this.ws.send(JSON.stringify({ type: "MOVE", action: "skill" }));
         this.setLog("КОРОННЫЙ ХОД! ЖДЕМ ХОД...");
@@ -356,6 +358,11 @@ window.NetDuel = {
   resolveQTE() {
     const isCrit = QTEFocusEngine.hit();
     this.lockActions(true);
+
+  if (typeof sfx !== "undefined") {
+       if (isCrit && sfx.playCritHit) sfx.playCritHit(); // <-- Звук Крита
+       else if (sfx.playAttackHit) sfx.playAttackHit();   // <-- Звук обычной атаки
+     }
 
     if (this.isNet) {
       this.ws.send(JSON.stringify({ type: "MOVE", action: "attack", crit: isCrit }));

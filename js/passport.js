@@ -39,6 +39,9 @@ function registerCardDiscovery(heroId) {
   if (!data.unlocked.includes(heroId)) {
     data.unlocked.push(heroId);
     savePassportData(data);
+    if (typeof sfx !== "undefined" && sfx.playCardUnlock) {
+      sfx.playCardUnlock(); // <-- Хрустальный перезвон открытия карты
+    }
     showUnlockToast(HEROES[heroId].name);
   }
 }

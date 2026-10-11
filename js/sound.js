@@ -247,6 +247,135 @@ class SoundController {
       osc.stop(now + idx * 0.08 + 1.2);
     });
   }
+// 8. Обычный тактический удар (хлёсткий звук атаки)
+  playAttackHit() {
+    if (!this.enabled || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(280, now);
+    osc.frequency.exponentialRampToValueAtTime(50, now + 0.12);
+
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.12);
+  }
+
+  // 9. КРИТИЧЕСКИЙ УДАР (Стеклянный звон + глубокий саб-бас)
+  playCritHit() {
+    if (!this.enabled || !this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // Звонкий крит-щелчок (высокие частоты)
+    const chime = this.ctx.createOscillator();
+    const chimeGain = this.ctx.createGain();
+    chime.type = 'sine';
+    chime.frequency.setValueAtTime(1760, now);
+    chime.frequency.exponentialRampToValueAtTime(880, now + 0.25);
+    chimeGain.gain.setValueAtTime(0.35, now);
+    chimeGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+    chime.connect(chimeGain);
+    chimeGain.connect(this.ctx.destination);
+    chime.start(now);
+    chime.stop(now + 0.25);
+
+    // Мощный низкий импульс удара
+    const sub = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    sub.type = 'triangle';
+    sub.frequency.setValueAtTime(220, now);
+    sub.frequency.exponentialRampToValueAtTime(30, now + 0.28);
+    subGain.gain.setValueAtTime(0.5, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    sub.connect(subGain);
+    subGain.connect(this.ctx.destination);
+    sub.start(now);
+    sub.stop(now + 0.28);
+  }
+
+  // 10. Активация Щита / Защиты (гул силового поля)
+  playShield() {
+    if (!this.enabled || !this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    // Плавное нарастание и стабилизация как у силового поля
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(360, now + 0.15);
+
+    gain.gain.setValueAtTime(0.01, now);
+    gain.gain.linearRampToValueAtTime(0.28, now + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.35);
+  }
+
+  // 11. Коронный прием / Ультимейт (заряд энергии + взрыв)
+  playUltimate() {
+    if (!this.enabled || !this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // Взлёт частоты (Riser)
+    const sweep = this.ctx.createOscillator();
+    const sweepGain = this.ctx.createGain();
+    sweep.type = 'sawtooth';
+    sweep.frequency.setValueAtTime(120, now);
+    sweep.frequency.exponentialRampToValueAtTime(800, now + 0.25);
+    sweepGain.gain.setValueAtTime(0.15, now);
+    sweepGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+    sweep.connect(sweepGain);
+    sweepGain.connect(this.ctx.destination);
+    sweep.start(now);
+    sweep.stop(now + 0.25);
+
+    // Мощный аккорд вспышки
+    [440, 554.37, 659.25, 880].forEach((f, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(f, now + 0.22);
+      gain.gain.setValueAtTime(0.25, now + 0.22);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22 + 0.6);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now + 0.22);
+      osc.stop(now + 0.22 + 0.6);
+    });
+  }
+
+  // 12. Разблокировка новой легенды в коллекции (сверкающий хрусталь)
+  playCardUnlock() {
+    if (!this.enabled || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    const notes = [587.33, 739.99, 880.00, 1174.66, 1479.98]; // Ре-мажорное арпеджио
+
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+
+      gain.gain.setValueAtTime(0.2, now + idx * 0.07);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.07 + 0.5);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now + idx * 0.07);
+      osc.stop(now + idx * 0.07 + 0.5);
+    });
+  }
+
 }
 
 const sfx = new SoundController();
