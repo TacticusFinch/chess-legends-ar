@@ -385,6 +385,15 @@ if (typeof sfx !== "undefined" && sfx.playUltimate) sfx.playUltimate(); // <-- �
     setTimeout(() => {
       eCard?.classList.remove("anim-lunge-down", "anim-skill-blast");
 
+      // === ОЗВУЧКА УРОНА ===
+      if (typeof sfx !== "undefined") {
+        if (res.dmg_taken > 0) {
+          sfx.playDamageTaken(); // Наш герой получил урон!
+        } else if (res.dmg_dealt > 0) {
+          sfx.playDamageDealt(); // Мы нанесли урон врагу!
+        }
+      }
+
       this.myHp = res.my_hp;
       this.enemyHp = res.enemy_hp;
       this.myEnergy = res.my_energy;
@@ -449,6 +458,15 @@ if (typeof sfx !== "undefined" && sfx.playUltimate) sfx.playUltimate(); // <-- �
       this.enemyHp = Math.max(0, this.enemyHp - pDmg);
       this.myHp = Math.max(0, this.myHp - eDmg);
       this.round++;
+
+	// === ОЗВУЧКА УРОНА В БОЮ С БОТОМ ===
+      if (typeof sfx !== "undefined") {
+        if (eDmg > 0) {
+          sfx.playDamageTaken();
+        } else if (pDmg > 0) {
+          sfx.playDamageDealt();
+        }
+      }
 
       setTimeout(() => {
         eCard?.classList.remove("anim-lunge-down", "anim-skill-blast");

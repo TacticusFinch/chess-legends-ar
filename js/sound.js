@@ -376,6 +376,72 @@ class SoundController {
     });
   }
 
+// 13. Успешный урон по сопернику (сочный шахматный удар / раскол)
+  playDamageDealt() {
+    if (!this.enabled || !this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // Плотный деревянно-хрустящий щелчок
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.exponentialRampToValueAtTime(70, now + 0.15);
+
+    gain.gain.setValueAtTime(0.45, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.15);
+
+    // Дополнительный низкочастотный «тум»
+    const punch = this.ctx.createOscillator();
+    const punchGain = this.ctx.createGain();
+    punch.type = 'sine';
+    punch.frequency.setValueAtTime(140, now);
+    punch.frequency.exponentialRampToValueAtTime(35, now + 0.18);
+
+    punchGain.gain.setValueAtTime(0.5, now);
+    punchGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+    punch.connect(punchGain);
+    punchGain.connect(this.ctx.destination);
+    punch.start(now);
+    punch.stop(now + 0.18);
+  }
+
+  // 14. Игрок пропустил удар (глухой болезненный урон)
+  playDamageTaken() {
+    if (!this.enabled || !this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // Тяжелый резонансный низкий саб-удар
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(130, now);
+    osc.frequency.linearRampToValueAtTime(45, now + 0.28);
+
+    // Срезаем ядовитые высокие частоты фильтром, оставляя глухой удар
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(400, now);
+
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.28);
+  }
+
+
+
 }
 
 const sfx = new SoundController();
