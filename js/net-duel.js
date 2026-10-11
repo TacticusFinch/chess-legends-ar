@@ -1,75 +1,43 @@
 /**
- * Тактикус Финч — Модуль Дуэлей на WebSocket Amvera + Боевые Голоса Чемпионов
+ * Тактикус Финч — Модуль Дуэлей на WebSocket Amvera + Динамический TTS Чемпионов
  */
 const AMVERA_WS = "wss://chesslegendsai-tacticusfinch.mia0.amvera.tech";
+const AMVERA_TTS_API = "https://chesslegendsai-tacticusfinch.mia0.amvera.tech/api/ask";
 
-// ================= БАЗА БОЕВЫХ РЕПЛИК ЧЕМПИОНОВ =================
-const HERO_BATTLE_VOICES = {
-  0: { // Стейниц
-    start: "Шахматы — это наука и точные законы!",
-    crit: "Накопление преимуществ завершено матом!",
-    skill: "Моя позиционная школа несокрушима!",
-    win: "Законы позиции доказали свое превосходство."
-  },
-  1: { // Ласкер
-    start: "Я играю не в фигуры, я играю против человека.",
-    crit: "Психологическое давление сломило вас!",
-    skill: "Вы попали в расставленную ловушку!",
-    win: "Борьба нервов окончена. Шах и мат."
-  },
-  2: { // Капабланка
-    start: "Хороший шахматист видит простой и чистый путь.",
-    crit: "Кристальная точность без единого лишнего хода!",
-    skill: "Геометрия доски абсолютно ясна!",
-    win: "Партия завершена по законам шахматной гармонии."
-  },
-  3: { // Карлсен
-    start: "Я выжму победу из любой позиции.",
-    crit: "Эндшпиль неизбежен. Вы проиграли!",
-    skill: "Безупречная техника в каждом движении!",
-    win: "Это было очевидно с самого начала."
-  },
-  5: { // Таль
-    start: "Вы должны затащить меня в темный лес!",
-    crit: "Красота комбинации требует жертв!",
-    skill: "Жертвую ферзя за бессмертие!",
-    win: "Шахматы — это мир безграничной фантазии!"
-  },
-  6: { // Stockfish
-    start: "Глубина расчета 40 полуходов. Оценка плюс ноль целых три десятых.",
-    crit: "Критическая ошибка перебора в вашей защите.",
-    skill: "Форсированная линия мата активирована.",
-    win: "Математически неизбежный финал."
-  },
-  7: { // Ботвинник
-    start: "Шахматы — это искусство анализа и железного труда.",
-    crit: "Точный расчет не прощает иллюзий.",
-    skill: "Железная логика подавляет ваш центр!",
-    win: "Победа дисциплины и фундаментальной подготовки."
-  },
-  8: { // Фишер
-    start: "Я сломаю их эго за доской.",
-    crit: "Каждый ход должен быть ударом молота!",
-    skill: "Тактика — это то, что я делаю лучше всех!",
-    win: "Я не верю в психологию. Я верю в сильные ходы."
-  },
-  10: { // Накамура
-    start: "Посмотрим, справитесь ли вы с моим темпом!",
-    crit: "Блиц-удар на бешеных скоростях!",
-    skill: "Цейтнотная буря сносит всё!",
-    win: "GG! Слишком быстро и слишком остро."
-  },
-  11: { // Гукеш
-    start: "Молодость готова писать новую историю.",
-    crit: "Хладнокровный удар без страха и сомнений!",
-    skill: "Энергия нового поколения чемпионов!",
-    win: "Мат на доске. Наследие продолжается."
-  },
-  default: {
-    start: "Покажите ваше мастерство на доске!",
-    crit: "Мат на доске! Сокрушительный удар!",
-    skill: "Вот мой коронный замысел!",
-    win: "Партия завершена. Шах и мат!"
+// ================= ДИНАМИЧЕСКИЙ ГЕНЕРАТОР РЕПЛИК ДЛЯ TTS =================
+const BattleTTSGenerator = {
+  // Генерация живой фразы на основе контекста
+  generatePhrase(heroName, eventType, context = {}) {
+    const templates = {
+      start: [
+        `${heroName} приветствует соперника. Покажите вашу игру!`,
+        `За доской ${heroName}. Начнем партию!`,
+        `${heroName} готов к борьбе. Ваш первый ход!`
+      ],
+      crit: [
+        `Мат в один ход! Сокрушительный удар!`,
+        `Блестящая тактика от ${heroName}! Прямо в цель!`,
+        `Критический удар! Позиция соперника трещит по швам!`
+      ],
+      skill: [
+        `${heroName} применяет ${context.skillName || "коронный удар"}!`,
+        `Энергия на максимуме! Форсированная атака!`,
+        `Смертоносная комбинация от ${heroName}!`
+      ],
+      win: [
+        `Шах и мат! Победа за ${heroName}!`,
+        `Король повержен! Партию выиграл ${heroName}!`,
+        `Партия завершена триумфом ${heroName}!`
+      ],
+      lose: [
+        `Король пал. Признаю поражение.`,
+        `Тонкая игра соперника. Партия окончена.`,
+        `Партия сдана. Поздравляю с победой.`
+      ]
+    };
+
+    const list = templates[eventType] || [`${heroName} делает ход!`];
+    return list[Math.floor(Math.random() * list.length)];
   }
 };
 
@@ -246,13 +214,12 @@ window.NetDuel = {
   mySide: "white",
   isWaitingOpponent: false,
 
-  // Воспроизведение голоса гроссмейстера + всплывающий речевой бабл
-  playChampionVoice(heroId, eventType, isEnemy = false) {
-    const heroLines = HERO_BATTLE_VOICES[heroId] || HERO_BATTLE_VOICES.default;
-    const phrase = heroLines[eventType] || HERO_BATTLE_VOICES.default[eventType];
-    if (!phrase) return;
+  // Универсальный TTS модуль для дуэли
+  speakTTS(hero, eventType, isEnemy = false, context = {}) {
+    if (!hero) return;
+    const phrase = BattleTTSGenerator.generatePhrase(hero.name, eventType, context);
 
-    // Всплывающее облачко реплики над аватаром
+    // 1. Показываем речевой комикс-бабл над персонажем
     const anchorId = isEnemy ? "enemy-card-anchor" : "player-card-anchor";
     const anchor = document.getElementById(anchorId);
     if (anchor) {
@@ -264,27 +231,33 @@ window.NetDuel = {
       bubble.innerHTML = `💬 <i>«${phrase}»</i>`;
       anchor.appendChild(bubble);
 
-      setTimeout(() => bubble.remove(), 2600);
+      setTimeout(() => bubble.remove(), 2800);
     }
 
-    // Голосовой синтез Web Speech API
+    // 2. Синтез через Web Speech API (без ожидания сети, мгновенно)
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utter = new SpeechSynthesisUtterance(phrase);
       utter.lang = "ru-RU";
       utter.rate = 1.05;
 
-      if (heroId === 6) { 
-        utter.pitch = 0.1; // Stockfish — робот
-        utter.rate = 1.2;
-      } else if (heroId === 5 || heroId === 8 || heroId === 10) { 
-        utter.pitch = 0.95; // Таль, Фишер, Накамура — эмоциональный
-      } else { 
-        utter.pitch = 0.75; // Гроссмейстеры-классики — солидный бас
+      // Мягкая и приятная для детей подстройка тона (без демонического баса)
+      if (hero.id === 6) {
+        utter.pitch = 0.9; // Дружелюбный электронный помощник
+        utter.rate = 1.15;
+      } else if (hero.id === 10 || hero.id === 11) {
+        utter.pitch = 1.1; // Звонкий, бодрый юношеский голос
+        utter.rate = 1.05;
+      } else {
+        utter.pitch = 0.95; // Естественный, тёплый голос взрослого наставника
+        utter.rate = 1.0;
       }
 
       const voices = window.speechSynthesis.getVoices();
-      const ruVoice = voices.find(v => v.lang.includes("ru") && (v.name.toLowerCase().includes("dmitry") || v.name.toLowerCase().includes("male") || v.name.toLowerCase().includes("pavel")));
+      const ruVoice = voices.find(v => 
+        v.lang.includes("ru") && 
+        (v.name.toLowerCase().includes("dmitry") || v.name.toLowerCase().includes("male") || v.name.toLowerCase().includes("pavel"))
+      );
       if (ruVoice) utter.voice = ruVoice;
 
       window.speechSynthesis.speak(utter);
@@ -465,10 +438,10 @@ startBattle() {
       sfx.playBattleStart();
     }
 
-    // Реплика чемпиона в начале партии
+    // TTS: Реплика чемпиона в начале партии
     setTimeout(() => {
-      this.playChampionVoice(this.myHero.id, "start", false);
-    }, 550);
+      this.speakTTS(this.myHero, "start", false);
+    }, 500);
 
     const mySideBadge = document.querySelector(".player-panel .actor-side-badge");
     const enemySideBadge = document.querySelector(".enemy-panel .actor-side-badge");
@@ -575,8 +548,8 @@ startBattle() {
       this.lockActions(true);
       if (typeof sfx !== "undefined" && sfx.playUltimate) sfx.playUltimate();
 
-      // Озвучивание коронного хода
-      this.playChampionVoice(this.myHero.id, "skill", false);
+      // TTS: Голос коронного удара
+      this.speakTTS(this.myHero, "skill", false, { skillName: this.myHero.skillName });
 
       if (this.isNet) {
         this.ws.send(JSON.stringify({ type: "MOVE", action: "skill" }));
@@ -598,9 +571,9 @@ startBattle() {
       else if (sfx.playAttackHit) sfx.playAttackHit();
     }
 
-    // Озвучка крита при успешном нахождении мата
+    // TTS: Голос критического удара
     if (isCrit) {
-      this.playChampionVoice(this.myHero.id, "crit", false);
+      this.speakTTS(this.myHero, "crit", false);
     }
 
     if (this.isNet) {
@@ -619,8 +592,9 @@ applyRoundResult(res) {
     if (res.enemy_action === "attack") eCard?.classList.add("anim-lunge-down");
     if (res.enemy_action === "skill") {
       eCard?.classList.add("anim-skill-blast");
-      if (this.enemyHero?.id !== undefined) {
-        this.playChampionVoice(this.enemyHero.id, "skill", true);
+      // Озвучка применения коронного хода оппонентом в сетевом бою
+      if (this.enemyHero) {
+        this.speakTTS(this.enemyHero, "skill", true, { skillName: this.enemyHero.skillName });
       }
     }
 
@@ -629,6 +603,7 @@ applyRoundResult(res) {
     setTimeout(() => {
       eCard?.classList.remove("anim-lunge-down", "anim-skill-blast");
 
+      // Звуки урона (премиум-движок из sound.js)
       if (typeof sfx !== "undefined") {
         if (res.dmg_taken > 0) sfx.playDamageTaken();
         else if (res.dmg_dealt > 0) sfx.playDamageDealt();
@@ -690,8 +665,9 @@ applyRoundResult(res) {
         eDmg = Math.round(this.enemyHero.atk * 1.7);
         this.enemyEnergy = 0;
         this.fx("red");
-        if (this.enemyHero?.id !== undefined) {
-          this.playChampionVoice(this.enemyHero.id, "skill", true);
+        // Озвучка коронного хода Ботвинника в оффлайн-тренировке
+        if (this.enemyHero) {
+          this.speakTTS(this.enemyHero, "skill", true, { skillName: this.enemyHero.skillName });
         }
       } else {
         this.enemyShield = true;
@@ -770,9 +746,9 @@ applyRoundResult(res) {
       if (nameEl) nameEl.innerText = this.myHero.name;
       if (detailsEl) detailsEl.innerHTML = `Вы одержали триумф на <b>${this.round} раунде</b>!`;
 
-      // Победная реплика чемпиона
+      // Реплика победителя через TTS
       setTimeout(() => {
-        this.playChampionVoice(this.myHero.id, "win", false);
+        this.speakTTS(this.myHero, "win", false);
       }, 400);
     } else {
       if (typeof sfx !== "undefined" && sfx.playCheckmate) sfx.playCheckmate();
@@ -786,12 +762,10 @@ applyRoundResult(res) {
       if (nameEl) nameEl.innerText = this.enemyHero.name;
       if (detailsEl) detailsEl.innerHTML = `Победу одержал оппонент на <b>${this.round} раунде</b>.`;
 
-      // Победная фраза соперника при вашем поражении
-      if (this.enemyHero?.id !== undefined) {
-        setTimeout(() => {
-          this.playChampionVoice(this.enemyHero.id, "win", true);
-        }, 400);
-      }
+      // Реплика поражения
+      setTimeout(() => {
+        this.speakTTS(this.myHero, "lose", false);
+      }, 400);
     }
 
     setTimeout(() => {
@@ -802,6 +776,9 @@ applyRoundResult(res) {
   closeVictoryModal() {
     document.getElementById("duel-victory-modal")?.classList.remove("active");
     document.getElementById("net-battle-overlay").style.display = "none";
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
     if (this.ws) {
       try { this.ws.close(); } catch (e) {}
       this.ws = null;
