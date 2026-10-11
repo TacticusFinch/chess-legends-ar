@@ -1,51 +1,3 @@
-/**
- * Тактикус Финч — Модуль Дуэлей на WebSocket Amvera
- */
-const AMVERA_WS = "wss://chesslegendsai-tacticusfinch.mia0.amvera.tech";
-
-/* ================= 1. ДВИЖОК QTE «ФОКУС ГРОССМЕЙСТЕРА» ================= */
-const QTEFocusEngine = {
-  cursor: null,
-  trackWidth: 260,
-  pos: 0,
-  dir: 1,
-  raf: null,
-  active: false,
-
-  start() {
-    const modal = document.getElementById("qte-focus-modal");
-    this.cursor = document.getElementById("qte-cursor");
-    if (!modal || !this.cursor) return;
-
-    modal.style.display = "flex";
-    this.pos = 0;
-    this.dir = 1;
-    this.active = true;
-
-    const tick = () => {
-      if (!this.active) return;
-      this.pos += 4.5 * this.dir;
-      if (this.pos >= this.trackWidth - 14) this.dir = -1;
-      if (this.pos <= 0) this.dir = 1;
-      this.cursor.style.transform = `translateX(${this.pos}px)`;
-      this.raf = requestAnimationFrame(tick);
-    };
-    this.raf = requestAnimationFrame(tick);
-  },
-
-  hit() {
-    if (!this.active) return false;
-    this.active = false;
-    cancelAnimationFrame(this.raf);
-
-    // Центр трека 130px. Зона CRIT: 110px..150px
-    const isCrit = Math.abs(this.pos + 7 - 130) <= 20;
-    const modal = document.getElementById("qte-focus-modal");
-    if (modal) modal.style.display = "none";
-    return isCrit;
-  }
-};
-
 /* ================= 2. КОНТРОЛЛЕР СЕТЕВОЙ И ИИ ДУЭЛИ ================= */
 window.NetDuel = {
   ws: null,
@@ -59,22 +11,20 @@ window.NetDuel = {
   enemyShield: false,
   myHero: null,
   enemyHero: null,
+  mySide: "white",
+  isWaitingOpponent: false,
 
-  // Получение активного чемпиона
   getHero() {
     let h = window.currentHeroData;
-
     if (!h && typeof currentHeroId !== "undefined" && currentHeroId !== null && typeof HEROES !== "undefined") {
       h = { ...HEROES[currentHeroId], id: currentHeroId };
     }
-
     if (!h) {
       try {
         const cached = localStorage.getItem("last_active_hero");
         if (cached) h = JSON.parse(cached);
       } catch (e) {}
     }
-
     if (!h) {
       alert("Сначала наведите камеру на карту чемпиона!");
       return null;
@@ -85,7 +35,7 @@ window.NetDuel = {
 
     return {
       name: h.name || "Гроссмейстер",
-      img: h.avatar || (h.id !== undefined ? `./assets/avatars/${h.id}.jpg` : "./assets/avatars/0.jpg"),
+      img: h.avatar || "./assets/avatars/steinitz.png",
       atk: Math.round(atk * 0.35),
       def: Math.round(def * 0.25),
       skillName: h.skillName || h.skill || "Коронный удар"
@@ -96,7 +46,6 @@ window.NetDuel = {
     this.myHero = this.getHero();
     if (!this.myHero) return;
 
-    // Кнопка одиночной игры с ботом прямо в окне выбора
     const actionsStack = document.querySelector(".duel-actions-stack");
     if (actionsStack && !document.getElementById("btn-ai-duel")) {
       const aiBtn = document.createElement("button");
@@ -158,27 +107,38 @@ window.NetDuel = {
       };
 
       this.ws.onmessage = (e) => {
-        const msg = JSON.parse(e.data);
-        if (msg.type === "MATCH_START") {
-          this.enemyHero = msg.enemy;
-          this.closeLobby();
-          this.startBattle();
-        } else if (msg.type === "ROUND_RESULT") {
-          this.applyRoundResult(msg);
-        } else if (msg.type === "OPPONENT_DISCONNECTED") {
-          this.setLog("СОПЕРНИК ВЫШЕЛ ИЗ БОЯ");
-          setTimeout(() => this.endBattle(true), 1500);
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === "MATCH_START") {
+            this.enemyHero = msg.enemy;
+            this.mySide = msg.side || "white";
+            this.closeLobby();
+            this.startBattle();
+          } else if (msg.type === "ROUND_RESULT") {
+            this.applyRoundResult(msg);
+          } else if (msg.type === "OPPONENT_DISCONNECTED") {
+            this.setLog("СОПЕРНИК ВЫШЕЛ ИЗ БОЯ");
+            setTimeout(() => this.endBattle(true), 1500);
+          } else if (msg.type === "ERROR") {
+            alert(msg.message);
+            this.closeLobby();
+          }
+        } catch (err) {
+          console.error("Ошибка парсинга WS:", err);
         }
       };
 
       this.ws.onerror = () => this.askOffline();
+      this.ws.onclose = () => {
+        if (this.isWaitingOpponent) this.askOffline();
+      };
     } catch {
       this.askOffline();
     }
   },
 
   askOffline() {
-    if (confirm("Сетевой сервер Amvera недоступен. Сыграть тренировку с ботом?")) {
+    if (confirm("Сетевой сервер недоступен. Сыграть тренировку с ботом?")) {
       this.startOfflineAiMatch();
     } else {
       this.closeLobby();
@@ -187,12 +147,13 @@ window.NetDuel = {
 
   startOfflineAiMatch() {
     this.isNet = false;
+    this.mySide = "white";
     this.enemyHero = {
       name: "Михаил Ботвинник",
       atk: 22,
       def: 18,
       skillName: "Железная логика",
-      img: "./assets/avatars/7.jpg"
+      img: "./assets/avatars/botvinnik.png" // Исправлено на PNG
     };
     this.closeLobby();
     this.startBattle();
@@ -207,8 +168,37 @@ window.NetDuel = {
     this.enemyEnergy = 1;
     this.myShield = false;
     this.enemyShield = false;
+    this.isWaitingOpponent = false;
+
+    // Стороны фигур (Белые / Черные)
+    const mySideBadge = document.querySelector(".player-panel .actor-side-badge");
+    const enemySideBadge = document.querySelector(".enemy-panel .actor-side-badge");
+    if (mySideBadge && enemySideBadge) {
+      if (this.mySide === "black") {
+        mySideBadge.className = "actor-side-badge side-black";
+        mySideBadge.textContent = "ЧЁРНЫЕ";
+        enemySideBadge.className = "actor-side-badge side-white";
+        enemySideBadge.textContent = "БЕЛЫЕ";
+      } else {
+        mySideBadge.className = "actor-side-badge side-white";
+        mySideBadge.textContent = "БЕЛЫЕ";
+        enemySideBadge.className = "actor-side-badge side-black";
+        enemySideBadge.textContent = "ЧЁРНЫЕ";
+      }
+    }
+
+    this.lockActions(false);
     this.updateHUD();
     this.setLog("ВЫБЕРИТЕ ДЕЙСТВИЕ");
+  },
+
+  lockActions(state) {
+    this.isWaitingOpponent = state;
+    const btns = document.querySelectorAll(".tactical-card-btn");
+    btns.forEach(b => {
+      b.style.pointerEvents = state ? "none" : "auto";
+      b.style.opacity = state ? "0.45" : "1";
+    });
   },
 
   updateHUD() {
@@ -216,7 +206,8 @@ window.NetDuel = {
 
     // Игрок
     set("my-hero-name", this.myHero.name);
-    document.getElementById("my-avatar-img").src = this.myHero.img;
+    const myImg = document.getElementById("my-avatar-img");
+    if (myImg) myImg.src = this.myHero.img;
     set("my-hp-text", `${Math.max(0, this.myHp)} / 100 HP`);
     document.getElementById("my-hp-bar").style.width = `${Math.max(0, this.myHp)}%`;
     set("my-atk-val", this.myHero.atk);
@@ -226,7 +217,8 @@ window.NetDuel = {
 
     // Соперник
     set("enemy-hero-name", this.enemyHero.name);
-    document.getElementById("enemy-avatar-img").src = this.enemyHero.img;
+    const enemyImg = document.getElementById("enemy-avatar-img");
+    if (enemyImg) enemyImg.src = this.enemyHero.img;
     set("enemy-hp-text", `${Math.max(0, this.enemyHp)} / 100 HP`);
     document.getElementById("enemy-hp-bar").style.width = `${Math.max(0, this.enemyHp)}%`;
     set("enemy-atk-val", this.enemyHero.atk);
@@ -255,14 +247,19 @@ window.NetDuel = {
   },
 
   chooseAction(type) {
+    if (this.isWaitingOpponent) return;
+
     if (type === "attack") {
       QTEFocusEngine.start();
       return;
     }
     if (type === "defend") {
+      this.lockActions(true);
       if (this.isNet) {
+        this.myShield = true;
+        this.updateHUD();
         this.ws.send(JSON.stringify({ type: "MOVE", action: "defend" }));
-        this.setLog("ЗАЩИТА... ЖДЕМ ОППОНЕНТА");
+        this.setLog("ЗАЩИТА! ЖДЕМ ОППОНЕНТА...");
       } else {
         this.myShield = true;
         this.myEnergy = Math.min(2, this.myEnergy + 1);
@@ -274,9 +271,10 @@ window.NetDuel = {
     }
     if (type === "skill") {
       if (this.myEnergy < 2) return this.setLog("НЕДОСТАТОЧНО ЭНЕРГИИ!");
+      this.lockActions(true);
       if (this.isNet) {
         this.ws.send(JSON.stringify({ type: "MOVE", action: "skill" }));
-        this.setLog("КОРОННЫЙ ХОД! ЖДЕМ ОППОНЕНТА");
+        this.setLog("КОРОННЫЙ ХОД! ЖДЕМ ХОД...");
       } else {
         this.myEnergy = 0;
         this.fx("gold");
@@ -288,12 +286,51 @@ window.NetDuel = {
 
   resolveQTE() {
     const isCrit = QTEFocusEngine.hit();
+    this.lockActions(true);
+
     if (this.isNet) {
       this.ws.send(JSON.stringify({ type: "MOVE", action: "attack", crit: isCrit }));
-      this.setLog(isCrit ? "КРИТ! ЖДЕМ ХОД..." : "АТАКА! ЖДЕМ ХОД...");
+      this.setLog(isCrit ? "🔥 КРИТ! ЖДЕМ ХОД..." : "⚔️ АТАКА! ЖДЕМ ХОД...");
     } else {
       this.runAiTurn("attack", isCrit);
     }
+  },
+
+  applyRoundResult(res) {
+    const pCard = document.getElementById("player-card-anchor");
+    const eCard = document.getElementById("enemy-card-anchor");
+
+    // Показываем, что сделал соперник
+    this.enemyShield = (res.enemy_action === "defend");
+    if (res.enemy_action === "attack") eCard?.classList.add("anim-lunge-down");
+    if (res.enemy_action === "skill") eCard?.classList.add("anim-skill-blast");
+
+    this.updateHUD();
+
+    setTimeout(() => {
+      eCard?.classList.remove("anim-lunge-down", "anim-skill-blast");
+      
+      this.myHp = res.my_hp;
+      this.enemyHp = res.enemy_hp;
+      this.myEnergy = res.my_energy;
+      this.enemyEnergy = res.enemy_energy;
+      this.round = res.round; // Раунд синхронизируем с сервером без +1!
+      this.myShield = false;
+      this.enemyShield = false;
+
+      this.updateHUD();
+      this.setLog(`УРОН: -${res.dmg_dealt} | ПОЛУЧЕНО: -${res.dmg_taken}`);
+      this.fx(res.dmg_dealt >= res.dmg_taken ? "gold" : "red");
+
+      setTimeout(() => {
+        if (this.myHp <= 0 || this.enemyHp <= 0) {
+          this.endBattle(this.myHp > 0);
+        } else {
+          this.lockActions(false);
+          this.setLog("ВАШ ХОД! ВЫБЕРИТЕ ДЕЙСТВИЕ");
+        }
+      }, 900);
+    }, 600);
   },
 
   runAiTurn(playerAct, isCrit) {
@@ -336,43 +373,38 @@ window.NetDuel = {
 
       this.enemyHp = Math.max(0, this.enemyHp - pDmg);
       this.myHp = Math.max(0, this.myHp - eDmg);
-      this.myShield = false;
-      this.enemyShield = false;
       this.round++;
 
       setTimeout(() => {
         eCard?.classList.remove("anim-lunge-down", "anim-skill-blast");
+        this.myShield = false;
+        this.enemyShield = false;
         this.updateHUD();
+
         if (this.enemyHp <= 0 || this.myHp <= 0) {
           this.endBattle(this.myHp > 0);
         } else {
+          this.lockActions(false);
           this.setLog("ВАШ ХОД! ВЫБЕРИТЕ ДЕЙСТВИЕ");
         }
-      }, 600);
+      }, 700);
     }, 500);
-  },
-
-  applyRoundResult(res) {
-    this.myHp = res.my_hp;
-    this.enemyHp = res.enemy_hp;
-    this.myEnergy = res.my_energy;
-    this.enemyEnergy = res.enemy_energy;
-    this.round = res.round + 1;
-    this.updateHUD();
-    this.setLog(`УРОН: -${res.dmg_dealt} | ПОЛУЧЕНО: -${res.dmg_taken}`);
-    this.fx(res.dmg_dealt >= res.dmg_taken ? "gold" : "red");
-
-    if (this.myHp <= 0 || this.enemyHp <= 0) {
-      this.endBattle(this.myHp > 0);
-    }
   },
 
   endBattle(isWin) {
     this.setLog(isWin ? "🏆 ПОБЕДА ГРОССМЕЙСТЕРА!" : "ПОРАЖЕНИЕ...");
     this.fx(isWin ? "gold" : "red");
+    if (typeof sfx !== "undefined") {
+      if (isWin && sfx.playFanfare) sfx.playFanfare();
+      else if (!isWin && sfx.playWrong) sfx.playWrong();
+    }
     setTimeout(() => {
       document.getElementById("net-battle-overlay").style.display = "none";
-      if (this.ws) this.ws.close();
+      if (this.ws) {
+        try { this.ws.close(); } catch (e) {}
+        this.ws = null;
+      }
+      this.lockActions(false);
     }, 2800);
   },
 
