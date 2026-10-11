@@ -62,12 +62,18 @@ window.NetDuel = {
     this.setStep("lobby-step-select");
   },
 
+// Просто спрятать модальное окно лобби
+  hideLobbyModal() {
+    document.getElementById("duel-lobby-modal")?.classList.remove("active");
+  },
+
+  // Закрытие лобби пользователем по крестику
   closeLobby() {
     if (this.ws) {
       try { this.ws.close(); } catch (e) {}
       this.ws = null;
     }
-    document.getElementById("duel-lobby-modal")?.classList.remove("active");
+    this.hideLobbyModal();
   },
 
   setStep(id) {
@@ -106,15 +112,14 @@ window.NetDuel = {
         this.ws.send(JSON.stringify({ type: "READY", hero: this.myHero }));
       };
 
-      this.ws.onmessage = (e) => {
-        try {
-          const msg = JSON.parse(e.data);
-          if (msg.type === "MATCH_START") {
-            this.enemyHero = msg.enemy;
-            this.mySide = msg.side || "white";
-            this.closeLobby();
-            this.startBattle();
-          } else if (msg.type === "ROUND_RESULT") {
+this.ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === "MATCH_START") {
+          this.enemyHero = msg.enemy;
+          this.mySide = msg.side || "white";
+          this.hideLobbyModal(); 
+          this.startBattle();
+        } else if (msg.type === "ROUND_RESULT") {
             this.applyRoundResult(msg);
           } else if (msg.type === "OPPONENT_DISCONNECTED") {
             this.setLog("СОПЕРНИК ВЫШЕЛ ИЗ БОЯ");
@@ -155,7 +160,7 @@ window.NetDuel = {
       skillName: "Железная логика",
       img: "./assets/avatars/botvinnik.png" // Исправлено на PNG
     };
-    this.closeLobby();
+    this.hideLobbyModal();
     this.startBattle();
   },
 
