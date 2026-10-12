@@ -15,6 +15,11 @@ const InteractiveBoardEngine = {
   start() {
     const modal = document.getElementById("tactical-board-modal");
     const descEl = document.getElementById("tactical-task-title");
+    const skillTooltip = document.getElementById("battle-skill-tooltip");
+
+    // Прячем подсказку скилла на время решения задачи
+    if (skillTooltip) skillTooltip.style.display = "none";
+
     if (!modal) return;
 
     modal.style.display = "flex";
@@ -25,7 +30,8 @@ const InteractiveBoardEngine = {
       ? getRandomDuelPuzzle()
       : {
           fen: "6k1/5ppp/8/8/8/8/8/1R4K1 w - - 0 1",
-          move: { from: "b1", to: "b8" }
+          move: { from: "b1", to: "b8" },
+          desc: "Найдите лучший ход"
         };
 
     this.game = new Chess(this.currentPuzzle.fen);
@@ -121,6 +127,11 @@ const InteractiveBoardEngine = {
     setTimeout(() => {
       const modal = document.getElementById("tactical-board-modal");
       if (modal) modal.style.display = "none";
+
+      // Возвращаем подсказку скилла
+      const skillTooltip = document.getElementById("battle-skill-tooltip");
+      if (skillTooltip) skillTooltip.style.display = "flex";
+
       NetDuel.resolveTacticalStrike(true);
     }, 450);
   },
@@ -135,6 +146,11 @@ const InteractiveBoardEngine = {
     setTimeout(() => {
       const modal = document.getElementById("tactical-board-modal");
       if (modal) modal.style.display = "none";
+
+      // Возвращаем подсказку скилла
+      const skillTooltip = document.getElementById("battle-skill-tooltip");
+      if (skillTooltip) skillTooltip.style.display = "flex";
+
       NetDuel.resolveTacticalStrike(false);
     }, 550);
   }
@@ -179,32 +195,32 @@ window.NetDuel = {
 
     const el = document.createElement("div");
     el.className = `floating-dmg-num ${isCrit ? "crit" : ""}`;
-    el.textContent = isCrit ? `💥 -${amount}` : `-${amount}`;
+    el.textContent = isCrit ? `КРИТ -${amount}` : `-${amount}`;
     anchor.appendChild(el);
-    setTimeout(() => el.remove(), 950);
+    setTimeout(() => el.remove(), 1600); // 1.6 сек, чтобы четко увидеть урон
   },
 
   showSuperCutIn(hero, skillName) {
-  const overlay = document.getElementById("net-battle-overlay");
-  if (!overlay) return;
+    const overlay = document.getElementById("net-battle-overlay");
+    if (!overlay) return;
 
-  const cutin = document.createElement("div");
-  cutin.className = "super-cutin-overlay";
-  cutin.innerHTML = `
-    <div class="super-cutin-banner">
-      <img class="cutin-avatar" src="${hero.img}" alt="${hero.name}">
-      <div class="cutin-text-group">
-        <span class="cutin-hero-name">${hero.name}</span>
-        <span class="cutin-skill-name">«${skillName || "КОРОННЫЙ ХОД"}»</span>
+    const cutin = document.createElement("div");
+    cutin.className = "super-cutin-overlay";
+    cutin.innerHTML = `
+      <div class="super-cutin-banner">
+        <img class="cutin-avatar" src="${hero.img}" alt="${hero.name}">
+        <div class="cutin-text-group">
+          <span class="cutin-hero-name">${hero.name}</span>
+          <span class="cutin-skill-name">«${skillName || "КОРОННЫЙ ХОД"}»</span>
+        </div>
       </div>
-    </div>
-  `;
+    `;
 
-  overlay.appendChild(cutin);
-  this.screenShake(true);
-  this.vibrate([60, 40, 100]);
-  setTimeout(() => cutin.remove(), 2400);
-},
+    overlay.appendChild(cutin);
+    this.screenShake(true);
+    this.vibrate([60, 40, 90]);
+    setTimeout(() => cutin.remove(), 2400); // Увеличенная задержка суперудара
+  },
 
   getHero() {
     let h = window.currentHeroData;
@@ -233,13 +249,14 @@ window.NetDuel = {
       atk: heroCardData.atk,
       def: heroCardData.def,
       rank: rankInfo.name,
+      rankKey: heroCardData.rank,
       rankColor: rankInfo.color,
       skillName: heroCardData.skillName,
       skillId: heroCardData.skillId
     };
   },
 
-  openLobby() {
+openLobby() {
     this.myHero = this.getHero();
     if (!this.myHero) return;
 
@@ -248,9 +265,9 @@ window.NetDuel = {
       const aiBtn = document.createElement("button");
       aiBtn.id = "btn-ai-duel";
       aiBtn.className = "duel-secondary-btn";
-      aiBtn.style.borderColor = "var(--accent-color)";
-      aiBtn.style.color = "var(--accent-color)";
-      aiBtn.textContent = "🤖 Бой с Ботвинником (Одиночный)";
+      aiBtn.style.borderColor = "var(--accent-gold)";
+      aiBtn.style.color = "var(--accent-gold)";
+      aiBtn.textContent = "Бой с Ботвинником (Одиночный)";
       aiBtn.onclick = () => NetDuel.startOfflineAiMatch();
       actionsStack.appendChild(aiBtn);
     }
@@ -362,6 +379,7 @@ window.NetDuel = {
       atk: bData.atk,
       def: bData.def,
       rank: "ЛЕГЕНДА",
+      rankKey: "legend",
       rankColor: "#e2b868",
       skillName: bData.skillName,
       skillId: bData.skillId,
@@ -373,8 +391,9 @@ window.NetDuel = {
 
 startBattle() {
     if (typeof stopAllTargetVideosImmediate === "function") {
-    stopAllTargetVideosImmediate();
-  }
+      stopAllTargetVideosImmediate();
+    }
+
     document.getElementById("net-battle-overlay").style.display = "flex";
     document.getElementById("duel-victory-modal")?.classList.remove("active");
 
@@ -391,22 +410,6 @@ startBattle() {
       sfx.playBattleStart();
     }
     this.vibrate(60);
-
-    const mySideBadge = document.querySelector(".player-panel .actor-side-badge");
-    const enemySideBadge = document.querySelector(".enemy-panel .actor-side-badge");
-    if (mySideBadge && enemySideBadge) {
-      if (this.mySide === "black") {
-        mySideBadge.className = "actor-side-badge side-black";
-        mySideBadge.textContent = "ЧЁРНЫЕ";
-        enemySideBadge.className = "actor-side-badge side-white";
-        enemySideBadge.textContent = "БЕЛЫЕ";
-      } else {
-        mySideBadge.className = "actor-side-badge side-white";
-        mySideBadge.textContent = "БЕЛЫЕ";
-        enemySideBadge.className = "actor-side-badge side-black";
-        enemySideBadge.textContent = "ЧЁРНЫЕ";
-      }
-    }
 
     this.lockActions(false);
     this.updateHUD();
@@ -429,8 +432,13 @@ startBattle() {
     set("my-hero-name", this.myHero.name);
     const myImg = document.getElementById("my-avatar-img");
     if (myImg) myImg.src = this.myHero.img;
-    set("my-hp-text", `${Math.max(0, this.myHp)} / 100`);
-    document.getElementById("my-hp-bar").style.width = `${Math.max(0, this.myHp)}%`;
+
+    const currentMyHp = Math.max(0, this.myHp);
+    set("my-hp-text", `${currentMyHp} / 100`);
+    document.getElementById("my-hp-bar").style.width = `${currentMyHp}%`;
+    const myGhost = document.getElementById("my-hp-ghost");
+    if (myGhost) myGhost.style.width = `${currentMyHp}%`;
+
     set("my-atk-val", this.myHero.atk);
     set("my-def-val", this.myHero.def);
     set("my-energy-val", `${this.myEnergy}/2`);
@@ -439,16 +447,20 @@ startBattle() {
     const pRankBadge = document.querySelector(".player-panel .actor-side-badge");
     if (pRankBadge && this.myHero.rank) {
       pRankBadge.textContent = this.myHero.rank;
-      pRankBadge.style.color = this.myHero.rankColor || "#fff";
-      pRankBadge.style.borderColor = this.myHero.rankColor || "rgba(255,255,255,0.2)";
+      pRankBadge.className = `actor-side-badge rank-${(this.myHero.rankKey || 'legend').toLowerCase()}`;
     }
 
     // 2. Оппонент
     set("enemy-hero-name", this.enemyHero.name);
     const enemyImg = document.getElementById("enemy-avatar-img");
     if (enemyImg) enemyImg.src = this.enemyHero.img;
-    set("enemy-hp-text", `${Math.max(0, this.enemyHp)} / 100`);
-    document.getElementById("enemy-hp-bar").style.width = `${Math.max(0, this.enemyHp)}%`;
+
+    const currentEnemyHp = Math.max(0, this.enemyHp);
+    set("enemy-hp-text", `${currentEnemyHp} / 100`);
+    document.getElementById("enemy-hp-bar").style.width = `${currentEnemyHp}%`;
+    const enemyGhost = document.getElementById("enemy-hp-ghost");
+    if (enemyGhost) enemyGhost.style.width = `${currentEnemyHp}%`;
+
     set("enemy-atk-val", this.enemyHero.atk);
     set("enemy-def-val", this.enemyHero.def);
     set("enemy-energy-tracker", `${this.enemyEnergy}/2`);
@@ -457,8 +469,7 @@ startBattle() {
     const eRankBadge = document.querySelector(".enemy-panel .actor-side-badge");
     if (eRankBadge && this.enemyHero.rank) {
       eRankBadge.textContent = this.enemyHero.rank;
-      eRankBadge.style.color = this.enemyHero.rankColor || "#fff";
-      eRankBadge.style.borderColor = this.enemyHero.rankColor || "rgba(255,255,255,0.2)";
+      eRankBadge.className = `actor-side-badge rank-${(this.enemyHero.rankKey || 'legend').toLowerCase()}`;
     }
 
     // 3. Диоды энергии кнопки скилла
@@ -482,7 +493,7 @@ startBattle() {
 
     if (this.myHero) {
       if (skillNameEl) {
-        skillNameEl.textContent = (this.myHero.skillName || "НАВЫК").toUpperCase() + ":";
+        skillNameEl.textContent = (this.myHero.skillName || "НАВЫК").toUpperCase();
       }
       if (skillTipEl) {
         const heroData = (typeof HERO_STATS_DATA !== "undefined") ? HERO_STATS_DATA[this.myHero.id] : null;
@@ -491,7 +502,6 @@ startBattle() {
           : "Накопите 2 единицы энергии для сокрушительного удара";
       }
     }
-
   },
 
   setLog(text) {
@@ -499,7 +509,7 @@ startBattle() {
     if (el) el.textContent = text;
   },
 
-  chooseAction(type) {
+chooseAction(type) {
     if (this.isWaitingOpponent) return;
 
     if (type === "attack") {
@@ -538,9 +548,6 @@ startBattle() {
         this.ws.send(JSON.stringify({ type: "MOVE", action: "skill" }));
         this.setLog("КОРОННЫЙ ХОД! ЖДЕМ ХОД...");
       } else {
-        this.myEnergy = 0;
-        this.fx("gold");
-        this.updateHUD();
         this.runAiTurn("skill", false);
       }
     }
@@ -563,7 +570,7 @@ startBattle() {
 
     if (this.isNet) {
       this.ws.send(JSON.stringify({ type: "MOVE", action: "attack", crit: isCrit }));
-      this.setLog(isCrit ? "🔥 МАТ НАЙДЕН! КРИТ-УРОН!" : "⚔️ АТАКА! ЖДЕМ ХОД...");
+      this.setLog(isCrit ? "МАТ НАЙДЕН • КРИТИЧЕСКИЙ УРОН" : "АТАКА • ОЖИДАНИЕ ХОДА");
     } else {
       this.runAiTurn("attack", isCrit);
     }
@@ -587,7 +594,6 @@ startBattle() {
     setTimeout(() => {
       eCard?.classList.remove("anim-lunge-down", "anim-skill-blast");
 
-      // Всплывающие цифры урона над персонажами
       const isCritAtk = res.dmg_dealt > (this.myHero.atk * 1.2);
       if (res.dmg_dealt > 0) {
         this.spawnDamageNumber("enemy-card-anchor", res.dmg_dealt, isCritAtk);
@@ -596,7 +602,6 @@ startBattle() {
         this.spawnDamageNumber("player-card-anchor", res.dmg_taken, false);
       }
 
-      // Звуки урона и тряска
       if (typeof sfx !== "undefined") {
         if (res.dmg_taken > 0) {
           sfx.playDamageTaken();
@@ -635,7 +640,7 @@ startBattle() {
     }, 600);
   },
 
- runAiTurn(playerAct, isCrit) {
+runAiTurn(playerAct, isCrit) {
     const pCard = document.getElementById("player-card-anchor");
     const eCard = document.getElementById("enemy-card-anchor");
 
@@ -725,6 +730,17 @@ startBattle() {
           ignoreEnemyDef = true;
           pDmg = Math.round(this.myHero.atk * ATK_MULT * 1.3);
           this.setLog("ПАРТИЯ ВЕКА: НЕОТРАЗИМЫЙ ТОРНАДО!");
+          break;
+
+        case "KASPAROV_ADVENTURE": // Каспаров
+          pDmg = Math.round(this.myHero.atk * ATK_MULT * 1.15);
+          this.myEnergy = 1; // Сохранение темпа (+1 энергия)
+          if (this.enemyShield) {
+            const halfBlock = Math.round((this.enemyHero.def * DEF_MULT) * 0.5);
+            pDmg = Math.max(10, pDmg - halfBlock);
+          }
+          this.screenShake(true);
+          this.setLog("ДУХ ПРИКЛЮЧЕНИЙ: ШТУРМ И СОХРАНЕНИЕ ТЕМПА (+1⚡)!");
           break;
 
         default:
@@ -820,9 +836,9 @@ startBattle() {
 
     if (isDraw) {
       if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
-      if (crownEl) crownEl.innerText = "🤝";
+      if (crownEl) crownEl.innerText = "♚ ♚";
       if (titleEl) {
-        titleEl.innerText = "БОЕВАЯ НИЧЬЯ!";
+        titleEl.innerText = "БОЕВАЯ НИЧЬЯ";
         titleEl.style.color = "#00ffcc";
       }
       if (subEl) subEl.innerText = "НИКТО НЕ УСТУПИЛ";
@@ -832,19 +848,19 @@ startBattle() {
     } else if (isWin) {
       if (typeof sfx !== "undefined" && sfx.playFanfare) sfx.playFanfare();
       this.vibrate([100, 50, 150]);
-      if (crownEl) crownEl.innerText = "👑";
+      if (crownEl) crownEl.innerText = "♚";
       if (titleEl) {
-        titleEl.innerText = "ШАХ И МАТ!";
+        titleEl.innerText = "ШАХ И МАТ";
         titleEl.style.color = "#f1c40f";
       }
-      if (subEl) subEl.innerText = "ВЕЛИКОЛЕПНАЯ ПОБЕДА!";
+      if (subEl) subEl.innerText = "ВЕЛИКОЛЕПНАЯ ПОБЕДА";
       if (avatarEl) avatarEl.src = this.myHero.img;
       if (nameEl) nameEl.innerText = this.myHero.name;
       if (detailsEl) detailsEl.innerHTML = `Вы одержали триумф на <b>${this.round} раунде</b>!`;
     } else {
       if (typeof sfx !== "undefined" && sfx.playCheckmate) sfx.playCheckmate();
       this.vibrate(200);
-      if (crownEl) crownEl.innerText = "⚔️";
+      if (crownEl) crownEl.innerText = "♚";
       if (titleEl) {
         titleEl.innerText = "ПАРТИЯ ОКОНЧЕНА";
         titleEl.style.color = "#ff4d6d";
@@ -861,17 +877,17 @@ startBattle() {
   },
 
   closeVictoryModal() {
-  document.getElementById("duel-victory-modal")?.classList.remove("active");
-  document.getElementById("net-battle-overlay").style.display = "none";
-  if (this.ws) {
-    try { this.ws.close(); } catch (e) {}
-    this.ws = null;
-  }
-  if (typeof stopAllTargetVideosImmediate === "function") {
-    stopAllTargetVideosImmediate();
-  }
-  this.lockActions(false);
-},
+    document.getElementById("duel-victory-modal")?.classList.remove("active");
+    document.getElementById("net-battle-overlay").style.display = "none";
+    if (this.ws) {
+      try { this.ws.close(); } catch (e) {}
+      this.ws = null;
+    }
+    if (typeof stopAllTargetVideosImmediate === "function") {
+      stopAllTargetVideosImmediate();
+    }
+    this.lockActions(false);
+  },
 
   fx(color) {
     const div = document.createElement("div");

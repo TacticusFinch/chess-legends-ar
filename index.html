@@ -122,13 +122,16 @@
             </div>
             <div class="hp-badge-wrap">
               <span class="hp-tag">HP</span>
-              <span id="enemy-hp-text" class="actor-points">100 / 100</span>
+              <span id="enemy-hp-text" class="actor-points">100/100</span>
             </div>
           </div>
           
-          <div class="meter-track">
-            <div id="enemy-hp-bar" class="meter-fill enemy-fill" style="width: 100%;"></div>
-          </div>
+        <div class="meter-track">
+          <!-- След урона (Ghost Bar) -->
+          <div id="enemy-hp-ghost" class="meter-ghost" style="width: 100%;"></div>
+          <!-- Основная полоса -->
+          <div id="enemy-hp-bar" class="meter-fill enemy-fill" style="width: 100%;"></div>
+        </div>
 
           <div class="tactical-stats-row">
             <div class="stat-chip atk-chip">
@@ -198,12 +201,15 @@
             </div>
             <div class="hp-badge-wrap">
               <span class="hp-tag">HP</span>
-              <span id="my-hp-text" class="actor-points">100 / 100</span>
+              <span id="my-hp-text" class="actor-points">100/100</span>
             </div>
           </div>
           
           <div class="meter-track">
-            <div id="my-hp-bar" class="meter-fill player-fill" style="width: 100%;"></div>
+          	<!-- След урона (Ghost Bar) -->
+          	<div id="my-hp-ghost" class="meter-ghost" style="width: 100%;"></div>
+          	<!-- Основная полоса -->
+          	<div id="my-hp-bar" class="meter-fill player-fill" style="width: 100%;"></div>
           </div>
 
           <div class="tactical-stats-row">

@@ -1420,3 +1420,117 @@ body {
   text-overflow: clip;       /* Убираем многоточие */
   max-width: 100%;
 }
+
+/* Двухслойный трек здоровья с эффектом тающего следа */
+.meter-track {
+  position: relative;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  margin: 6px 0 9px 0;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+}
+
+/* Бело-желтый след полученного урона */
+.meter-ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+  border-radius: 4px;
+  transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.35s; /* Задержка 0.35s перед таянием */
+  z-index: 1;
+}
+
+/* Основная цветная полоса здоровья */
+.meter-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 4px;
+  z-index: 2;
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.meter-fill.player-fill {
+  background: linear-gradient(90deg, #d4a347, #fde047);
+  box-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
+}
+.meter-fill.enemy-fill {
+  background: linear-gradient(90deg, #991b1b, #ef4444);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+/* Всплывающие цифры урона: увеличенный размер и долгая плавная задержка */
+.floating-dmg-num {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translate(-50%, 0);
+  font-family: 'JetBrains Mono', monospace, -apple-system;
+  font-size: 26px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 4px 14px rgba(0, 0, 0, 0.95), 0 0 10px rgba(239, 68, 68, 0.8);
+  pointer-events: none;
+  z-index: 300;
+  animation: floatUpSlow 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.floating-dmg-num.crit {
+  font-size: 34px;
+  color: #fde047;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.95), 0 0 24px rgba(250, 204, 21, 0.9);
+}
+
+@keyframes floatUpSlow {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20px) scale(0.6);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -8px) scale(1.25);
+  }
+  30% {
+    transform: translate(-50%, -15px) scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: translate(-50%, -28px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -55px) scale(0.9);
+  }
+}
+
+/* Премиальная плашка ранга чемпиона */
+.actor-side-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(8, 12, 18, 0.92); /* Всегда темный контрастный фон */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+}
+
+/* Акцентные классы по рангам для четкого свечения текста */
+.actor-side-badge.rank-legend      { border-color: #e2b868; color: #fde047 !important; text-shadow: 0 0 8px rgba(226, 184, 104, 0.5); }
+.actor-side-badge.rank-phenomenon  { border-color: #f43f5e; color: #fda4af !important; text-shadow: 0 0 8px rgba(244, 63, 94, 0.5); }
+.actor-side-badge.rank-singularity { border-color: #00ffcc; color: #a7f3d0 !important; text-shadow: 0 0 8px rgba(0, 255, 204, 0.5); }
+.actor-side-badge.rank-grandmaster { border-color: #38bdf8; color: #bae6fd !important; text-shadow: 0 0 8px rgba(56, 189, 248, 0.5); }
+.actor-side-badge.rank-joker       { border-color: #c084fc; color: #f3e8ff !important; text-shadow: 0 0 8px rgba(192, 132, 252, 0.5); }
+.actor-side-badge.rank-maestro     { border-color: #94a3b8; color: #f1f5f9 !important; text-shadow: 0 0 8px rgba(148, 163, 184, 0.5); }
