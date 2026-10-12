@@ -475,6 +475,23 @@ startBattle() {
     document.getElementById("duel-eval-fill").style.height = `${evalScore}%`;
     const scoreVal = ((evalScore - 50) / 10).toFixed(1);
     set("duel-eval-score", scoreVal > 0 ? `+${scoreVal}` : scoreVal);
+
+    // 5. Подсказка уникального супернавыка в центре экрана
+    const skillTipEl = document.getElementById("tooltip-skill-desc");
+    const skillNameEl = document.getElementById("tooltip-skill-name");
+
+    if (this.myHero) {
+      if (skillNameEl) {
+        skillNameEl.textContent = (this.myHero.skillName || "НАВЫК").toUpperCase() + ":";
+      }
+      if (skillTipEl) {
+        const heroData = (typeof HERO_STATS_DATA !== "undefined") ? HERO_STATS_DATA[this.myHero.id] : null;
+        skillTipEl.textContent = (heroData && heroData.tip) 
+          ? heroData.tip 
+          : "Накопите 2 единицы энергии для сокрушительного удара";
+      }
+    }
+
   },
 
   setLog(text) {

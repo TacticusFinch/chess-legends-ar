@@ -1104,23 +1104,23 @@ const HERO_RANKS = {
 
 // Обновленные статы с карточек
 const HERO_STATS_DATA = {
-  0:  { atk: 6,  def: 9,  rank: "legend",      skillName: "Теория равновесия",       skillId: "STEINITZ_EQUILIBRIUM" },
-  1:  { atk: 7,  def: 7,  rank: "legend",      skillName: "Психологический гамбит",  skillId: "LASKER_GAMBIT" },
-  2:  { atk: 6,  def: 7,  rank: "legend",      skillName: "Гениальная интуиция",     skillId: "CAPABLANCA_INTUITION" },
-  3:  { atk: 9,  def: 10, rank: "phenomenon",  skillName: "Квантовый эндшпиль",      skillId: "CARLSEN_ENDGAME" },
-  4:  { atk: 6,  def: 6,  rank: "joker",       skillName: "Хамелеон",               skillId: "ENIGMA_CHAMELEON" },
-  5:  { atk: 10, def: 6,  rank: "legend",      skillName: "Ярость шторма",          skillId: "TAL_STORM" },
-  6:  { atk: 15, def: 15, rank: "singularity", skillName: "Суперкомпьютер",         skillId: "STOCKFISH_ENGINE" },
-  7:  { atk: 6,  def: 8,  rank: "legend",      skillName: "Архитектор мысли",        skillId: "BOTVINNIK_ARCHITECT" },
-  8:  { atk: 8,  def: 8,  rank: "legend",      skillName: "Ментальный торнадо",      skillId: "FISCHER_TORNADO" },
-  9:  { atk: 8,  def: 8,  rank: "grandmaster", skillName: "Дворец теней",            skillId: "CARUANA_PALACE" },
-  10: { atk: 7,  def: 8,  rank: "grandmaster", skillName: "Экстремальное выживание", skillId: "NAKAMURA_SURVIVAL" },
-  11: { atk: 7,  def: 7,  rank: "legend",      skillName: "Сакральный разум",        skillId: "GUKESH_MIND" },
-  12: { atk: 5,  def: 6,  rank: "maestro",     skillName: "Ладейная гармония",       skillId: "RUBINSTEIN_HARMONY" },
-  13: { atk: 6,  def: 10, rank: "legend",      skillName: "Железная профилактика",   skillId: "PETROSYAN_FORTRESS" },
-  14: { atk: 6,  def: 7,  rank: "legend",      skillName: "Магистр гармонии",        skillId: "SMYSLOV_SYMPHONY" },
-  15: { atk: 10, def: 9,  rank: "phenomenon",  skillName: "Дух приключений",         skillId: "KASPAROV_ADVENTURE" },
-  16: { atk: 7,  def: 7,  rank: "legend",      skillName: "Воля дракона",            skillId: "DING_DRAGON" }
+  0:  { atk: 6,  def: 9,  rank: "legend",      skillName: "Теория равновесия",       tip: "Пробивает блок и навсегда снижает атаку врага на 2", skillId: "STEINITZ_EQUILIBRIUM" },
+  1:  { atk: 7,  def: 7,  rank: "legend",      skillName: "Психологический гамбит",  tip: "Наносит урон и лишает врага Защиты на 1 ход", skillId: "LASKER_GAMBIT" },
+  2:  { atk: 6,  def: 7,  rank: "legend",      skillName: "Гениальная интуиция",     tip: "Чистый урон, 100% игнорирующий броню щита", skillId: "CAPABLANCA_INTUITION" },
+  3:  { atk: 9,  def: 10, rank: "phenomenon",  skillName: "Квантовый эндшпиль",      tip: "Добивание: +20% урона от потерянного HP врага", skillId: "CARLSEN_ENDGAME" },
+  4:  { atk: 6,  def: 6,  rank: "joker",       skillName: "Хамелеон",               tip: "Отражает атаку врага в него же или крадет энергию", skillId: "ENIGMA_CHAMELEON" },
+  5:  { atk: 10, def: 6,  rank: "legend",      skillName: "Ярость шторма",          tip: "Жертвует 8 HP ради сокрушительного удара 42 DMG", skillId: "TAL_STORM" },
+  6:  { atk: 15, def: 15, rank: "singularity", skillName: "Суперкомпьютер",         tip: "Абсолютный урон 48 DMG и квантовое лечение +15 HP", skillId: "STOCKFISH_ENGINE" },
+  7:  { atk: 6,  def: 8,  rank: "legend",      skillName: "Архитектор мысли",        tip: "Удар и снижение следующего входящего урона на 60%", skillId: "BOTVINNIK_ARCHITECT" },
+  8:  { atk: 8,  def: 8,  rank: "legend",      skillName: "Ментальный торнадо",      tip: "Партия века: неудержимый штурм сквозь любые щиты", skillId: "FISCHER_TORNADO" },
+  9:  { atk: 8,  def: 8,  rank: "grandmaster", skillName: "Дворец теней",            tip: "Удар и полное обнуление запаса энергии соперника", skillId: "CARUANA_PALACE" },
+  10: { atk: 7,  def: 8,  rank: "grandmaster", skillName: "Экстремальное выживание", tip: "При здоровье ниже 35 HP моментально лечит +30 HP", skillId: "NAKAMURA_SURVIVAL" },
+  11: { atk: 7,  def: 7,  rank: "legend",      skillName: "Сакральный разум",        tip: "Гарантирует автоматический крит на следующий ход", skillId: "GUKESH_MIND" },
+  12: { atk: 5,  def: 6,  rank: "maestro",     skillName: "Ладейная гармония",       tip: "Вампиризм: восстанавливает HP на 45% от урона", skillId: "RUBINSTEIN_HARMONY" },
+  13: { atk: 6,  def: 10, rank: "legend",      skillName: "Железная профилактика",   tip: "Непробиваемый щит и мгновенное исцеление +22 HP", skillId: "PETROSYAN_FORTRESS" },
+  14: { atk: 6,  def: 7,  rank: "legend",      skillName: "Магистр гармонии",        tip: "Удар и выравнивание разницы здоровья на 10 HP", skillId: "SMYSLOV_SYMPHONY" },
+  15: { atk: 10, def: 9,  rank: "phenomenon",  skillName: "Дух приключений",         tip: "Вулканический штурм с критическим сотрясением", skillId: "KASPAROV_ADVENTURE" },
+  16: { atk: 7,  def: 7,  rank: "legend",      skillName: "Воля дракона",            tip: "Режим контратаки: враг получит шипами 15 DMG при ударе", skillId: "DING_DRAGON" }
 };
 
 // Применяем параметры к объекту HEROES
