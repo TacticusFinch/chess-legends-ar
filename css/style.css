@@ -1149,230 +1149,165 @@ body {
 
 
 /* ==========================================================
-   ПРОФЕССИОНАЛЬНЫЕ ГЕЙМЕРСКИЕ КНОПКИ ДЕЙСТВИЯ
+   CYBER-TECH КНОПКИ ДЕЙСТВИЯ (ESPORTS HEX-EDGED)
    ========================================================== */
 .tactical-deck {
   display: grid;
   grid-template-columns: 1fr 1fr 1.25fr;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.tactical-btn {
-  position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  cursor: pointer;
-  background: linear-gradient(180deg, #151b27 0%, #0c1017 100%);
-  color: #fff;
-  min-height: 58px;
-  box-sizing: border-box;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  transition: transform 0.1s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-  user-select: none;
-}
-
-.tactical-btn:active {
-  transform: translateY(2px) scale(0.97);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
-}
-
-.btn-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.btn-type {
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  color: #718096;
-}
-
-.btn-stat {
-  font-family: monospace;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.btn-title {
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin-top: 2px;
-  text-align: left;
-}
-
-/* 1. Кнопка УДАР */
-.btn-atk {
-  border-color: rgba(239, 68, 68, 0.3);
-}
-.btn-atk .btn-stat { color: #f87171; }
-.btn-atk .btn-title { color: #fca5a5; }
-.btn-atk:active { border-color: #ef4444; }
-
-/* 2. Кнопка БЛОК */
-.btn-def {
-  border-color: rgba(56, 189, 248, 0.3);
-}
-.btn-def .btn-stat { color: #38bdf8; }
-.btn-def .btn-title { color: #bae6fd; }
-.btn-def:active { border-color: #38bdf8; }
-
-/* 3. Кнопка ТРИУМФ (Ультимейт) */
-.btn-spc {
-  border-color: rgba(226, 184, 104, 0.35);
-  background: linear-gradient(180deg, #221a10 0%, #0e0c08 100%);
-}
-.btn-spc .btn-stat { color: #facc15; }
-.btn-spc .btn-title { color: #fde047; }
-
-/* Состояние полной готовности ультимейта */
-.btn-spc.ready {
-  background: linear-gradient(180deg, #3d2c11 0%, #1c1306 100%);
-  border-color: #facc15;
-  box-shadow: 0 0 18px rgba(250, 204, 21, 0.35), inset 0 1px 0 rgba(254, 240, 138, 0.5);
-  animation: ultReadyPulse 1.2s infinite alternate;
-}
-.btn-spc.ready .btn-stat {
-  background: #facc15;
-  color: #000;
-  font-weight: 900;
-}
-
-@keyframes ultReadyPulse {
-  0%   { transform: scale(1); filter: brightness(1); }
-  100% { transform: scale(1.02); filter: brightness(1.25); }
-}
-
-/* ==========================================================
-   КИБЕРСПОРТИВНЫЕ БОЕВЫЕ КНОПКИ
-   ========================================================== */
-.tactical-deck {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.15fr;
   gap: 10px;
   margin-top: 12px;
 }
 
 .esport-btn {
   position: relative;
-  height: 54px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  background: linear-gradient(180deg, #1b2434 0%, #0d121c 100%);
+  height: 60px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  background: linear-gradient(180deg, #182234 0%, #0c111a 100%);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  color: #fff;
-  padding: 0 8px;
+  gap: 3px;
+  padding: 0 10px;
   box-sizing: border-box;
-  box-shadow: 
-    0 8px 18px rgba(0, 0, 0, 0.7),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  transition: transform 0.08s ease, box-shadow 0.15s ease, border-color 0.2s ease, filter 0.2s ease;
+  /* Скошенные фаски по углам в стиле кибер-интерфейсов */
+  clip-path: polygon(
+    10px 0, 100% 0, 
+    100% calc(100% - 10px), calc(100% - 10px) 100%, 
+    0 100%, 0 10px
+  );
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+  transition: transform 0.08s ease, filter 0.2s ease;
   overflow: hidden;
 }
 
-/* Верхняя световая полоса-лезвие */
-.esport-light-bar {
+/* Внутренняя металлическая рамка с фаской */
+.esport-btn::before {
+  content: "";
   position: absolute;
-  top: 0;
-  left: 15%;
-  right: 15%;
-  height: 2px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.2);
-  transition: all 0.25s ease;
+  inset: 1px;
+  clip-path: polygon(
+    10px 0, 100% 0, 
+    100% calc(100% - 10px), calc(100% - 10px) 100%, 
+    0 100%, 0 10px
+  );
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.4) 100%);
+  pointer-events: none;
+}
+
+/* Бегущий стеклянный блик (Sheen) */
+.esport-btn::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 40%;
+  height: 200%;
+  background: linear-gradient(
+    90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.18), 
+    transparent
+  );
+  transform: rotate(25deg);
+  pointer-events: none;
+  transition: transform 0.6s ease;
+}
+
+.esport-btn:active::after {
+  transform: translateX(350%) rotate(25deg);
+}
+
+.esport-btn:active {
+  transform: translateY(3px) scale(0.96);
 }
 
 .esport-btn-text {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 13px;
   font-weight: 900;
-  letter-spacing: 2.5px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   z-index: 2;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
 }
 
-.esport-btn:active {
-  transform: translateY(2px) scale(0.97);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.85);
+/* 1. АТАКА */
+.btn-atk {
+  background: linear-gradient(180deg, #241416 0%, #110708 100%);
+  border-bottom: 2px solid #ef4444;
 }
+.btn-atk .esport-light-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: #ef4444;
+  box-shadow: 0 0 12px #ef4444;
+}
+.btn-atk .esport-btn-text { color: #fca5a5; }
 
-/* 1. АТАКА (Неоновый багрово-алый) */
-.btn-atk { border-color: rgba(239, 68, 68, 0.3); }
-.btn-atk .esport-light-bar { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
-.btn-atk .esport-btn-text { color: #fee2e2; }
-.btn-atk:active { border-color: #ef4444; }
+/* 2. ЗАЩИТА */
+.btn-def {
+  background: linear-gradient(180deg, #101c2a 0%, #070e17 100%);
+  border-bottom: 2px solid #38bdf8;
+}
+.btn-def .esport-light-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: #38bdf8;
+  box-shadow: 0 0 12px #38bdf8;
+}
+.btn-def .esport-btn-text { color: #bae6fd; }
 
-/* 2. ЗАЩИТА (Ледяной сапфир) */
-.btn-def { border-color: rgba(56, 189, 248, 0.3); }
-.btn-def .esport-light-bar { background: #38bdf8; box-shadow: 0 0 10px #38bdf8; }
-.btn-def .esport-btn-text { color: #e0f2fe; }
-.btn-def:active { border-color: #38bdf8; }
-
-/* 3. СКИЛЛ (Золотой энерго-блок) */
+/* 3. СКИЛЛ (СВЕРХУДАР) */
 .btn-spc {
-  border-color: rgba(226, 184, 104, 0.35);
-  background: linear-gradient(180deg, #241c11 0%, #100d08 100%);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
+  background: linear-gradient(180deg, #261d10 0%, #110d06 100%);
+  border-bottom: 2px solid rgba(234, 179, 8, 0.4);
 }
-.btn-spc .esport-light-bar { background: #eab308; }
-.btn-spc .esport-btn-text { color: #fef08a; font-size: 12px; }
+.btn-spc .esport-light-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: #eab308;
+  box-shadow: 0 0 10px #eab308;
+}
+.btn-spc .esport-btn-text { color: #fef08a; }
 
-/* LED-индикаторы заряда на кнопке скилла */
+/* Диоды заряда */
 .esport-spc-leds {
   display: flex;
   gap: 6px;
+  margin-bottom: 2px;
   z-index: 2;
 }
 .esport-spc-leds .led {
-  width: 14px;
-  height: 3px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.12);
-  transition: all 0.3s ease;
+  width: 16px;
+  height: 4px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.6);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .esport-spc-leds .led.on {
   background: #facc15;
-  box-shadow: 0 0 8px #facc15;
+  box-shadow: 0 0 10px #facc15, 0 0 3px #fff;
 }
 
-/* Состояние готовности ультимейта (MAX ENERGY) */
+/* УЛЬТИМЕЙТ ГОТОВ (2/2) */
 .btn-spc.ready {
-  background: linear-gradient(180deg, #3d2c11 0%, #1c1407 100%);
-  border-color: #facc15;
-  box-shadow: 
-    0 0 22px rgba(250, 204, 21, 0.4),
-    inset 0 1px 0 rgba(254, 240, 138, 0.4);
-  animation: esportPulse 1.2s ease-in-out infinite alternate;
+  background: linear-gradient(180deg, #3d2c11 0%, #1f1406 100%);
+  border-bottom: 2px solid #facc15;
+  box-shadow: 0 0 24px rgba(250, 204, 21, 0.45);
+  animation: ultFlame 1.3s ease-in-out infinite alternate;
 }
-.btn-spc.ready .esport-light-bar {
-  left: 5%;
-  right: 5%;
-  background: #fff;
-  box-shadow: 0 0 14px #facc15;
+.btn-spc.ready .esport-btn-text {
+  color: #fff;
+  text-shadow: 0 0 12px #facc15;
 }
 
-@keyframes esportPulse {
-  0%   { filter: brightness(1); }
-  100% { filter: brightness(1.25); }
+@keyframes ultFlame {
+  0% { filter: brightness(1); box-shadow: 0 0 16px rgba(250, 204, 21, 0.3); }
+  100% { filter: brightness(1.25); box-shadow: 0 0 28px rgba(250, 204, 21, 0.6); }
 }
 
 .top-hud {

@@ -364,6 +364,9 @@ window.NetDuel = {
   },
 
 startBattle() {
+    if (typeof stopAllTargetVideosImmediate === "function") {
+    stopAllTargetVideosImmediate();
+  }
     document.getElementById("net-battle-overlay").style.display = "flex";
     document.getElementById("duel-victory-modal")?.classList.remove("active");
 
@@ -735,14 +738,17 @@ startBattle() {
   },
 
   closeVictoryModal() {
-    document.getElementById("duel-victory-modal")?.classList.remove("active");
-    document.getElementById("net-battle-overlay").style.display = "none";
-    if (this.ws) {
-      try { this.ws.close(); } catch (e) {}
-      this.ws = null;
-    }
-    this.lockActions(false);
-  },
+  document.getElementById("duel-victory-modal")?.classList.remove("active");
+  document.getElementById("net-battle-overlay").style.display = "none";
+  if (this.ws) {
+    try { this.ws.close(); } catch (e) {}
+    this.ws = null;
+  }
+  if (typeof stopAllTargetVideosImmediate === "function") {
+    stopAllTargetVideosImmediate();
+  }
+  this.lockActions(false);
+},
 
   fx(color) {
     const div = document.createElement("div");

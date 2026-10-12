@@ -474,12 +474,37 @@ function openSchoolModal() {
   modal.classList.add("active");
 }
 
+
+function stopAllTargetVideosImmediate() {
+  ALL_TARGET_IDS.forEach(id => {
+    const vid = document.getElementById(`vid-${id}`);
+    const targetEl = document.getElementById(`target-${id}`);
+    if (vid) {
+      vid.pause();
+      vid.muted = true;
+      vid.currentTime = 0;
+    }
+    if (targetEl) {
+      const aVideo = targetEl.querySelector('a-video');
+      if (aVideo) {
+        aVideo.setAttribute('scale', '0 0 0');
+        aVideo.setAttribute('material', 'transparent: true; opacity: 0;');
+      }
+    }
+  });
+}
+
 function closeModal() {
   if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
   modal.classList.remove("active");
-  if (currentHeroId !== null) {
+
+  // Запускаем видео ТОЛЬКО если маркер РЕАЛЬНО сейчас находится в поле зрения камеры!
+  if (currentHeroId !== null && visibleTargets.has(currentHeroId)) {
     const activeVideo = document.getElementById(`vid-${currentHeroId}`);
     if (activeVideo) activeVideo.play().catch(() => {});
+  } else {
+    // Иначе жестко глушим
+    stopAllTargetVideosImmediate();
   }
 }
 
