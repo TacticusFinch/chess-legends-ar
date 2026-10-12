@@ -1092,6 +1092,63 @@ const HEROES = {
 };
 
 
+// Значения рангов и цветов для интерфейса
+const HERO_RANKS = {
+  maestro:     { name: "МАЭСТРО",      color: "#94a3b8" },
+  joker:       { name: "ДЖОКЕР",       color: "#c084fc" },
+  grandmaster: { name: "ГРАНДМАСТЕР", color: "#38bdf8" },
+  legend:      { name: "ЛЕГЕНДА",      color: "#e2b868" },
+  phenomenon:  { name: "ФЕНОМЕН",      color: "#f43f5e" },
+  singularity: { name: "СИНГУЛЯРНОСТЬ", color: "#00ffcc" }
+};
+
+// Обновленные статы с карточек
+const HERO_STATS_DATA = {
+  0:  { atk: 6,  def: 9,  rank: "legend",      skillName: "Теория равновесия",       skillId: "STEINITZ_EQUILIBRIUM" },
+  1:  { atk: 7,  def: 7,  rank: "legend",      skillName: "Психологический гамбит",  skillId: "LASKER_GAMBIT" },
+  2:  { atk: 6,  def: 7,  rank: "legend",      skillName: "Гениальная интуиция",     skillId: "CAPABLANCA_INTUITION" },
+  3:  { atk: 9,  def: 10, rank: "phenomenon",  skillName: "Квантовый эндшпиль",      skillId: "CARLSEN_ENDGAME" },
+  4:  { atk: 6,  def: 6,  rank: "joker",       skillName: "Хамелеон",               skillId: "ENIGMA_CHAMELEON" },
+  5:  { atk: 10, def: 6,  rank: "legend",      skillName: "Ярость шторма",          skillId: "TAL_STORM" },
+  6:  { atk: 15, def: 15, rank: "singularity", skillName: "Суперкомпьютер",         skillId: "STOCKFISH_ENGINE" },
+  7:  { atk: 6,  def: 8,  rank: "legend",      skillName: "Архитектор мысли",        skillId: "BOTVINNIK_ARCHITECT" },
+  8:  { atk: 8,  def: 8,  rank: "legend",      skillName: "Ментальный торнадо",      skillId: "FISCHER_TORNADO" },
+  9:  { atk: 8,  def: 8,  rank: "grandmaster", skillName: "Дворец теней",            skillId: "CARUANA_PALACE" },
+  10: { atk: 7,  def: 8,  rank: "grandmaster", skillName: "Экстремальное выживание", skillId: "NAKAMURA_SURVIVAL" },
+  11: { atk: 7,  def: 7,  rank: "legend",      skillName: "Сакральный разум",        skillId: "GUKESH_MIND" },
+  12: { atk: 5,  def: 6,  rank: "maestro",     skillName: "Ладейная гармония",       skillId: "RUBINSTEIN_HARMONY" },
+  13: { atk: 6,  def: 10, rank: "legend",      skillName: "Железная профилактика",   skillId: "PETROSYAN_FORTRESS" },
+  14: { atk: 6,  def: 7,  rank: "legend",      skillName: "Магистр гармонии",        skillId: "SMYSLOV_SYMPHONY" },
+  15: { atk: 10, def: 9,  rank: "phenomenon",  skillName: "Дух приключений",         skillId: "KASPAROV_ADVENTURE" },
+  16: { atk: 7,  def: 7,  rank: "legend",      skillName: "Воля дракона",            skillId: "DING_DRAGON" }
+};
+
+// Применяем параметры к объекту HEROES
+Object.keys(HERO_STATS_DATA).forEach(id => {
+  if (HEROES[id]) {
+    const s = HERO_STATS_DATA[id];
+    HEROES[id].atk = s.atk;
+    HEROES[id].def = s.def;
+    HEROES[id].rankKey = s.rank;
+    HEROES[id].rank = HERO_RANKS[s.rank];
+    HEROES[id].skillName = s.skillName;
+    HEROES[id].skillId = s.skillId;
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ================= СИСТЕМНЫЕ ПРОМПТЫ ДЛЯ DEEPSEEK =================
 const HERO_AI_PROMPTS = {
   0: "Ты — Вильгельм Стейниц, 1-й чемпион мира по шахматам. Твой тон: строгий, академичный, научный. Ты презираешь безрассудные атаки без позиционной подготовки. Учишь ценить центр, слабости и силу короля. Отвечай кратко (2-3 предложения), от первого лица.",
