@@ -512,76 +512,9 @@ body {
 .passport-lock-icon { font-size: 14px; opacity: 0.5; }
 
 /* ==========================================================
-   5. ДУЭЛЬ: ЛОББИ И БОЕВОЙ ТУРНИРНЫЙ HUD
+   5. RPG БОЕВАЯ АРЕНА (DARK LUXURY DUEL SYSTEM)
    ========================================================== */
-.duel-card {
-  max-width: 320px !important;
-  padding: 28px 20px !important;
-  text-align: center;
-}
-.duel-actions-stack { display: flex; flex-direction: column; gap: 10px; }
 
-.duel-primary-btn {
-  width: 100%;
-  padding: 13px;
-  background: #fff;
-  color: #000;
-  border: none;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s var(--ease-smooth);
-}
-.duel-primary-btn:active { transform: scale(0.97); opacity: 0.9; }
-
-.duel-secondary-btn {
-  width: 100%;
-  padding: 13px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-main);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s var(--ease-smooth);
-}
-.duel-secondary-btn:active { transform: scale(0.97); background: rgba(255, 255, 255, 0.1); }
-
-.duel-big-code {
-  font-family: monospace;
-  font-size: 42px;
-  font-weight: 800;
-  letter-spacing: 8px;
-  color: #fff;
-  padding: 12px 0;
-  margin: 6px 0 16px;
-  text-indent: 8px;
-}
-.duel-wait-status { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
-.wait-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-gold); animation: pulseWait 1.4s infinite; }
-
-.duel-pin-input {
-  width: 150px;
-  padding: 10px 0;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  font-size: 30px;
-  font-weight: 700;
-  letter-spacing: 10px;
-  text-align: center;
-  text-indent: 10px;
-  font-family: monospace;
-  margin-bottom: 24px;
-  outline: none;
-  transition: border-color 0.2s ease;
-}
-.duel-pin-input:focus { border-color: #fff; }
-
-/* Боевой оверлей турнира */
 #net-battle-overlay {
   display: none;
   position: fixed;
@@ -589,214 +522,415 @@ body {
   z-index: 999;
   flex-direction: column;
   justify-content: space-between;
-  padding: 16px 14px;
+  padding: 14px 12px;
   box-sizing: border-box;
-  background: radial-gradient(circle at center, rgba(14, 19, 30, 0.88) 0%, rgba(6, 8, 12, 0.98) 100%);
+  background: 
+    radial-gradient(circle at 50% 50%, rgba(26, 36, 56, 0.4) 0%, rgba(5, 7, 12, 0.95) 100%),
+    linear-gradient(180deg, #060910 0%, #030407 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
+/* Панель персонажей */
 .duel-actor-panel {
   pointer-events: auto;
-  background: rgba(18, 24, 38, 0.85);
-  border: 1px solid var(--border-subtle);
-  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(20, 27, 42, 0.92) 0%, rgba(10, 14, 24, 0.95) 100%);
+  border: 1px solid rgba(226, 184, 104, 0.25);
+  border-radius: 14px;
   padding: 12px 14px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 
+    0 12px 30px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
-.actor-card-row { display: flex; align-items: center; gap: 12px; }
-.actor-details { flex: 1; }
+.duel-actor-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--border-gold), transparent);
+}
 
+.actor-card-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Аватар в кованой металлической оправе */
 .actor-avatar {
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   border-radius: 10px;
-  overflow: hidden;
   background: #000;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+}
+
+.player-avatar-frame {
+  border: 2px solid var(--accent-gold);
+  box-shadow: 0 0 15px rgba(226, 184, 104, 0.35);
+}
+
+.enemy-avatar-frame {
+  border: 2px solid #ef4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+
+.actor-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Титулы и имена */
+.actor-details { flex: 1; }
+.actor-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.actor-title-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
+  gap: 8px;
 }
-.enemy-avatar-frame  { border: 1.5px solid #ef4444; }
-.player-avatar-frame { border: 1.5px solid var(--accent-gold); }
-.actor-avatar-img    { width: 100%; height: 100%; object-fit: cover; }
 
-.actor-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.actor-title-row { display: flex; align-items: center; gap: 8px; }
-.actor-side-badge { font-size: 8px; font-weight: 800; letter-spacing: 1px; padding: 2px 6px; border-radius: 4px; }
-.actor-side-badge.side-black { background: #21262d; color: #8b949e; }
-.actor-side-badge.side-white { background: #fff; color: #000; }
-.actor-name { font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; }
-.actor-points { font-family: monospace; font-size: 11px; color: var(--text-muted); font-weight: 600; }
-
-.meter-track { width: 100%; height: 4px; background: rgba(255, 255, 255, 0.08); border-radius: 2px; overflow: hidden; }
-.meter-fill { height: 100%; transition: width 0.4s var(--ease-smooth); }
-.meter-fill.enemy-fill  { background: #ef4444; }
-.meter-fill.player-fill { background: var(--accent-gold); }
-
-.tactical-stats-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
-.stat-pill {
-  font-family: monospace;
-  font-size: 8.5px;
-  font-weight: 700;
+.actor-side-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-muted);
 }
-.stat-pill.atk-pill   { color: #f87171; }
-.stat-pill.def-pill   { color: #38bdf8; }
-.stat-pill.skill-pill { color: #fbbf24; }
+.actor-side-badge.side-white {
+  background: #ffffff;
+  color: #000000;
+}
+.actor-side-badge.side-black {
+  background: #1e2638;
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-.round-status-badge {
-  font-size: 10.5px;
+.actor-name {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
   font-weight: 800;
-  letter-spacing: 1.5px;
-  color: var(--accent-gold);
+  letter-spacing: 0.5px;
+  color: #fff;
   text-transform: uppercase;
-  margin-bottom: 8px;
-  padding: 4px 12px;
-  background: var(--accent-gold-subtle);
-  border: 1px solid var(--border-gold);
-  border-radius: 20px;
 }
 
-.duel-center-stage {
-  flex: 1;
+/* Счетчик HP */
+.hp-counter-group {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  width: 100%;
-  pointer-events: auto;
-}
-
-.eval-meter-container {
-  position: absolute;
-  left: 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: baseline;
   gap: 4px;
+  font-family: 'JetBrains Mono', monospace;
 }
-.eval-bar-track {
-  width: 4px;
-  height: 90px;
-  background: #181b24;
-  border-radius: 2px;
-  display: flex;
-  flex-direction: column-reverse;
-  overflow: hidden;
-}
-.eval-bar-fill {
-  width: 100%;
-  background: #fff;
-  transition: height 0.5s ease;
-}
-.eval-score-text {
-  font-family: monospace;
+.hp-label {
   font-size: 9px;
+  font-weight: 800;
+  color: var(--text-dim);
+}
+.actor-points {
+  font-size: 13px;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: -0.5px;
+}
+
+/* Прогресс-бар здоровья в стиле RPG */
+.hp-track {
+  height: 8px;
+  background: rgba(8, 12, 19, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 3px;
+  position: relative;
+  transition: width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Золотой градиент игрока */
+.meter-fill.player-fill {
+  background: linear-gradient(90deg, #d4a347, #fde047);
+  box-shadow: 0 0 12px rgba(253, 224, 71, 0.6);
+}
+
+/* Кроваво-рубиновый градиент врага */
+.meter-fill.enemy-fill {
+  background: linear-gradient(90deg, #991b1b, #ef4444);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+}
+
+.meter-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, transparent 60%);
+}
+
+/* RPG Статы: Атака, Защита, Заряд */
+.tactical-stats-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.stat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: rgba(10, 14, 24, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+}
+
+.stat-icon-mini {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.stat-name {
+  font-size: 8px;
   font-weight: 700;
   color: var(--text-dim);
-}
-
-.duel-center-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 0 35px;
-  box-sizing: border-box;
-}
-
-.tactical-teletype {
-  font-family: monospace;
-  font-size: 11px;
   letter-spacing: 0.5px;
-  color: var(--text-muted);
-  background: rgba(13, 17, 26, 0.85);
-  border: 1px solid var(--border-subtle);
-  padding: 6px 14px;
-  border-radius: 20px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  text-transform: uppercase;
-  text-align: center;
-  max-width: 280px;
 }
 
-.tactical-hint {
-  font-size: 9px;
-  color: var(--text-dim);
-  margin-top: 8px;
-  text-align: center;
-  line-height: 1.3;
+.stat-badge b {
+  font-weight: 800;
+  font-size: 11px;
 }
 
-/* Карточки действий игрока */
+.atk-badge { border-color: rgba(248, 113, 113, 0.25); }
+.atk-badge b { color: #f87171; text-shadow: 0 0 8px rgba(248, 113, 113, 0.4); }
+
+.def-badge { border-color: rgba(56, 189, 248, 0.25); }
+.def-badge b { color: #38bdf8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+
+.nrg-badge { border-color: rgba(234, 179, 8, 0.25); }
+
+/* Ячейки энергии (Pips) */
+.energy-pips {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.energy-pips .pip {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transform: rotate(45deg);
+  transition: all 0.3s ease;
+}
+
+.energy-pips .pip.active {
+  background: #eab308;
+  border-color: #fef08a;
+  box-shadow: 0 0 8px #eab308;
+}
+
+/* ==========================================================
+   БОЕВЫЕ RPG КНОПКИ ДЕЙСТВИЯ (TACTICAL DECK)
+   ========================================================== */
 .tactical-deck {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.2fr;
-  gap: 8px;
+  grid-template-columns: 1fr 1fr 1.25fr;
+  gap: 10px;
   margin-top: 12px;
 }
 
 .tactical-card-btn {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-subtle);
+  position: relative;
+  border: none;
+  background: linear-gradient(180deg, #182030 0%, #0d121c 100%);
   border-radius: 12px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   justify-content: space-between;
   cursor: pointer;
   color: #fff;
-  min-height: 64px;
+  min-height: 80px;
   box-sizing: border-box;
-  transition: all 0.2s var(--ease-smooth);
-}
-.tactical-card-btn:hover { background: rgba(255, 255, 255, 0.06); }
-.tactical-card-btn:active { transform: scale(0.96); }
-.tactical-card-btn.selected {
-  border-color: var(--accent-gold) !important;
-  background: var(--accent-gold-subtle) !important;
+  box-shadow: 
+    0 6px 16px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: transform 0.12s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  overflow: hidden;
 }
 
-.action-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-.action-icon { font-size: 13px; }
-.action-dmg-badge { font-family: monospace; font-size: 8.5px; color: #f87171; font-weight: 700; }
-.action-energy-gain { font-family: monospace; font-size: 8.5px; color: #38bdf8; font-weight: 700; }
-.action-energy-badge {
-  font-family: monospace;
+.tactical-card-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.tactical-card-btn:active {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.action-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.action-tag {
+  font-family: 'JetBrains Mono', monospace;
   font-size: 8px;
-  padding: 2px 4px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-muted);
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--text-dim);
 }
 
-.action-name { font-size: 10px; font-weight: 700; text-transform: uppercase; margin-top: 2px; }
-.action-sub { font-size: 8px; color: var(--text-dim); text-transform: uppercase; }
-
-.tactical-card-btn.skill-card.ready {
-  border-color: var(--accent-gold) !important;
-  background: linear-gradient(135deg, rgba(226, 184, 104, 0.15) 0%, rgba(18, 24, 38, 0.9) 100%) !important;
-  box-shadow: 0 0 20px rgba(226, 184, 104, 0.2);
-  animation: pulseReady 1.2s infinite alternate;
-}
-.tactical-card-btn.skill-card.ready .action-energy-badge {
-  background: var(--accent-gold);
-  color: #000;
+.action-dmg-badge,
+.action-energy-gain,
+.action-energy-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
   font-weight: 800;
 }
-.tactical-card-btn.skill-card.ready #skill-action-sub {
+
+.action-dmg-badge { color: #f87171; }
+.action-energy-gain { color: #38bdf8; }
+.action-energy-badge {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: var(--text-dim);
+}
+
+.action-name {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-top: 4px;
+  text-align: left;
+}
+
+.action-sub {
+  font-size: 8.5px;
+  color: var(--text-dim);
+  text-align: left;
+  line-height: 1.2;
+}
+
+/* Стилизация кнопки АТАКА (красный RPG-акцент) */
+.action-attack:hover::before {
+  border-color: rgba(248, 113, 113, 0.4);
+}
+.action-attack .action-name {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(248, 113, 113, 0.4);
+}
+
+/* Стилизация кнопки БЛОК (лазурный RPG-акцент) */
+.action-defend:hover::before {
+  border-color: rgba(56, 189, 248, 0.4);
+}
+.action-defend .action-name {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+/* Стилизация кнопки КОРОННЫЙ ХОД (Золотой ультимейт) */
+.action-skill {
+  background: linear-gradient(180deg, #221c13 0%, #100e0a 100%);
+}
+.action-skill::before {
+  border-color: rgba(226, 184, 104, 0.2);
+}
+.action-skill .action-name {
+  color: #fde047;
+}
+
+/* Готовность коронного удара (пульсация энергии) */
+.action-skill.ready {
+  background: linear-gradient(180deg, #3d2f16 0%, #1c1407 100%);
+  box-shadow: 
+    0 0 24px rgba(234, 179, 8, 0.4),
+    inset 0 1px 0 rgba(254, 240, 138, 0.4);
+  animation: ultimatePulse 1.4s ease-in-out infinite alternate;
+}
+
+.action-skill.ready::before {
+  border-color: #fde047;
+}
+
+.action-skill.ready .action-energy-badge {
+  background: #eab308;
+  color: #000;
+  font-weight: 900;
+  box-shadow: 0 0 8px #fde047;
+}
+
+@keyframes ultimatePulse {
+  0% { transform: scale(1); filter: brightness(1); }
+  100% { transform: scale(1.02); filter: brightness(1.2); }
+}
+
+/* Раунд и центральные подсказки */
+.round-status-badge {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
   color: var(--accent-gold);
+  background: rgba(18, 24, 38, 0.85);
+  border: 1px solid var(--border-gold);
+  border-radius: 20px;
+  padding: 4px 14px;
+}
+
+.tactical-teletype {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #e2e8f0;
+  background: rgba(8, 12, 19, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 6px 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+}
+
+.tactical-hint {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
   font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
 }
 
 /* ==========================================================
