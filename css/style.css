@@ -1014,60 +1014,80 @@ body {
   100% { transform: scale(1.04); opacity: 1; }
 }
 
-ss /* --- БОЕВАЯ ПАНЕЛЬ ИГРОКА --- */
-.duel-actor-panel.player-panel {
-  background: linear-gradient(135deg, rgba(16, 22, 34, 0.94) 0%, rgba(8, 12, 18, 0.98) 100%);
-  border: 1px solid rgba(226, 184, 104, 0.35);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  padding: 12px 14px;
+ss /* --- ПАНЕЛИ БОЙЦОВ (ИГРОК И СОПЕРНИК) --- */
+.duel-actor-panel {
+  pointer-events: auto;
   border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
-/* Бейдж здоровья HP */
+.duel-actor-panel.player-panel {
+  background: linear-gradient(135deg, rgba(16, 22, 34, 0.95) 0%, rgba(8, 12, 18, 0.98) 100%);
+  border: 1px solid rgba(226, 184, 104, 0.35);
+}
+
+.duel-actor-panel.enemy-panel {
+  background: linear-gradient(135deg, rgba(28, 16, 18, 0.95) 0%, rgba(14, 8, 10, 0.98) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+/* Бейджи HP */
 .hp-badge-wrap {
   display: inline-flex;
   align-items: baseline;
   gap: 5px;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.55);
   padding: 2px 8px;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 .hp-tag {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 800;
-  color: var(--accent-gold, #e2b868);
   letter-spacing: 0.5px;
+  color: var(--text-dim);
 }
+.player-panel .hp-tag { color: var(--accent-gold); }
+.enemy-panel .hp-tag  { color: #f87171; }
+
 .actor-points {
-  font-family: 'JetBrains Mono', monospace, -apple-system;
+  font-family: monospace, -apple-system;
   font-size: 13px;
   font-weight: 800;
   color: #fff;
-  letter-spacing: 0.5px;
+  letter-spacing: -0.2px;
 }
 
-/* Полоса здоровья */
+/* Полоски здоровья */
 .meter-track {
-  height: 7px;
-  background: rgba(0, 0, 0, 0.6);
+  height: 6px;
+  background: rgba(0, 0, 0, 0.7);
   border-radius: 4px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: hidden;
-  margin: 6px 0 10px 0;
+  margin: 6px 0 9px 0;
+}
+.meter-fill {
+  height: 100%;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .meter-fill.player-fill {
   background: linear-gradient(90deg, #d4a347, #fde047);
-  box-shadow: 0 0 10px rgba(253, 224, 71, 0.4);
-  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
+}
+.meter-fill.enemy-fill {
+  background: linear-gradient(90deg, #991b1b, #ef4444);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
 }
 
-/* --- РЯД СТАТОВ: ИГРОВЫЕ ЧИПЫ --- */
+/* Сетка чипов характеристик (3 равные колонки) */
 .tactical-stats-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  margin-top: 4px;
 }
 
 .stat-chip {
@@ -1075,57 +1095,148 @@ ss /* --- БОЕВАЯ ПАНЕЛЬ ИГРОКА --- */
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 5px 4px;
+  padding: 5px 2px;
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .stat-chip-label {
-  font-size: 8px;
-  font-weight: 700;
+  font-size: 7.5px;
+  font-weight: 800;
   letter-spacing: 0.8px;
-  color: #8a99ad;
+  color: #788599;
   text-transform: uppercase;
   margin-bottom: 2px;
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stat-chip-value {
-  font-family: 'JetBrains Mono', monospace, -apple-system;
-  font-size: 15px;
+  font-family: monospace, -apple-system;
+  font-size: 14.5px;
   font-weight: 900;
   line-height: 1;
-  letter-spacing: 0.5px;
 }
 
-/* 1. АТАКА (Хлесткий неоновый кармин) */
-.stat-chip.atk-chip {
-  border-color: rgba(248, 113, 113, 0.25);
-  background: linear-gradient(180deg, rgba(239, 68, 68, 0.08) 0%, rgba(15, 20, 31, 0.6) 100%);
-}
-.stat-chip.atk-chip .stat-chip-value {
-  color: #f87171;
-  text-shadow: 0 0 10px rgba(248, 113, 113, 0.45);
+/* Колористика чипов */
+.stat-chip.atk-chip { border-color: rgba(248, 113, 113, 0.28); }
+.stat-chip.atk-chip .stat-chip-value { color: #f87171; text-shadow: 0 0 8px rgba(248, 113, 113, 0.4); }
+
+.stat-chip.def-chip { border-color: rgba(56, 189, 248, 0.28); }
+.stat-chip.def-chip .stat-chip-value { color: #38bdf8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+
+.stat-chip.skill-chip { border-color: rgba(234, 179, 8, 0.28); }
+.stat-chip.skill-chip .stat-chip-value { color: #facc15; text-shadow: 0 0 8px rgba(250, 204, 21, 0.4); }
+
+
+/* ==========================================================
+   ПРОФЕССИОНАЛЬНЫЕ ГЕЙМЕРСКИЕ КНОПКИ ДЕЙСТВИЯ
+   ========================================================== */
+.tactical-deck {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.25fr;
+  gap: 8px;
+  margin-top: 10px;
 }
 
-/* 2. ЗАЩИТА (Ледяной сапфировый щит) */
-.stat-chip.def-chip {
-  border-color: rgba(56, 189, 248, 0.25);
-  background: linear-gradient(180deg, rgba(56, 189, 248, 0.08) 0%, rgba(15, 20, 31, 0.6) 100%);
-}
-.stat-chip.def-chip .stat-chip-value {
-  color: #38bdf8;
-  text-shadow: 0 0 10px rgba(56, 189, 248, 0.45);
+.tactical-btn {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  background: linear-gradient(180deg, #151b27 0%, #0c1017 100%);
+  color: #fff;
+  min-height: 58px;
+  box-sizing: border-box;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: transform 0.1s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
 }
 
-/* 3. ЗАРЯД / НАВЫК (Золотой импульс) */
-.stat-chip.skill-chip {
-  border-color: rgba(234, 179, 8, 0.3);
-  background: linear-gradient(180deg, rgba(234, 179, 8, 0.1) 0%, rgba(15, 20, 31, 0.6) 100%);
+.tactical-btn:active {
+  transform: translateY(2px) scale(0.97);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
 }
-.stat-chip.skill-chip .stat-chip-value {
-  color: #facc15;
-  text-shadow: 0 0 10px rgba(250, 204, 21, 0.45);
+
+.btn-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.btn-type {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #718096;
+}
+
+.btn-stat {
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.btn-title {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 2px;
+  text-align: left;
+}
+
+/* 1. Кнопка УДАР */
+.btn-atk {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+.btn-atk .btn-stat { color: #f87171; }
+.btn-atk .btn-title { color: #fca5a5; }
+.btn-atk:active { border-color: #ef4444; }
+
+/* 2. Кнопка БЛОК */
+.btn-def {
+  border-color: rgba(56, 189, 248, 0.3);
+}
+.btn-def .btn-stat { color: #38bdf8; }
+.btn-def .btn-title { color: #bae6fd; }
+.btn-def:active { border-color: #38bdf8; }
+
+/* 3. Кнопка ТРИУМФ (Ультимейт) */
+.btn-spc {
+  border-color: rgba(226, 184, 104, 0.35);
+  background: linear-gradient(180deg, #221a10 0%, #0e0c08 100%);
+}
+.btn-spc .btn-stat { color: #facc15; }
+.btn-spc .btn-title { color: #fde047; }
+
+/* Состояние полной готовности ультимейта */
+.btn-spc.ready {
+  background: linear-gradient(180deg, #3d2c11 0%, #1c1306 100%);
+  border-color: #facc15;
+  box-shadow: 0 0 18px rgba(250, 204, 21, 0.35), inset 0 1px 0 rgba(254, 240, 138, 0.5);
+  animation: ultReadyPulse 1.2s infinite alternate;
+}
+.btn-spc.ready .btn-stat {
+  background: #facc15;
+  color: #000;
+  font-weight: 900;
+}
+
+@keyframes ultReadyPulse {
+  0%   { transform: scale(1); filter: brightness(1); }
+  100% { transform: scale(1.02); filter: brightness(1.25); }
 }

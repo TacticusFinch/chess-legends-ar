@@ -414,36 +414,37 @@ startBattle() {
   updateHUD() {
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-    // Игрок
+    // 1. Игрок
     set("my-hero-name", this.myHero.name);
     const myImg = document.getElementById("my-avatar-img");
     if (myImg) myImg.src = this.myHero.img;
-    set("my-hp-text", `${Math.max(0, this.myHp)} / 100 HP`);
+    set("my-hp-text", `${Math.max(0, this.myHp)} / 100`);
     document.getElementById("my-hp-bar").style.width = `${Math.max(0, this.myHp)}%`;
     set("my-atk-val", this.myHero.atk);
     set("my-def-val", this.myHero.def);
     set("my-energy-val", `${this.myEnergy}/2`);
     document.getElementById("player-shield-fx").style.display = this.myShield ? "flex" : "none";
 
-    // Соперник
+    // 2. Оппонент
     set("enemy-hero-name", this.enemyHero.name);
     const enemyImg = document.getElementById("enemy-avatar-img");
     if (enemyImg) enemyImg.src = this.enemyHero.img;
-    set("enemy-hp-text", `${Math.max(0, this.enemyHp)} / 100 HP`);
+    set("enemy-hp-text", `${Math.max(0, this.enemyHp)} / 100`);
     document.getElementById("enemy-hp-bar").style.width = `${Math.max(0, this.enemyHp)}%`;
     set("enemy-atk-val", this.enemyHero.atk);
     set("enemy-def-val", this.enemyHero.def);
     set("enemy-energy-tracker", `${this.enemyEnergy}/2`);
-    set("enemy-skill-name", (this.enemyHero.skillName || "НАВЫК").toUpperCase());
     document.getElementById("enemy-shield-fx").style.display = this.enemyShield ? "flex" : "none";
 
-    // Кнопка ультимейта
+    // 3. Лаконичный статус кнопки ультимейта
     const spcBtn = document.getElementById("btn-action-spc");
     if (spcBtn) {
-      spcBtn.classList.toggle("ready", this.myEnergy >= 2);
-      set("skill-cd-badge", this.myEnergy >= 2 ? "ГОТОВО ⚡" : `${this.myEnergy}/2 ⚡`);
+      const isReady = this.myEnergy >= 2;
+      spcBtn.classList.toggle("ready", isReady);
+      set("skill-cd-badge", isReady ? "ГОТОВ" : `${this.myEnergy}/2`);
     }
 
+    // 4. Оценка позиции и номер раунда
     set("round-title-badge", `РАУНД ${this.round}`);
     const evalScore = Math.min(100, Math.max(0, 50 + (this.myHp - this.enemyHp) / 2));
     document.getElementById("duel-eval-fill").style.height = `${evalScore}%`;

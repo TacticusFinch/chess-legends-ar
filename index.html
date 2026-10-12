@@ -108,126 +108,145 @@
 
   <!-- БОЕВОЙ ТУРНИРНЫЙ HUD -->
   <div id="net-battle-overlay" style="display: none;">
-    <!-- Оппонент -->
-    <div class="duel-actor-panel enemy-panel">
-      <div class="actor-card-row">
-        <div class="actor-avatar enemy-avatar-frame" id="enemy-card-anchor">
-          <img id="enemy-avatar-img" class="actor-avatar-img" src="" alt="Оппонент">
-          <div id="enemy-shield-fx" class="shield-barrier-fx"></div>
+<!-- Оппонент -->
+  <div class="duel-actor-panel enemy-panel">
+    <div class="actor-card-row">
+      <div class="actor-avatar enemy-avatar-frame" id="enemy-card-anchor">
+        <img id="enemy-avatar-img" class="actor-avatar-img" src="" alt="Оппонент">
+        <div id="enemy-shield-fx" class="shield-barrier-fx"></div>
+      </div>
+      <div class="actor-details">
+        <div class="actor-meta">
+          <div class="actor-title-row">
+            <span class="actor-side-badge side-black">ЧЁРНЫЕ</span>
+            <span id="enemy-hero-name" class="actor-name">ГРОССМЕЙСТЕР</span>
+          </div>
+          <div class="hp-badge-wrap">
+            <span class="hp-tag">HP</span>
+            <span id="enemy-hp-text" class="actor-points">100 / 100</span>
+          </div>
         </div>
-        <div class="actor-details">
-          <div class="actor-meta">
-            <div class="actor-title-row">
-              <span class="actor-side-badge side-black">ЧЁРНЫЕ</span>
-              <span id="enemy-hero-name" class="actor-name">ГРОССМЕЙСТЕР</span>
-            </div>
-            <span id="enemy-hp-text" class="actor-points">100 / 100 HP</span>
+        
+        <div class="meter-track">
+          <div id="enemy-hp-bar" class="meter-fill enemy-fill" style="width: 100%;"></div>
+        </div>
+
+        <div class="tactical-stats-row">
+          <div class="stat-chip atk-chip">
+            <span class="stat-chip-label">АТАКА</span>
+            <b id="enemy-atk-val" class="stat-chip-value">--</b>
           </div>
-          <div class="meter-track">
-            <div id="enemy-hp-bar" class="meter-fill enemy-fill" style="width: 100%;"></div>
+          <div class="stat-chip def-chip">
+            <span class="stat-chip-label">ЗАЩИТА</span>
+            <b id="enemy-def-val" class="stat-chip-value">--</b>
           </div>
-          <div class="tactical-stats-row">
-            <span class="stat-pill atk-pill">⚔️ <b id="enemy-atk-val">--</b></span>
-            <span class="stat-pill def-pill">🛡️ <b id="enemy-def-val">--</b></span>
-            <span class="stat-pill skill-pill">⚡ <span id="enemy-skill-name">НАВЫК</span>: <b id="enemy-energy-tracker">1/2</b></span>
+          <div class="stat-chip skill-chip">
+            <span class="stat-chip-label" id="enemy-skill-name">ЗАРЯД</span>
+            <b id="enemy-energy-tracker" class="stat-chip-value">1/2</b>
           </div>
         </div>
       </div>
-    </div>
-
-<!-- Центр -->
-    <div class="duel-center-stage">
-      <div class="eval-meter-container">
-        <div class="eval-bar-track">
-          <div id="duel-eval-fill" class="eval-bar-fill" style="height: 50%;"></div>
-        </div>
-        <div id="duel-eval-score" class="eval-score-text">0.0</div>
-      </div>
-
-      <div class="duel-center-content">
-        <div class="round-status-badge" id="round-title-badge">РАУНД 1</div>
-        <div id="battle-log" class="tactical-teletype">ВЫБЕРИТЕ ДЕЙСТВИЕ</div>
-
-<!-- ИНТЕРАКТИВНАЯ ДОСКА АТАКИ (ТАПЫ) -->
-<div id="tactical-board-modal" class="qte-strike-modal" style="display: none;">
-  <div class="qte-card" style="width: 310px; max-width: 95vw; padding: 18px 14px; background: rgba(12, 17, 26, 0.95); border: 1px solid var(--border-gold); border-radius: 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.85); backdrop-filter: blur(20px);">
-    <div id="tactical-task-title" style="font-size: 13px; font-weight: 700; color: var(--accent-gold); letter-spacing: 0.8px; text-transform: uppercase; text-align: center; margin-bottom: 12px;">
-      Найдите лучший ход
-    </div>
-
-    <!-- Шахматная доска -->
-    <div style="display: flex; justify-content: center;">
-      <div id="strike-board" style="width: 270px;"></div>
     </div>
   </div>
-</div>
 
-        <div id="battle-hint" class="tactical-hint">
-          Лучший ход дает больше урона (+60%) • Защита копит энергию
-        </div>
+  <!-- Центр арены: Оценка позиции, раунд и телекс -->
+  <div class="duel-center-stage">
+    <div class="eval-meter-container">
+      <div class="eval-bar-track">
+        <div id="duel-eval-fill" class="eval-bar-fill" style="height: 50%;"></div>
       </div>
+      <div id="duel-eval-score" class="eval-score-text">0.0</div>
     </div>
 
-<!-- Игрок -->
-    <div class="duel-actor-panel player-panel">
-      <div class="actor-card-row">
-        <div class="actor-avatar player-avatar-frame" id="player-card-anchor">
-          <img id="my-avatar-img" class="actor-avatar-img" src="" alt="Герой">
-          <div id="player-shield-fx" class="shield-barrier-fx"></div>
-        </div>
-        <div class="actor-details">
-          <div class="actor-meta">
-            <div class="actor-title-row">
-              <span class="actor-side-badge side-white">БЕЛЫЕ</span>
-              <span id="my-hero-name" class="actor-name">ВАШ ЧЕМПИОН</span>
-            </div>
-            <div class="hp-badge-wrap">
-              <span class="hp-tag">HP</span>
-              <span id="my-hp-text" class="actor-points">100 / 100</span>
-            </div>
-          </div>
-          
-          <div class="meter-track">
-            <div id="my-hp-bar" class="meter-fill player-fill" style="width: 100%;"></div>
-          </div>
+    <div class="duel-center-content">
+      <div class="round-status-badge" id="round-title-badge">РАУНД 1</div>
+      <div id="battle-log" class="tactical-teletype">ВЫБЕРИТЕ ДЕЙСТВИЕ</div>
 
-          <!-- Боевые чипы статов (исправлены id на my-*) -->
-          <div class="tactical-stats-row">
-            <div class="stat-chip atk-chip">
-              <span class="stat-chip-label">АТАКА</span>
-              <b id="my-atk-val" class="stat-chip-value">--</b>
-            </div>
-            <div class="stat-chip def-chip">
-              <span class="stat-chip-label">ЗАЩИТА</span>
-              <b id="my-def-val" class="stat-chip-value">--</b>
-            </div>
-            <div class="stat-chip skill-chip">
-              <span class="stat-chip-label" id="my-skill-label">ЗАРЯД</span>
-              <b id="my-energy-val" class="stat-chip-value">1/2</b>
-            </div>
+      <!-- Интерактивная доска атаки -->
+      <div id="tactical-board-modal" class="qte-strike-modal" style="display: none;">
+        <div class="qte-card" style="width: 310px; max-width: 95vw; padding: 16px 12px; background: rgba(12, 17, 26, 0.95); border: 1px solid var(--border-gold); border-radius: 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.85); backdrop-filter: blur(20px);">
+          <div id="tactical-task-title" style="font-size: 13px; font-weight: 800; color: var(--accent-gold); letter-spacing: 1px; text-transform: uppercase; text-align: center; margin-bottom: 12px;">
+            Найдите лучший ход
+          </div>
+          <div style="display: flex; justify-content: center;">
+            <div id="strike-board" style="width: 270px;"></div>
           </div>
         </div>
       </div>
 
-      <div class="tactical-deck">
-    <button id="btn-action-atk" class="tactical-card-btn" onclick="NetDuel.chooseAction('attack')">
-      <div class="action-name">АТАКА</div>
-    </button>
-
-    <button id="btn-action-def" class="tactical-card-btn" onclick="NetDuel.chooseAction('defend')">
-      <div class="action-name">ЗАЩИТА</div>
-    </button>
-
-    <button id="btn-action-spc" class="tactical-card-btn skill-card" onclick="NetDuel.chooseAction('skill')">
-      <div class="action-top-row">
-        <span class="action-tag">Ультимейт</span>
-        <span id="skill-cd-badge" class="action-energy-badge">1/2 ЭНЕРГИЯ</span>
+      <div id="battle-hint" class="tactical-hint">
+        МАТ: КРИТИЧЕСКИЙ УРОН (+60%) • ЗАЩИТА: +1 ЗАРЯД
       </div>
-      <div id="skill-action-sub" class="action-sub">Требуется 2 энергии</div>
-    </button>
+    </div>
   </div>
-  
+
+  <!-- Игрок -->
+  <div class="duel-actor-panel player-panel">
+    <div class="actor-card-row">
+      <div class="actor-avatar player-avatar-frame" id="player-card-anchor">
+        <img id="my-avatar-img" class="actor-avatar-img" src="" alt="Герой">
+        <div id="player-shield-fx" class="shield-barrier-fx"></div>
+      </div>
+      <div class="actor-details">
+        <div class="actor-meta">
+          <div class="actor-title-row">
+            <span class="actor-side-badge side-white">БЕЛЫЕ</span>
+            <span id="my-hero-name" class="actor-name">ВАШ ЧЕМПИОН</span>
+          </div>
+          <div class="hp-badge-wrap">
+            <span class="hp-tag">HP</span>
+            <span id="my-hp-text" class="actor-points">100 / 100</span>
+          </div>
+        </div>
+        
+        <div class="meter-track">
+          <div id="my-hp-bar" class="meter-fill player-fill" style="width: 100%;"></div>
+        </div>
+
+        <div class="tactical-stats-row">
+          <div class="stat-chip atk-chip">
+            <span class="stat-chip-label">АТАКА</span>
+            <b id="my-atk-val" class="stat-chip-value">--</b>
+          </div>
+          <div class="stat-chip def-chip">
+            <span class="stat-chip-label">ЗАЩИТА</span>
+            <b id="my-def-val" class="stat-chip-value">--</b>
+          </div>
+          <div class="stat-chip skill-chip">
+            <span class="stat-chip-label">ЗАРЯД</span>
+            <b id="my-energy-val" class="stat-chip-value">1/2</b>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- Лаконичные геймерские кнопки действий -->
+    <div class="tactical-deck">
+      <button id="btn-action-atk" class="tactical-btn btn-atk" onclick="NetDuel.chooseAction('attack')">
+        <div class="btn-top">
+          <span class="btn-type">АТАКА</span>
+          <span id="atk-stat-badge" class="btn-stat">~25</span>
+        </div>
+        <div class="btn-title">УДАР</div>
+      </button>
+
+      <button id="btn-action-def" class="tactical-btn btn-def" onclick="NetDuel.chooseAction('defend')">
+        <div class="btn-top">
+          <span class="btn-type">ЗАЩИТА</span>
+          <span class="btn-stat">+1 ⚡</span>
+        </div>
+        <div class="btn-title">БЛОК</div>
+      </button>
+
+      <button id="btn-action-spc" class="tactical-btn btn-spc" onclick="NetDuel.chooseAction('skill')">
+        <div class="btn-top">
+          <span class="btn-type">СВЕРХУДАР</span>
+          <span id="skill-cd-badge" class="btn-stat">1/2</span>
+        </div>
+        <div class="btn-title">ТРИУМФ</div>
+      </button>
+    </div>
+  </div>
 
 <!-- ТОРЖЕСТВЕННОЕ ОКНО ПОБЕДИТЕЛЯ -->
 <div id="duel-victory-modal" class="modal-overlay" style="z-index: 1200;">
