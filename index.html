@@ -168,7 +168,7 @@
       </div>
     </div>
 
-    <!-- Игрок -->
+<!-- Игрок -->
     <div class="duel-actor-panel player-panel">
       <div class="actor-card-row">
         <div class="actor-avatar player-avatar-frame" id="player-card-anchor">
@@ -181,45 +181,48 @@
               <span class="actor-side-badge side-white">БЕЛЫЕ</span>
               <span id="my-hero-name" class="actor-name">ВАШ ЧЕМПИОН</span>
             </div>
-            <span id="my-hp-text" class="actor-points">100 / 100 HP</span>
+            <div class="hp-badge-wrap">
+              <span class="hp-tag">HP</span>
+              <span id="my-hp-text" class="actor-points">100 / 100</span>
+            </div>
           </div>
+          
           <div class="meter-track">
             <div id="my-hp-bar" class="meter-fill player-fill" style="width: 100%;"></div>
           </div>
+
+          <!-- Боевые чипы статов (исправлены id на my-*) -->
           <div class="tactical-stats-row">
-    <span class="stat-pill atk-pill">АТАКА <b id="enemy-atk-val">--</b></span>
-    <span class="stat-pill def-pill">ЗАЩИТА <b id="enemy-def-val">--</b></span>
-    <span class="stat-pill skill-pill"><span id="enemy-skill-name">НАВЫК</span> <b id="enemy-energy-tracker">1/2</b></span>
-  </div>
-  
+            <div class="stat-chip atk-chip">
+              <span class="stat-chip-label">АТАКА</span>
+              <b id="my-atk-val" class="stat-chip-value">--</b>
+            </div>
+            <div class="stat-chip def-chip">
+              <span class="stat-chip-label">ЗАЩИТА</span>
+              <b id="my-def-val" class="stat-chip-value">--</b>
+            </div>
+            <div class="stat-chip skill-chip">
+              <span class="stat-chip-label" id="my-skill-label">ЗАРЯД</span>
+              <b id="my-energy-val" class="stat-chip-value">1/2</b>
+            </div>
+          </div>
         </div>
       </div>
 
       <div class="tactical-deck">
     <button id="btn-action-atk" class="tactical-card-btn" onclick="NetDuel.chooseAction('attack')">
-      <div class="action-top-row">
-        <span class="action-tag">УДАР</span>
-        <span id="atk-stat-badge" class="action-dmg-badge">~25 УРОН</span>
-      </div>
       <div class="action-name">АТАКА</div>
-      <div class="action-sub">Тактический выпад</div>
     </button>
 
     <button id="btn-action-def" class="tactical-card-btn" onclick="NetDuel.chooseAction('defend')">
-      <div class="action-top-row">
-        <span class="action-tag">БЛОК</span>
-        <span class="action-energy-gain">+1 ЭНЕРГИЯ</span>
-      </div>
       <div class="action-name">ЗАЩИТА</div>
-      <div id="def-stat-badge" class="action-sub">Снижение урона</div>
     </button>
 
     <button id="btn-action-spc" class="tactical-card-btn skill-card" onclick="NetDuel.chooseAction('skill')">
       <div class="action-top-row">
-        <span class="action-tag">ТАКТИКА</span>
+        <span class="action-tag">Ультимейт</span>
         <span id="skill-cd-badge" class="action-energy-badge">1/2 ЭНЕРГИЯ</span>
       </div>
-      <div id="skill-action-title" class="action-name">КОРОННЫЙ ХОД</div>
       <div id="skill-action-sub" class="action-sub">Требуется 2 энергии</div>
     </button>
   </div>
