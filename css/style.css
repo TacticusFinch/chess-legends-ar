@@ -873,23 +873,64 @@ body {
   animation: shieldPulse 0.8s infinite alternate;
 }
 
+/* ==========================================================
+   БОЕВЫЕ ЧИСЛА УРОНА (RPG FLOATING POPUP)
+   ========================================================== */
 .floating-dmg-num {
   position: absolute;
-  top: 20%;
-  left: 50%;
-  transform: translate(-50%, 0);
-  font-size: 24px;
-  font-weight: 800;
+  transform: translate(-50%, -50%);
+  font-family: 'JetBrains Mono', monospace, -apple-system, sans-serif;
+  font-size: 28px;
+  font-weight: 900;
   color: #fff;
-  text-shadow: 0 4px 12px rgba(0,0,0,0.8);
+  /* Четкая многослойная тень для идеальной видимости на любом фоне */
+  text-shadow: 
+    0 2px 0 #000,
+    0 -2px 0 #000,
+    2px 0 0 #000,
+    -2px 0 0 #000,
+    0 4px 15px rgba(239, 68, 68, 0.9);
   pointer-events: none;
-  z-index: 150;
-  animation: floatUpDmg 0.85s var(--ease-smooth) forwards;
+  z-index: 1000;
+  white-space: nowrap;
+  animation: floatAndHang 1.8s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
 }
+
+/* Критический урон — крупнее, золотистый неоновый взрыв */
 .floating-dmg-num.crit {
-  font-size: 32px;
-  color: var(--accent-gold);
-  text-shadow: 0 0 20px rgba(226, 184, 104, 0.6);
+  font-size: 38px;
+  color: #fde047;
+  text-shadow: 
+    0 2px 0 #000,
+    0 -2px 0 #000,
+    2px 0 0 #000,
+    -2px 0 0 #000,
+    0 0 25px rgba(250, 204, 21, 1),
+    0 4px 20px rgba(0, 0, 0, 0.9);
+}
+
+/* Анимация: резкий выстрел вверх -> зависание на 1.2 секунды -> плавное растворение */
+@keyframes floatAndHang {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 0) scale(0.4);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, -35px) scale(1.3); /* Резкий вылет с отскоком */
+  }
+  20% {
+    transform: translate(-50%, -42px) scale(1.05);
+  }
+  /* Фаза долгого зависания в воздухе (с 20% до 75% времени, ~1 секунда) */
+  75% {
+    opacity: 1;
+    transform: translate(-50%, -50px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -75px) scale(0.85); /* Плавное таяние ввысь */
+  }
 }
 
 .flash-fx-overlay {
@@ -1465,72 +1506,62 @@ body {
   box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
 }
 
-/* Всплывающие цифры урона: увеличенный размер и долгая плавная задержка */
+/* ==========================================================
+   БОЕВЫЕ ЧИСЛА УРОНА (RPG FLOATING POPUP)
+   ========================================================== */
 .floating-dmg-num {
   position: absolute;
-  top: 10%;
-  left: 50%;
-  transform: translate(-50%, 0);
-  font-family: 'JetBrains Mono', monospace, -apple-system;
-  font-size: 26px;
+  transform: translate(-50%, -50%);
+  font-family: 'JetBrains Mono', monospace, -apple-system, sans-serif;
+  font-size: 28px;
   font-weight: 900;
   color: #fff;
-  text-shadow: 0 4px 14px rgba(0, 0, 0, 0.95), 0 0 10px rgba(239, 68, 68, 0.8);
+  /* Четкая многослойная тень для идеальной видимости на любом фоне */
+  text-shadow: 
+    0 2px 0 #000,
+    0 -2px 0 #000,
+    2px 0 0 #000,
+    -2px 0 0 #000,
+    0 4px 15px rgba(239, 68, 68, 0.9);
   pointer-events: none;
-  z-index: 300;
-  animation: floatUpSlow 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  z-index: 1000;
+  white-space: nowrap;
+  animation: floatAndHang 1.8s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
 }
 
+/* Критический урон — крупнее, золотистый неоновый взрыв */
 .floating-dmg-num.crit {
-  font-size: 34px;
+  font-size: 38px;
   color: #fde047;
-  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.95), 0 0 24px rgba(250, 204, 21, 0.9);
+  text-shadow: 
+    0 2px 0 #000,
+    0 -2px 0 #000,
+    2px 0 0 #000,
+    -2px 0 0 #000,
+    0 0 25px rgba(250, 204, 21, 1),
+    0 4px 20px rgba(0, 0, 0, 0.9);
 }
 
-@keyframes floatUpSlow {
+/* Анимация: резкий выстрел вверх -> зависание на 1.2 секунды -> плавное растворение */
+@keyframes floatAndHang {
   0% {
     opacity: 0;
-    transform: translate(-50%, 20px) scale(0.6);
+    transform: translate(-50%, 0) scale(0.4);
   }
-  15% {
+  12% {
     opacity: 1;
-    transform: translate(-50%, -8px) scale(1.25);
+    transform: translate(-50%, -35px) scale(1.3); /* Резкий вылет с отскоком */
   }
-  30% {
-    transform: translate(-50%, -15px) scale(1);
+  20% {
+    transform: translate(-50%, -42px) scale(1.05);
   }
+  /* Фаза долгого зависания в воздухе (с 20% до 75% времени, ~1 секунда) */
   75% {
     opacity: 1;
-    transform: translate(-50%, -28px) scale(1);
+    transform: translate(-50%, -50px) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -55px) scale(0.9);
+    transform: translate(-50%, -75px) scale(0.85); /* Плавное таяние ввысь */
   }
 }
-
-/* Премиальная плашка ранга чемпиона */
-.actor-side-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 8.5px;
-  font-weight: 900;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: rgba(8, 12, 18, 0.92); /* Всегда темный контрастный фон */
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
-  white-space: nowrap;
-}
-
-/* Акцентные классы по рангам для четкого свечения текста */
-.actor-side-badge.rank-legend      { border-color: #e2b868; color: #fde047 !important; text-shadow: 0 0 8px rgba(226, 184, 104, 0.5); }
-.actor-side-badge.rank-phenomenon  { border-color: #f43f5e; color: #fda4af !important; text-shadow: 0 0 8px rgba(244, 63, 94, 0.5); }
-.actor-side-badge.rank-singularity { border-color: #00ffcc; color: #a7f3d0 !important; text-shadow: 0 0 8px rgba(0, 255, 204, 0.5); }
-.actor-side-badge.rank-grandmaster { border-color: #38bdf8; color: #bae6fd !important; text-shadow: 0 0 8px rgba(56, 189, 248, 0.5); }
-.actor-side-badge.rank-joker       { border-color: #c084fc; color: #f3e8ff !important; text-shadow: 0 0 8px rgba(192, 132, 252, 0.5); }
-.actor-side-badge.rank-maestro     { border-color: #94a3b8; color: #f1f5f9 !important; text-shadow: 0 0 8px rgba(148, 163, 184, 0.5); }

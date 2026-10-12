@@ -191,13 +191,30 @@ window.NetDuel = {
 
   spawnDamageNumber(anchorId, amount, isCrit = false) {
     const anchor = document.getElementById(anchorId);
-    if (!anchor || amount <= 0) return;
+    const overlay = document.getElementById("net-battle-overlay");
+    if (!anchor || !overlay || amount <= 0) return;
+
+    // Вычисляем точные экранные координаты центра аватара
+    const rect = anchor.getBoundingClientRect();
+    const overlayRect = overlay.getBoundingClientRect();
+
+    const posX = rect.left + rect.width / 2 - overlayRect.left;
+    const posY = rect.top + rect.height / 2 - overlayRect.top;
 
     const el = document.createElement("div");
     el.className = `floating-dmg-num ${isCrit ? "crit" : ""}`;
     el.textContent = isCrit ? `КРИТ -${amount}` : `-${amount}`;
-    anchor.appendChild(el);
-    setTimeout(() => el.remove(), 1600); // 1.6 сек, чтобы четко увидеть урон
+
+    // Позиционируем прямо над центром персонажа
+    el.style.left = `${posX}px`;
+    el.style.top = `${posY}px`;
+
+    overlay.appendChild(el);
+
+    // Удаляем после завершения долгой анимации зависания (1.8 сек)
+    setTimeout(() => {
+      if (el.parentNode) el.remove();
+    }, 1800);
   },
 
   showSuperCutIn(hero, skillName) {
