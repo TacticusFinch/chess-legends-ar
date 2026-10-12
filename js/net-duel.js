@@ -412,66 +412,44 @@ startBattle() {
   },
 
   updateHUD() {
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-  // 1. Игрок
-  set("my-hero-name", this.myHero.name);
-  const myImg = document.getElementById("my-avatar-img");
-  if (myImg) myImg.src = this.myHero.img;
+    // Игрок
+    set("my-hero-name", this.myHero.name);
+    const myImg = document.getElementById("my-avatar-img");
+    if (myImg) myImg.src = this.myHero.img;
+    set("my-hp-text", `${Math.max(0, this.myHp)} / 100 HP`);
+    document.getElementById("my-hp-bar").style.width = `${Math.max(0, this.myHp)}%`;
+    set("my-atk-val", this.myHero.atk);
+    set("my-def-val", this.myHero.def);
+    set("my-energy-val", `${this.myEnergy}/2`);
+    document.getElementById("player-shield-fx").style.display = this.myShield ? "flex" : "none";
 
-  const currentMyHp = Math.max(0, this.myHp);
-  set("my-hp-text", `${currentMyHp} / 100`);
-  document.getElementById("my-hp-bar").style.width = `${currentMyHp}%`;
-  set("my-atk-val", this.myHero.atk);
-  set("my-def-val", this.myHero.def);
+    // Соперник
+    set("enemy-hero-name", this.enemyHero.name);
+    const enemyImg = document.getElementById("enemy-avatar-img");
+    if (enemyImg) enemyImg.src = this.enemyHero.img;
+    set("enemy-hp-text", `${Math.max(0, this.enemyHp)} / 100 HP`);
+    document.getElementById("enemy-hp-bar").style.width = `${Math.max(0, this.enemyHp)}%`;
+    set("enemy-atk-val", this.enemyHero.atk);
+    set("enemy-def-val", this.enemyHero.def);
+    set("enemy-energy-tracker", `${this.enemyEnergy}/2`);
+    set("enemy-skill-name", (this.enemyHero.skillName || "НАВЫК").toUpperCase());
+    document.getElementById("enemy-shield-fx").style.display = this.enemyShield ? "flex" : "none";
 
-  // Отрисовка ячеек энергии игрока
-  const playerPips = document.getElementById("player-energy-pips");
-  if (playerPips) {
-    playerPips.innerHTML = `
-      <span class="pip ${this.myEnergy >= 1 ? 'active' : ''}"></span>
-      <span class="pip ${this.myEnergy >= 2 ? 'active' : ''}"></span>
-    `;
-  }
-  document.getElementById("player-shield-fx").style.display = this.myShield ? "flex" : "none";
+    // Кнопка ультимейта
+    const spcBtn = document.getElementById("btn-action-spc");
+    if (spcBtn) {
+      spcBtn.classList.toggle("ready", this.myEnergy >= 2);
+      set("skill-cd-badge", this.myEnergy >= 2 ? "ГОТОВО ⚡" : `${this.myEnergy}/2 ⚡`);
+    }
 
-  // 2. Соперник
-  set("enemy-hero-name", this.enemyHero.name);
-  const enemyImg = document.getElementById("enemy-avatar-img");
-  if (enemyImg) enemyImg.src = this.enemyHero.img;
-
-  const currentEnemyHp = Math.max(0, this.enemyHp);
-  set("enemy-hp-text", `${currentEnemyHp} / 100`);
-  document.getElementById("enemy-hp-bar").style.width = `${currentEnemyHp}%`;
-  set("enemy-atk-val", this.enemyHero.atk);
-  set("enemy-def-val", this.enemyHero.def);
-  set("enemy-skill-name", (this.enemyHero.skillName || "НАВЫК").toUpperCase());
-
-  // Отрисовка ячеек энергии оппонента
-  const enemyPips = document.getElementById("enemy-energy-pips");
-  if (enemyPips) {
-    enemyPips.innerHTML = `
-      <span class="pip ${this.enemyEnergy >= 1 ? 'active' : ''}"></span>
-      <span class="pip ${this.enemyEnergy >= 2 ? 'active' : ''}"></span>
-    `;
-  }
-  document.getElementById("enemy-shield-fx").style.display = this.enemyShield ? "flex" : "none";
-
-  // 3. Состояние кнопки ультимейта (Коронного хода)
-  const spcBtn = document.getElementById("btn-action-spc");
-  if (spcBtn) {
-    const isReady = this.myEnergy >= 2;
-    spcBtn.classList.toggle("ready", isReady);
-    set("skill-cd-badge", isReady ? "ГОТОВ К УДАРУ" : `ЗАРЯДКА ${this.myEnergy}/2`);
-  }
-
-  // 4. Номер раунда и полоса преимущества (Eval bar)
-  set("round-title-badge", `РАУНД ${this.round}`);
-  const evalScore = Math.min(100, Math.max(0, 50 + (this.myHp - this.enemyHp) / 2));
-  document.getElementById("duel-eval-fill").style.height = `${evalScore}%`;
-  const scoreVal = ((evalScore - 50) / 10).toFixed(1);
-  set("duel-eval-score", scoreVal > 0 ? `+${scoreVal}` : scoreVal);
-},
+    set("round-title-badge", `РАУНД ${this.round}`);
+    const evalScore = Math.min(100, Math.max(0, 50 + (this.myHp - this.enemyHp) / 2));
+    document.getElementById("duel-eval-fill").style.height = `${evalScore}%`;
+    const scoreVal = ((evalScore - 50) / 10).toFixed(1);
+    set("duel-eval-score", scoreVal > 0 ? `+${scoreVal}` : scoreVal);
+  },
 
   setLog(text) {
     const el = document.getElementById("battle-log");
