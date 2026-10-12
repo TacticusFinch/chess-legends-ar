@@ -52,17 +52,14 @@
   </div>
 
   <!-- Верхний HUD -->
-  <div class="top-hud">
-    <a id="bot-link-btn" class="hud-btn" href="https://max.ru/se14097294_bot" target="_blank">
-      <span>🤖</span> Тактикус Финч
-    </a>
-    <button id="passport-btn" class="hud-btn" onclick="openPassportModal()">
-      <span></span> Коллекция <span id="passport-counter">(0/18)</span>
-    </button>
-    <button id="sound-toggle" class="hud-btn" style="display: none;">
-      <span>🔇</span> ЗВУК: ВЫКЛ
-    </button>
-  </div>
+<div class="top-hud">
+  <button id="passport-btn" class="hud-btn" onclick="openPassportModal()">
+    <span>Коллекция</span> <span id="passport-counter">(0/18)</span>
+  </button>
+  <button id="sound-toggle" class="hud-btn" style="display: none;">
+    ЗВУК: ВЫКЛ
+  </button>
+</div>
 
   <!-- Нижний док карточки -->
   <div id="interactive-dock"></div>
@@ -151,21 +148,18 @@
         <div id="battle-log" class="tactical-teletype">ВЫБЕРИТЕ ДЕЙСТВИЕ</div>
 
 <!-- ИНТЕРАКТИВНАЯ ДОСКА АТАКИ (ТАПЫ) -->
-        <div id="tactical-board-modal" class="qte-strike-modal" style="display: none;">
-          <div class="qte-card" style="width: 310px; max-width: 95vw; padding: 14px 10px; background: #0f1420; border: 1.5px solid var(--accent-color); border-radius: 16px; box-shadow: 0 0 30px rgba(0,0,0,0.9);">
-            <div class="qte-title" style="color: var(--accent-color); font-size: 13px; font-weight: 800; letter-spacing: 1px;">🎯 ТАКТИЧЕСКИЙ УДАР</div>
-            <div id="tactical-task-title" style="font-size: 11px; color: #8a99ad; margin: 4px 0 10px 0;">Поставьте мат в 1 ход!</div>
+<div id="tactical-board-modal" class="qte-strike-modal" style="display: none;">
+  <div class="qte-card" style="width: 310px; max-width: 95vw; padding: 18px 14px; background: rgba(12, 17, 26, 0.95); border: 1px solid var(--border-gold); border-radius: 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.85); backdrop-filter: blur(20px);">
+    <div id="tactical-task-title" style="font-size: 13px; font-weight: 700; color: var(--accent-gold); letter-spacing: 0.8px; text-transform: uppercase; text-align: center; margin-bottom: 12px;">
+      Найдите лучший ход
+    </div>
 
-            <!-- Шахматная доска -->
-            <div style="display: flex; justify-content: center;">
-              <div id="strike-board" style="width: 270px;"></div>
-            </div>
-
-            <div id="tactical-board-status" style="margin-top: 10px; font-size: 11px; font-weight: 800; color: #f1c40f; min-height: 16px;">
-              Тапните на фигуру, затем на клетку мата
-            </div>
-          </div>
-        </div>
+    <!-- Шахматная доска -->
+    <div style="display: flex; justify-content: center;">
+      <div id="strike-board" style="width: 270px;"></div>
+    </div>
+  </div>
+</div>
 
         <div id="battle-hint" class="tactical-hint">
           ⚔️ Мат дает Крит (+60%) • 🛡️ Защита копит энергию

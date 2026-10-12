@@ -3,48 +3,44 @@
 // ==========================================================
 AFRAME.registerComponent('smooth-materialize', {
   schema: {
-    duration: { type: 'number', default: 500 }
+    duration: { type: 'number', default: 600 }
   },
   init: function () {
     const el = this.el;
     const parentEntity = el.parentElement;
 
-    parentEntity.addEventListener('targetFound', () => {
-      // 1. Легкая тактильная отдача
-      if (navigator.vibrate) navigator.vibrate(18);
+    // Скрываем плоскость до полной готовности первого кадра
+    el.setAttribute('scale', '0 0 0');
+    el.setAttribute('material', 'transparent: true; opacity: 0; shader: flat;');
 
-      // 2. Световая вспышка на экране
-      const flash = document.createElement('div');
-      flash.className = 'ar-materialize-flash';
-      document.body.appendChild(flash);
-      setTimeout(() => flash.remove(), 600);
-
-      // 3. Плавный подъем масштаба и прозрачности
-      el.setAttribute('material', 'opacity', 0);
-      el.setAttribute('scale', '0.7 0.7 0.7');
+    this.onFrameReady = () => {
+      if (navigator.vibrate) navigator.vibrate(20);
 
       let startTime = null;
       const animateIn = (time) => {
         if (!startTime) startTime = time;
         const progress = Math.min((time - startTime) / this.data.duration, 1);
-        
-        // Easing: плавное торможение в конце
         const ease = 1 - Math.pow(1 - progress, 3);
-        const curScale = 0.7 + (0.3 * ease);
-        
+        const curScale = 0.85 + (0.15 * ease);
+
         el.setAttribute('scale', `${curScale} ${curScale} ${curScale}`);
-        el.setAttribute('material', 'opacity', ease);
+        el.setAttribute('material', 'transparent: true; opacity: ' + ease + '; shader: flat;');
 
         if (progress < 1) {
           requestAnimationFrame(animateIn);
+        } else {
+          el.setAttribute('scale', '1 1 1');
+          el.setAttribute('material', 'transparent: false; opacity: 1; shader: flat;');
         }
       };
       requestAnimationFrame(animateIn);
-    });
+    };
+
+    el.addEventListener('video-first-frame', this.onFrameReady);
 
     parentEntity.addEventListener('targetLost', () => {
       el.setAttribute('scale', '0 0 0');
-      el.setAttribute('material', 'opacity', 0);
+      el.setAttribute('material', 'transparent: true; opacity: 0; shader: flat;');
     });
   }
 });
@@ -199,7 +195,7 @@ const visibleTargets = new Set();
 
 function playTargetVideo(id) {
   stopAllVideosExcept(id);
-  visibleTargets.add(id); // Запоминаем, что маркер сейчас в кадре
+  visibleTargets.add(id);
 
   const vid = document.getElementById(`vid-${id}`);
   const targetEl = document.getElementById(`target-${id}`);
@@ -215,11 +211,11 @@ function playTargetVideo(id) {
     vid.removeEventListener('timeupdate', vid._revealHandler);
   }
 
+  // Запуск появления строго после того, как декодирован реальный видеокадр
   vid._revealHandler = () => {
     const isCurrentActive = (id === SCHOOL_TARGET_ID && currentHeroId === null) || (currentHeroId === id);
-    if (aVideo && vid.currentTime > 0 && isCurrentActive && visibleTargets.has(id)) {
-      aVideo.setAttribute('scale', '1 1 1');
-      aVideo.setAttribute('material', 'transparent: false; opacity: 1;');
+    if (aVideo && vid.currentTime > 0.08 && isCurrentActive && visibleTargets.has(id)) {
+      aVideo.dispatchEvent(new CustomEvent('video-first-frame'));
       vid.removeEventListener('timeupdate', vid._revealHandler);
       vid._revealHandler = null;
     }
@@ -231,7 +227,6 @@ function playTargetVideo(id) {
   if (playPromise !== undefined) {
     playPromise
       .then(() => {
-        // Если пока видео запускалось, карточку уже убрали — резко глушим и останавливаем!
         if (!visibleTargets.has(id)) {
           vid.pause();
           vid.muted = true;
@@ -242,7 +237,7 @@ function playTargetVideo(id) {
         if (err && err.name === "AbortError") return;
         vid.muted = true;
         isMuted = true;
-        if (soundBtn) soundBtn.innerHTML = "<span>🔇</span> ЗВУК: ВЫКЛ";
+        if (soundBtn) soundBtn.innerText = "ЗВУК: ВЫКЛ";
         if (visibleTargets.has(id)) {
           vid.play().catch(() => {});
         }

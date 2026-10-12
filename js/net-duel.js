@@ -14,7 +14,6 @@ const InteractiveBoardEngine = {
 
   start() {
     const modal = document.getElementById("tactical-board-modal");
-    const statusEl = document.getElementById("tactical-board-status");
     const descEl = document.getElementById("tactical-task-title");
     if (!modal) return;
 
@@ -26,17 +25,12 @@ const InteractiveBoardEngine = {
       ? getRandomDuelPuzzle()
       : {
           fen: "6k1/5ppp/8/8/8/8/8/1R4K1 w - - 0 1",
-          move: { from: "b1", to: "b8" },
-          desc: "Ход белых. Поставьте мат в 1 ход!"
+          move: { from: "b1", to: "b8" }
         };
 
     this.game = new Chess(this.currentPuzzle.fen);
 
-    if (descEl) descEl.textContent = this.currentPuzzle.desc;
-    if (statusEl) {
-      statusEl.textContent = "Тапните фигуру, затем клетку мата";
-      statusEl.style.color = "#00ffcc";
-    }
+    if (descEl) descEl.textContent = "Найдите лучший ход";
 
     setTimeout(() => {
       this.initBoard();
@@ -94,9 +88,6 @@ const InteractiveBoardEngine = {
           }
         });
 
-        const statusEl = document.getElementById("tactical-board-status");
-        if (statusEl) statusEl.textContent = `Выбрано: ${square.toUpperCase()}. Куда пойти?`;
-
         if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
         return;
       }
@@ -125,39 +116,27 @@ const InteractiveBoardEngine = {
   },
 
   onSuccess() {
-    const statusEl = document.getElementById("tactical-board-status");
-    if (statusEl) {
-      statusEl.textContent = "🎯 ПОБЕДА! КРИТ-УРОН (+60%)!";
-      statusEl.style.color = "#f1c40f";
-    }
-
     if (typeof sfx !== "undefined" && sfx.playCorrect) sfx.playCorrect();
 
     setTimeout(() => {
       const modal = document.getElementById("tactical-board-modal");
       if (modal) modal.style.display = "none";
       NetDuel.resolveTacticalStrike(true);
-    }, 700);
+    }, 450);
   },
 
   onError(originalSquare) {
-    const statusEl = document.getElementById("tactical-board-status");
-    if (statusEl) {
-      statusEl.textContent = "❌ ЗЕВОК! УДАР БЕЗ БОНУСА";
-      statusEl.style.color = "#ff4d6d";
-    }
-
     if (typeof sfx !== "undefined" && sfx.playWrong) sfx.playWrong();
 
     setTimeout(() => {
       if (this.board) this.board.position(this.currentPuzzle.fen);
-    }, 400);
+    }, 300);
 
     setTimeout(() => {
       const modal = document.getElementById("tactical-board-modal");
       if (modal) modal.style.display = "none";
       NetDuel.resolveTacticalStrike(false);
-    }, 850);
+    }, 550);
   }
 };
 
