@@ -12,33 +12,29 @@ function openAIChatModal() {
   if (activeVideo) activeVideo.pause();
 
   modalContent.innerHTML = `
-    <div class="modal-title" style="color: ${hero.color};">Беседа с легендой</div>
-    <div class="modal-subtitle">${hero.name} на связи с вами</div>
+  <div class="modal-title" style="color: ${hero.color};">Беседа с мастером</div>
+  <div class="modal-subtitle">${hero.name}</div>
 
-    <!-- Область диалога -->
-    <div id="ai-chat-box" style="height: 200px; overflow-y: auto; background: rgba(0,0,0,0.35); border-radius: 12px; padding: 12px; margin: 12px 0; border: 1px solid rgba(255,255,255,0.1); font-size: 13px; line-height: 1.5;">
-      <div style="color: ${hero.color}; margin-bottom: 8px;">
-        <b>${hero.name}:</b> Приветствую! О чем вы хотите спросить меня? Задайте вопрос о шахматах или моей жизни.
-      </div>
+  <!-- Область диалога -->
+  <div id="ai-chat-box" style="height: 220px; overflow-y: auto; background: rgba(0,0,0,0.4); border-radius: 14px; padding: 14px; margin: 12px 0; border: 1px solid rgba(255,255,255,0.08); font-size: 13px; line-height: 1.55;">
+    <div style="color: ${hero.color}; margin-bottom: 8px;">
+      <b>${hero.name}:</b> Приветствую. Сформулируйте ваш вопрос о позиции, стратегии или моем турнирном пути.
     </div>
+  </div>
 
-    <!-- Поле ввода, кнопка отправки и микрофон -->
-    <div style="display: flex; gap: 8px; align-items: center;">
-      <input id="ai-chat-input" type="text" placeholder="Задайте вопрос..." 
-        style="flex: 1; padding: 11px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: #fff; font-size: 13px; outline: none;"
-        onkeydown="if(event.key==='Enter') sendChatMessage()">
-      <button class="action-link-btn" style="width: auto; padding: 11px 15px; margin: 0; background: ${hero.color}; color: #000;" onclick="sendChatMessage()">
-        ➤
-      </button>
-      <button id="ai-mic-btn" class="action-link-btn secondary" style="width: auto; padding: 11px 14px; margin: 0;" onclick="toggleSpeechRecognition()">
-        🎙️
-      </button>
-    </div>
-
-    <div style="font-size: 10px; color: #777; text-align: center; margin-top: 8px;">
-      Нажмите 🎙️ для голосового ввода или введите текст вручную
-    </div>
-  `;
+  <!-- Поле ввода, кнопка отправки и голосовой ввод -->
+  <div style="display: flex; gap: 8px; align-items: center;">
+    <input id="ai-chat-input" type="text" placeholder="Задайте вопрос гроссмейстеру..." 
+      style="flex: 1; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #fff; font-size: 13px; outline: none;"
+      onkeydown="if(event.key==='Enter') sendChatMessage()">
+    <button class="action-link-btn" style="width: auto; padding: 12px 18px; margin: 0; background: var(--accent-gold); color: #000; font-weight: 700;" onclick="sendChatMessage()">
+      Отправить
+    </button>
+    <button id="ai-mic-btn" class="action-link-btn secondary" style="width: auto; padding: 12px 14px; margin: 0; font-size: 11px; text-transform: uppercase;" onclick="toggleSpeechRecognition()">
+      Голос
+    </button>
+  </div>
+`;
 
   modal.classList.add("active");
 }

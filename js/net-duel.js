@@ -185,26 +185,26 @@ window.NetDuel = {
   },
 
   showSuperCutIn(hero, skillName) {
-    const overlay = document.getElementById("net-battle-overlay");
-    if (!overlay) return;
+  const overlay = document.getElementById("net-battle-overlay");
+  if (!overlay) return;
 
-    const cutin = document.createElement("div");
-    cutin.className = "super-cutin-overlay";
-    cutin.innerHTML = `
-      <div class="super-cutin-banner">
-        <img class="cutin-avatar" src="${hero.img}" alt="${hero.name}">
-        <div class="cutin-text-group">
-          <span class="cutin-hero-name">⚡ ${hero.name}</span>
-          <span class="cutin-skill-name">«${skillName || "КОРОННЫЙ ХОД"}»</span>
-        </div>
+  const cutin = document.createElement("div");
+  cutin.className = "super-cutin-overlay";
+  cutin.innerHTML = `
+    <div class="super-cutin-banner">
+      <img class="cutin-avatar" src="${hero.img}" alt="${hero.name}">
+      <div class="cutin-text-group">
+        <span class="cutin-hero-name">${hero.name}</span>
+        <span class="cutin-skill-name">«${skillName || "КОРОННЫЙ ХОД"}»</span>
       </div>
-    `;
+    </div>
+  `;
 
-    overlay.appendChild(cutin);
-    this.screenShake(true);
-    this.vibrate([60, 40, 90]);
-    setTimeout(() => cutin.remove(), 800);
-  },
+  overlay.appendChild(cutin);
+  this.screenShake(true);
+  this.vibrate([60, 40, 100]);
+  setTimeout(() => cutin.remove(), 2400);
+},
 
   getHero() {
     let h = window.currentHeroData;

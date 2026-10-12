@@ -896,42 +896,60 @@ body {
 .super-cutin-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(5, 7, 11, 0.8);
-  backdrop-filter: blur(8px);
-  z-index: 200;
+  background: radial-gradient(circle at center, rgba(10, 14, 24, 0.88) 0%, rgba(3, 5, 8, 0.96) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 250;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   pointer-events: none;
-  animation: cutinFade 0.8s ease-out forwards;
+  animation: cutinFade 2.4s ease-in-out forwards;
 }
 
 .super-cutin-banner {
   width: 120%;
-  height: 100px;
-  background: linear-gradient(90deg, transparent, rgba(226, 184, 104, 0.95) 30%, rgba(226, 184, 104, 0.95) 70%, transparent);
-  transform: rotate(-3deg);
+  height: 110px;
+  background: linear-gradient(90deg, transparent, rgba(226, 184, 104, 0.95) 25%, rgba(226, 184, 104, 0.95) 75%, transparent);
+  transform: rotate(-2.5deg);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  box-shadow: 0 0 40px rgba(226, 184, 104, 0.35);
-  animation: cutinSlide 0.8s var(--ease-smooth) forwards;
+  gap: 20px;
+  box-shadow: 0 0 50px rgba(226, 184, 104, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  animation: cutinSlide 2.4s var(--ease-smooth) forwards;
 }
 
 .cutin-avatar {
-  width: 72px;
-  height: 72px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
   border: 2px solid #fff;
   object-fit: cover;
-  transform: rotate(3deg);
+  transform: rotate(2.5deg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
 }
 
-.cutin-text-group { display: flex; flex-direction: column; transform: rotate(3deg); }
-.cutin-hero-name { font-size: 12px; font-weight: 700; color: #1e1b18; letter-spacing: 2px; text-transform: uppercase; }
-.cutin-skill-name { font-size: 19px; font-weight: 900; color: #000; letter-spacing: 0.5px; }
+.cutin-text-group { 
+  display: flex; 
+  flex-direction: column; 
+  transform: rotate(2.5deg); 
+}
+.cutin-hero-name { 
+  font-size: 11px; 
+  font-weight: 700; 
+  color: #1e1b18; 
+  letter-spacing: 2.5px; 
+  text-transform: uppercase; 
+}
+.cutin-skill-name { 
+  font-size: 21px; 
+  font-weight: 900; 
+  color: #0b0f17; 
+  letter-spacing: 0.5px; 
+  text-transform: uppercase;
+}
 
 /* @keyframes */
 @keyframes scanLaser {
@@ -977,13 +995,20 @@ body {
   60% { transform: translate(-4px, 3px); }
   80% { transform: translate(4px, -2px); }
 }
-@keyframes cutinFade { 0% { opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes cutinSlide {
-  0%   { transform: translateX(50%) rotate(-3deg); }
-  25%  { transform: translateX(0%) rotate(-3deg); }
-  75%  { transform: translateX(-4%) rotate(-3deg); }
-  100% { transform: translateX(-50%) rotate(-3deg); }
+@keyframes cutinFade { 
+  0% { opacity: 0; } 
+  8% { opacity: 1; } 
+  85% { opacity: 1; } 
+  100% { opacity: 0; } 
 }
+
+@keyframes cutinSlide {
+  0%   { transform: translateX(60%) rotate(-2.5deg); }
+  18%  { transform: translateX(0%) rotate(-2.5deg); }
+  80%  { transform: translateX(-3%) rotate(-2.5deg); }
+  100% { transform: translateX(-60%) rotate(-2.5deg); }
+}
+
 @keyframes shieldPulse {
   0%   { transform: scale(0.98); opacity: 0.8; }
   100% { transform: scale(1.04); opacity: 1; }

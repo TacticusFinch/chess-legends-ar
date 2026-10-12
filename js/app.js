@@ -422,12 +422,12 @@ function showChampionUI() {
   dock.style.display = "flex";
   dock.innerHTML = `
     <button class="dock-btn" onclick="openModal('bio')"><span>Биография</span></button>
-    <button class="dock-btn" onclick="openModal('test')"><span>Тест</span></button>
-    <button class="dock-btn" onclick="if(typeof openAIChatModal==='function')openAIChatModal()" style="border-color: #00e5ff; box-shadow: 0 0 15px rgba(0,229,255,0.4);">
-      <span style="color: #00e5ff;">🎙️ Спроси</span>
+    <button class="dock-btn" onclick="openModal('test')"><span>Экзамен</span></button>
+    <button class="dock-btn" onclick="if(typeof openAIChatModal==='function')openAIChatModal()" style="border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);">
+      <span style="color: #38bdf8;">Диалог</span>
     </button>
-    <button class="dock-btn" onclick="NetDuel.openLobby()" style="border-color: #ff0055; box-shadow: 0 0 15px rgba(255,0,85,0.4);">
-      <span style="color: #ff0055;">⚔️ Дуэль</span>
+    <button class="dock-btn" onclick="NetDuel.openLobby()" style="border-color: rgba(226, 184, 104, 0.4); box-shadow: 0 0 15px rgba(226, 184, 104, 0.15);">
+      <span style="color: var(--accent-gold);">Дуэль</span>
     </button>
   `;
 }
