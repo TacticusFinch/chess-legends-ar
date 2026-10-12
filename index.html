@@ -52,15 +52,15 @@
     </div>
   </div>
 
-  <!-- Верхний HUD -->
-<div class="top-hud">
-  <button id="passport-btn" class="hud-btn" onclick="openPassportModal()">
-    <span>Коллекция</span> <span id="passport-counter">(0/18)</span>
-  </button>
-  <button id="sound-toggle" class="hud-btn" style="display: none;">
-    ЗВУК: ВЫКЛ
-  </button>
-</div>
+  <!-- Верхний HUD (центрирован изначально) -->
+  <div class="top-hud preloading" id="top-hud">
+    <button id="passport-btn" class="hud-btn hud-collection" onclick="openPassportModal()">
+      <span>КОЛЛЕКЦИЯ</span> <span id="passport-counter">(0/18)</span>
+    </button>
+    <button id="sound-toggle" class="hud-btn hud-sound" style="display: none;">
+      ЗВУК: ВЫКЛ
+    </button>
+  </div>
 
   <!-- Нижний док карточки -->
   <div id="interactive-dock"></div>
@@ -220,33 +220,27 @@
       </div>
     </div>
 
-    <!-- Лаконичные геймерские кнопки действий -->
+    <!-- Киберспортивная дека действий -->
     <div class="tactical-deck">
-      <button id="btn-action-atk" class="tactical-btn btn-atk" onclick="NetDuel.chooseAction('attack')">
-        <div class="btn-top">
-          <span class="btn-type">АТАКА</span>
-          <span id="atk-stat-badge" class="btn-stat">~25</span>
-        </div>
-        <div class="btn-title">УДАР</div>
+      <button id="btn-action-atk" class="esport-btn btn-atk" onclick="NetDuel.chooseAction('attack')">
+        <span class="esport-light-bar"></span>
+        <span class="esport-btn-text">АТАКА</span>
       </button>
 
-      <button id="btn-action-def" class="tactical-btn btn-def" onclick="NetDuel.chooseAction('defend')">
-        <div class="btn-top">
-          <span class="btn-type">ЗАЩИТА</span>
-          <span class="btn-stat">+1 ⚡</span>
-        </div>
-        <div class="btn-title">БЛОК</div>
+      <button id="btn-action-def" class="esport-btn btn-def" onclick="NetDuel.chooseAction('defend')">
+        <span class="esport-light-bar"></span>
+        <span class="esport-btn-text">ЗАЩИТА</span>
       </button>
 
-      <button id="btn-action-spc" class="tactical-btn btn-spc" onclick="NetDuel.chooseAction('skill')">
-        <div class="btn-top">
-          <span class="btn-type">СВЕРХУДАР</span>
-          <span id="skill-cd-badge" class="btn-stat">1/2</span>
+      <button id="btn-action-spc" class="esport-btn btn-spc" onclick="NetDuel.chooseAction('skill')">
+        <span class="esport-light-bar"></span>
+        <div class="esport-spc-leds">
+          <span class="led" id="spc-led-1"></span>
+          <span class="led" id="spc-led-2"></span>
         </div>
-        <div class="btn-title">ТРИУМФ</div>
+        <span class="esport-btn-text">СКИЛЛ</span>
       </button>
     </div>
-  </div>
 
 <!-- ТОРЖЕСТВЕННОЕ ОКНО ПОБЕДИТЕЛЯ -->
 <div id="duel-victory-modal" class="modal-overlay" style="z-index: 1200;">

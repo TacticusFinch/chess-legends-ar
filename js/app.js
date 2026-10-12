@@ -88,16 +88,31 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (barFill) barFill.style.width = "100%";
     if (percentText) percentText.innerText = "Готово!";
 
-    setTimeout(() => {
-      if (loadBox) loadBox.style.display = "none";
-      if (readySub) readySub.style.display = "block";
-      if (badge) {
-        badge.innerText = "AR СКАНЕР АКТИВЕН";
-        badge.style.borderColor = "var(--accent-color)";
-        badge.style.color = "var(--accent-color)";
-      }
-      if (title) title.innerText = "НАВЕДИТЕ НА КАРТОЧКУ";
-    }, 250);
+    // Внутри DOMContentLoaded после await onARReady:
+setTimeout(() => {
+  if (loadBox) loadBox.style.display = "none";
+  if (readySub) readySub.style.display = "block";
+  
+  // Переводим верхний бар в режим готовности (развод по углам)
+  const topHud = document.getElementById("top-hud");
+  if (topHud) {
+    topHud.classList.remove("preloading");
+    topHud.classList.add("ready");
+  }
+
+  // Показываем кнопку звука
+  if (soundBtn) {
+    soundBtn.style.display = "inline-flex";
+  }
+
+  if (badge) {
+    badge.innerText = "AR СКАНЕР АКТИВЕН";
+    badge.style.borderColor = "var(--accent-color)";
+    badge.style.color = "var(--accent-color)";
+  }
+  if (title) title.innerText = "НАВЕДИТЕ НА КАРТОЧКУ";
+}, 250);
+
 
   } catch (err) {
     console.error("Ошибка инициализации AR:", err);

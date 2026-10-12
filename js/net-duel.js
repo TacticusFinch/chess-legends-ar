@@ -232,8 +232,8 @@ window.NetDuel = {
       id: h.id !== undefined ? h.id : 0,
       name: h.name || "Гроссмейстер",
       img: h.avatar || "./assets/avatars/steinitz.png",
-      atk: Math.round(atk * 0.35),
-      def: Math.round(def * 0.25),
+      atk: atk,
+      def: def,
       skillName: h.skillName || h.skill || "Коронный удар"
     };
   },
