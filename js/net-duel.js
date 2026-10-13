@@ -157,7 +157,7 @@ window.NetDuel = {
   ws: null,
   isNet: false,
   round: 1,
-  maxHp: 50, // Строгий стандарт 50 HP для всех
+  maxHp: 50,
   myHp: 50,
   enemyHp: 50,
   myEnergy: 1,
@@ -232,7 +232,7 @@ window.NetDuel = {
     setTimeout(() => cutin.remove(), 2400);
   },
 
-getHero() {
+  getHero() {
     let h = window.currentHeroData;
 
     if (!h && typeof currentHeroId !== "undefined" && currentHeroId !== null && typeof HEROES !== "undefined") {
@@ -266,7 +266,7 @@ getHero() {
     };
   },
 
-  openLobby() {
+openLobby() {
     this.myHero = this.getHero();
     if (!this.myHero) return;
 
@@ -435,6 +435,8 @@ getHero() {
     });
   },
 
+
+
 updateHUD() {
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
@@ -484,7 +486,7 @@ updateHUD() {
       eRankBadge.className = `actor-side-badge rank-${(this.enemyHero.rankKey || 'legend').toLowerCase()}`;
     }
 
-    // 3. Диоды энергии кнопки скилла
+    // 3. Диоды энергии
     const spcBtn = document.getElementById("btn-action-spc");
     const led1 = document.getElementById("spc-led-1");
     const led2 = document.getElementById("spc-led-2");
@@ -492,14 +494,14 @@ updateHUD() {
     if (led2) led2.classList.toggle("on", this.myEnergy >= 2);
     if (spcBtn) spcBtn.classList.toggle("ready", this.myEnergy >= 2);
 
-    // 4. Оценка и раунд
+    // 4. Оценка позиции и номер раунда
     set("round-title-badge", `РАУНД ${this.round}`);
     const evalScore = Math.min(100, Math.max(0, 50 + (this.myHp - this.enemyHp)));
     document.getElementById("duel-eval-fill").style.height = `${evalScore}%`;
     const scoreVal = ((evalScore - 50) / 10).toFixed(1);
     set("duel-eval-score", scoreVal > 0 ? `+${scoreVal}` : scoreVal);
 
-    // 5. Подсказка скилла
+    // 5. Подсказка уникального навыка
     const skillTipEl = document.getElementById("tooltip-skill-desc");
     const skillNameEl = document.getElementById("tooltip-skill-name");
 
@@ -581,7 +583,6 @@ updateHUD() {
 
     if (this.isNet) {
       this.ws.send(JSON.stringify({ type: "MOVE", action: "attack", crit: isCrit }));
-      // Исправлена фраза: теперь без упоминания слова "Мат"
       this.setLog(isCrit ? "ТОЧНЫЙ ХОД! • КРИТИЧЕСКИЙ УРОН" : "АТАКА • ОЖИДАНИЕ ХОДА");
     } else {
       this.runAiTurn("attack", isCrit);
@@ -624,7 +625,6 @@ updateHUD() {
         }
       }
 
-      // Защита от сервера, если тот шлет HP из расчета 100
       let incomingMyHp = res.my_hp;
       let incomingEnemyHp = res.enemy_hp;
       if (incomingMyHp > 50 || incomingEnemyHp > 50) {
@@ -645,7 +645,6 @@ updateHUD() {
       this.fx(res.dmg_dealt >= res.dmg_taken ? "gold" : "red");
 
       setTimeout(() => {
-        // Проверка исхода сетевого раунда
         if (this.myHp <= 0 || this.enemyHp <= 0) {
           let outcome = 'lose';
           if (this.myHp <= 0 && this.enemyHp <= 0) outcome = 'draw';
@@ -660,34 +659,71 @@ updateHUD() {
     }, 600);
   },
 
-case "NAKAMURA_SURVIVAL": // Накамура (Экстремальное выживание)
-          pDmg = this.myHero.atk * 2; 
-          if (this.myHp <= 15) {
-            this.myHp = Math.min(50, this.myHp + 18);
-            this.spawnDamageNumber("player-card-anchor", "+18", true);
-            this.setLog("ЦЕЙТНОТНЫЙ КАМБЭК: +18 HP И УДАР!");
+
+runAiTurn(playerAct, isCrit) {
+    const pCard = document.getElementById("player-card-anchor");
+    const eCard = document.getElementById("enemy-card-anchor");
+
+    const CRIT_BONUS = 5;
+    let oppAct = this.enemyEnergy >= 2 ? "skill" : (Math.random() > 0.45 ? "attack" : "defend");
+
+    let pDmg = 0;
+    let eDmg = 0;
+    let ignoreEnemyDef = false;
+    let reflectDamageToEnemy = false;
+
+    // 1. ДЕЙСТВИЕ ИГРОКА (ПРОКАЧАННЫЕ УЛЬТИМЕЙТЫ)
+    if (playerAct === "skill") {
+      pCard?.classList.add("anim-skill-blast");
+      this.myEnergy = 0;
+      this.fx("gold");
+      const skill = this.myHero.skillId;
+
+      switch (skill) {
+        case "ENIGMA_CHAMELEON": // Джокер (Энигма)
+          if (oppAct === "attack") {
+            reflectDamageToEnemy = true;
+            this.setLog("ХАМЕЛЕОН: АТАКА ВРАГА ОТРАЖЕНА В ДВОЙНОМ ОБЪЕМЕ!");
+          } else {
+            this.enemyEnergy = 0;
+            this.myEnergy = 1;
+            this.setLog("ХАМЕЛЕОН: ЭНЕРГИЯ ПОХИЩЕНА!");
           }
+          pDmg = this.myHero.atk * 2;
           break;
 
-        case "RUBINSTEIN_HARMONY": // Рубинштейн (Ладейная гармония)
-          pDmg = this.myHero.atk * 2 + 2; 
-          const heal = Math.max(4, Math.round(pDmg * 0.5));
-          this.myHp = Math.min(50, this.myHp + heal);
-          this.spawnDamageNumber("player-card-anchor", `+${heal}`, true);
-          this.setLog("ГАРМОНИЯ: ВАМПИРИЗМ ЭНДШПИЛЯ!");
+        case "CARLSEN_ENDGAME": // Карлсен (Квантовый эндшпиль)
+          const missingEnemyHp = 50 - this.enemyHp;
+          pDmg = (this.myHero.atk * 2) + Math.round(missingEnemyHp * 0.35);
+          this.setLog("ПРЕСС КАРЛСЕНА: СОКРУШИТЕЛЬНЫЙ ЭНДШПИЛЬ!");
           break;
 
-        case "FISCHER_TORNADO": // Фишер (Ментальный торнадо)
+        case "TAL_STORM": // Таль (Ярость шторма)
+          this.myHp = Math.max(1, this.myHp - 4);
+          pDmg = this.myHero.atk * 2 + 6;
+          this.spawnDamageNumber("player-card-anchor", 4, false);
+          this.setLog("ЖЕРТВА ТАЛЯ: БЕСПОЩАДНЫЙ ШТОРМ!");
+          break;
+
+        case "CAPABLANCA_INTUITION": // Капабланка (Гениальная интуиция)
           ignoreEnemyDef = true;
-          pDmg = this.myHero.atk * 2 + 5; // Сквозной критический урон
-          this.setLog("ПАРТИЯ ВЕКА: НЕОТРАЗИМЫЙ ТОРНАДО!");
+          pDmg = this.myHero.atk * 2 + 4;
+          this.setLog("ИНТУИЦИЯ: СКВОЗНОЙ ПРОБИВНОЙ УДАР!");
           break;
 
-        case "KASPAROV_ADVENTURE": // Каспаров (Дух приключений)
-          pDmg = this.myHero.atk * 2 + 4; 
-          this.myEnergy = 1; // Возвращает 1 энергию
-          this.screenShake(true);
-          this.setLog("ДУХ ПРИКЛЮЧЕНИЙ: СОКРУШИТЕЛЬНЫЙ ШТУРМ (+1⚡)!");
+        case "PETROSYAN_FORTRESS": // Петросян (Железная профилактика)
+          this.myShield = true;
+          this.myHp = Math.min(50, this.myHp + 14);
+          pDmg = this.myHero.atk;
+          this.spawnDamageNumber("player-card-anchor", "+14", true);
+          this.setLog("КРЕПОСТЬ: +14 HP И НЕПРОБИВАЕМЫЙ БЛОК!");
+          break;
+
+        case "STOCKFISH_ENGINE": // Стокфиш (Суперкомпьютер)
+          pDmg = Math.round(this.myHero.atk * 1.8);
+          this.myHp = Math.min(50, this.myHp + 8);
+          this.spawnDamageNumber("player-card-anchor", "+8", true);
+          this.setLog("ОЦЕНКА +M1: КВАНТОВЫЙ РАСЧЕТ!");
           break;
 
         case "STEINITZ_EQUILIBRIUM": // Стейниц (Теория равновесия)
@@ -703,15 +739,24 @@ case "NAKAMURA_SURVIVAL": // Накамура (Экстремальное выж
           break;
 
         case "BOTVINNIK_ARCHITECT": // Ботвинник (Архитектор мысли)
-          pDmg = this.myHero.atk * 2; 
+          pDmg = this.myHero.atk * 2;
           this.myShield = true;
           this.setLog("АРХИТЕКТОР: УДАР И ЖЕЛЕЗНЫЙ КАРКАС!");
           break;
 
         case "CARUANA_PALACE": // Каруана (Дворец теней)
           pDmg = this.myHero.atk * 2 + 2;
-          this.enemyEnergy = 0; // Полный сброс энергии врага
+          this.enemyEnergy = 0;
           this.setLog("ДВОРЕЦ ТЕНЕЙ: ЭНЕРГИЯ ВРАГА СБРОШЕНА!");
+          break;
+
+        case "NAKAMURA_SURVIVAL": // Накамура (Экстремальное выживание)
+          pDmg = this.myHero.atk * 2;
+          if (this.myHp <= 15) {
+            this.myHp = Math.min(50, this.myHp + 18);
+            this.spawnDamageNumber("player-card-anchor", "+18", true);
+            this.setLog("ЦЕЙТНОТНЫЙ КАМБЭК: +18 HP И УДАР!");
+          }
           break;
 
         case "GUKESH_MIND": // Гукеш (Сакральный разум)
@@ -719,13 +764,34 @@ case "NAKAMURA_SURVIVAL": // Накамура (Экстремальное выж
           this.setLog("САКРАЛЬНЫЙ РАЗУМ: ГЛУБОКИЙ РАСЧЕТ!");
           break;
 
+        case "RUBINSTEIN_HARMONY": // Рубинштейн (Ладейная гармония)
+          pDmg = this.myHero.atk * 2 + 2;
+          const heal = Math.max(4, Math.round(pDmg * 0.5));
+          this.myHp = Math.min(50, this.myHp + heal);
+          this.spawnDamageNumber("player-card-anchor", `+${heal}`, true);
+          this.setLog("ГАРМОНИЯ: ВАМПИРИЗМ ЭНДШПИЛЯ!");
+          break;
+
         case "SMYSLOV_SYMPHONY": // Смыслов (Магистр гармонии)
           pDmg = this.myHero.atk * 2;
           if (this.myHp < this.enemyHp) {
             this.myHp = Math.min(50, this.myHp + 10);
             this.spawnDamageNumber("player-card-anchor", "+10", true);
-            this.setLog("МАГИСТР ГАРМОНИИ: +10 HP ВЫРАВНИВАНИЕ БАЛАНСА!");
+            this.setLog("МАГИСТР ГАРМОНИИ: +10 HP ВЫРАВНИВАНИЕ!");
           }
+          break;
+
+        case "FISCHER_TORNADO": // Фишер (Ментальный торнадо)
+          ignoreEnemyDef = true;
+          pDmg = this.myHero.atk * 2 + 5;
+          this.setLog("ПАРТИЯ ВЕКА: НЕОТРАЗИМЫЙ ТОРНАДО!");
+          break;
+
+        case "KASPAROV_ADVENTURE": // Каспаров (Дух приключений)
+          pDmg = this.myHero.atk * 2 + 4;
+          this.myEnergy = 1;
+          this.screenShake(true);
+          this.setLog("ДУХ ПРИКЛЮЧЕНИЙ: СОКРУШИТЕЛЬНЫЙ ШТУРМ (+1⚡)!");
           break;
 
         case "DING_DRAGON": // Дин Лижэнь (Воля дракона)
@@ -744,9 +810,7 @@ case "NAKAMURA_SURVIVAL": // Накамура (Экстремальное выж
       this.myShield = true;
     }
 
-    // -------------------------------------------------------------
-    // 2. ДЕЙСТВИЕ СОПЕРНИКА
-    // -------------------------------------------------------------
+// 2. ДЕЙСТВИЕ СОПЕРНИКА
     if (oppAct === "attack") {
       eCard?.classList.add("anim-lunge-down");
       eDmg = this.enemyHero.atk;
@@ -760,17 +824,13 @@ case "NAKAMURA_SURVIVAL": // Накамура (Экстремальное выж
       this.enemyEnergy = Math.min(2, this.enemyEnergy + 1);
     }
 
-    // -------------------------------------------------------------
     // 3. ОТРАЖЕНИЕ УРОНА (ЭНИГМА)
-    // -------------------------------------------------------------
     if (reflectDamageToEnemy) {
       pDmg += eDmg;
       eDmg = 0;
     }
 
-    // -------------------------------------------------------------
     // 4. ПРИМЕНЕНИЕ БРОНИ
-    // -------------------------------------------------------------
     if (this.enemyShield && !ignoreEnemyDef && pDmg > 0) {
       pDmg = Math.max(1, pDmg - this.enemyHero.def);
     }
@@ -815,7 +875,6 @@ case "NAKAMURA_SURVIVAL": // Накамура (Экстремальное выж
   endBattle(outcome) {
     this.lockActions(true);
 
-    // Защита от всех видов ложных поражений
     const isDraw = (outcome === 'draw' || (this.myHp <= 0 && this.enemyHp <= 0));
     const isWin = (!isDraw && (outcome === 'win' || outcome === true || (this.myHp > 0 && this.enemyHp <= 0)));
 
