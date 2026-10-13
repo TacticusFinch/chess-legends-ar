@@ -121,6 +121,56 @@ const DUEL_STRIKE_PUZZLES = [
     id: "m1_custom_20",
     fen: "2r3r1/pp1b1pkp/3p4/4qp1R/4P3/1PN2P2/1PPQ2P1/2K5 w - - 1 21",
     move: { from: "d2", to: "h6" }
+  },
+  {
+    id: "m1_custom_21",
+    fen: "8/R5pk/1p3r1p/4Q3/4P3/7P/5qPK/8 b - - 4 29",
+    move: { from: "f6", to: "g6" }
+  },
+  {
+    id: "m1_custom_22",
+    fen: "7r/6R1/pk2Pb2/1p5p/P7/1BP3B1/3r4/1K6 w - - 1 32",
+    move: { from: "a4", to: "a5" }
+  },
+  {
+    id: "m1_custom_23",
+    fen: "rn1qkb1r/pp2pp1p/2p3p1/2PbN3/2B5/5Q2/PP1P1PPP/R1B1K2R w KQkq - 0 11",
+    move: { from: "f3", to: "f7" }
+  },
+  {
+    id: "m1_custom_24",
+    fen: "8/2Q2pkp/6p1/1p1q4/4r3/P7/5PPP/2R3K1 b - - 2 28",
+    move: { from: "e4", to: "c4" }
+  },
+  {
+    id: "m1_custom_25",
+    fen: "8/p1q2pkp/1p1bp1p1/8/6N1/6PP/P2Q1P2/6K1 w - - 12 37",
+    move: { from: "d2", to: "h6" }
+  },
+  {
+    id: "m1_custom_26",
+    fen: "6k1/R6p/4pbp1/2Bb4/8/1PP1N2P/1P4PK/3r4 b - - 4 28",
+    move: { from: "f6", to: "e5" }
+  },
+  {
+    id: "m1_custom_27",
+    fen: "r4rk1/ppqn1ppp/2pb4/3pN3/3P1B2/3Q3P/PPP2PP1/2K1R2R b - - 4 15",
+    move: { from: "f7", to: "f6" }
+  },
+  {
+    id: "m1_custom_28",
+    fen: "r2r1k2/pp4pQ/1q3b1p/4p3/3p4/3B4/PP4PP/R4RK1 w - - 0 23",
+    move: { from: "f1", to: "f6" }
+  },
+  {
+    id: "m1_custom_29",
+    fen: "5knR/1p3p2/6P1/2PK2P1/1r1B3P/p7/8/8 b - - 0 42",
+    move: { from: "b4", to: "d4" }
+  },
+  {
+    id: "m1_custom_30",
+    fen: "r4rk1/1pp3pp/p5q1/3P4/4pp2/PP2P2b/3N1PPP/R2QRBK1 b - - 3 18",
+    move: { from: "h3", to: "g2" }
   }
 ];
 

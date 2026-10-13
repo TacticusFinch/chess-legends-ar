@@ -452,8 +452,8 @@ startBattle() {
     if (myImg) myImg.src = this.myHero.img;
 
     const currentMyHp = Math.max(0, this.myHp);
-    set("my-hp-text", `${currentMyHp} / 35`);
-    const myHpPercent = Math.round((currentMyHp / 35) * 100);
+    set("my-hp-text", `${currentMyHp} / 50`);
+    const myHpPercent = Math.round((currentMyHp / 50) * 100);
     document.getElementById("my-hp-bar").style.width = `${myHpPercent}%`;
     const myGhost = document.getElementById("my-hp-ghost");
     if (myGhost) myGhost.style.width = `${myHpPercent}%`;
@@ -475,8 +475,8 @@ startBattle() {
     if (enemyImg) enemyImg.src = this.enemyHero.img;
 
     const currentEnemyHp = Math.max(0, this.enemyHp);
-    set("enemy-hp-text", `${currentEnemyHp} / 35`);
-    const enemyHpPercent = Math.round((currentEnemyHp / 35) * 100);
+    set("enemy-hp-text", `${currentEnemyHp} / 50`);
+    const enemyHpPercent = Math.round((currentEnemyHp / 50) * 100);
     document.getElementById("enemy-hp-bar").style.width = `${enemyHpPercent}%`;
     const enemyGhost = document.getElementById("enemy-hp-ghost");
     if (enemyGhost) enemyGhost.style.width = `${enemyHpPercent}%`;
@@ -696,7 +696,7 @@ runAiTurn(playerAct, isCrit) {
           break;
 
         case "CARLSEN_ENDGAME": // Карлсен (Квантовый эндшпиль)
-          const missingEnemyHp = 35 - this.enemyHp;
+          const missingEnemyHp = 50 - this.enemyHp;
           pDmg = this.myHero.atk + Math.round(missingEnemyHp * 0.25); // 9 + добивание раненого
           this.setLog("ПРЕСС КАРЛСЕНА: ДОБИВАЮЩИЙ УРОН!");
           break;
@@ -716,7 +716,7 @@ runAiTurn(playerAct, isCrit) {
 
         case "PETROSYAN_FORTRESS": // Петросян (Железная профилактика)
           this.myShield = true;
-          this.myHp = Math.min(35, this.myHp + 7); // Исцеление +7 HP
+          this.myHp = Math.min(50, this.myHp + 7); // Исцеление +7 HP
           pDmg = Math.max(1, Math.round(this.myHero.atk * 0.5)); // 3 урона
           this.spawnDamageNumber("player-card-anchor", "+7", true);
           this.setLog("КРЕПОСТЬ: +7 HP И ПОЛНЫЙ БЛОК!");
@@ -724,7 +724,7 @@ runAiTurn(playerAct, isCrit) {
 
         case "STOCKFISH_ENGINE": // Стокфиш (Суперкомпьютер)
           pDmg = this.myHero.atk; // 15 честного урона
-          this.myHp = Math.min(35, this.myHp + 4);
+          this.myHp = Math.min(50, this.myHp + 4);
           this.spawnDamageNumber("player-card-anchor", "+4", true);
           this.setLog("ОЦЕНКА +M1: КВАНТОВЫЙ КОЛЛАПС!");
           break;
@@ -732,7 +732,7 @@ runAiTurn(playerAct, isCrit) {
         case "NAKAMURA_SURVIVAL": // Накамура (Экстремальное выживание)
           pDmg = this.myHero.atk; // 7 урона
           if (this.myHp <= 12) {
-            this.myHp = Math.min(35, this.myHp + 10);
+            this.myHp = Math.min(50, this.myHp + 10);
             this.spawnDamageNumber("player-card-anchor", "+10", true);
             this.setLog("ЦЕЙТНОТНЫЙ КАМБЭК: +10 HP!");
           }
@@ -741,7 +741,7 @@ runAiTurn(playerAct, isCrit) {
         case "RUBINSTEIN_HARMONY": // Рубинштейн (Ладейная гармония)
           pDmg = this.myHero.atk; // 5 урона
           const heal = Math.max(1, Math.round(pDmg * 0.5)); // Лечит 3 HP
-          this.myHp = Math.min(35, this.myHp + heal);
+          this.myHp = Math.min(50, this.myHp + heal);
           this.spawnDamageNumber("player-card-anchor", `+${heal}`, true);
           this.setLog("ГАРМОНИЯ: ВАМПИРИЗМ ЭНДШПИЛЯ!");
           break;
@@ -795,7 +795,7 @@ runAiTurn(playerAct, isCrit) {
         case "SMYSLOV_SYMPHONY": // Смыслов (Магистр гармонии)
           pDmg = this.myHero.atk; // 6 урона
           if (this.myHp < this.enemyHp) {
-            this.myHp = Math.min(35, this.myHp + 4);
+            this.myHp = Math.min(50, this.myHp + 4);
             this.spawnDamageNumber("player-card-anchor", "+4", true);
             this.setLog("МАГИСТР ГАРМОНИИ: ВЫРАВНИВАНИЕ БАЛАНСА!");
           }
