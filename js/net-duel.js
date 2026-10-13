@@ -435,8 +435,6 @@ openLobby() {
     });
   },
 
-
-
 updateHUD() {
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
@@ -658,7 +656,6 @@ updateHUD() {
       }, 900);
     }, 600);
   },
-
 
 runAiTurn(playerAct, isCrit) {
     const pCard = document.getElementById("player-card-anchor");
