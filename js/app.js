@@ -1,36 +1,49 @@
 // ==========================================================
-// КОМПОНЕНТ ПЛАВНОЙ МАТЕРИАЛИЗАЦИИ И ПОЯВЛЕНИЯ AR
+// КОМПОНЕНТ ПЛАВНОЙ МАТЕРИАЛИЗАЦИИ AR (БЕЗ ЧЁРНЫХ КВАДРАТОВ)
 // ==========================================================
 AFRAME.registerComponent('smooth-materialize', {
   schema: {
-    duration: { type: 'number', default: 600 }
+    duration: { type: 'number', default: 500 }
   },
   init: function () {
     const el = this.el;
     const parentEntity = el.parentElement;
 
-    // Скрываем плоскость до полной готовности первого кадра
-    el.setAttribute('scale', '0 0 0');
-    el.setAttribute('material', 'transparent: true; opacity: 0; shader: flat;');
+    // Скрываем плоскость на старте
+    el.object3D.scale.set(0.001, 0.001, 0.001);
+    el.object3D.visible = false;
 
     this.onFrameReady = () => {
       if (navigator.vibrate) navigator.vibrate(20);
 
+      el.object3D.visible = true;
       let startTime = null;
+
       const animateIn = (time) => {
         if (!startTime) startTime = time;
         const progress = Math.min((time - startTime) / this.data.duration, 1);
         const ease = 1 - Math.pow(1 - progress, 3);
         const curScale = 0.85 + (0.15 * ease);
 
-        el.setAttribute('scale', `${curScale} ${curScale} ${curScale}`);
-        el.setAttribute('material', 'transparent: true; opacity: ' + ease + '; shader: flat;');
+        el.object3D.scale.set(curScale, curScale, curScale);
+
+        // Безопасное изменение прозрачности материала без сброса текстуры видео
+        const mesh = el.getObject3D('mesh');
+        if (mesh && mesh.material) {
+          mesh.material.transparent = true;
+          mesh.material.opacity = ease;
+          mesh.material.needsUpdate = true;
+        }
 
         if (progress < 1) {
           requestAnimationFrame(animateIn);
         } else {
-          el.setAttribute('scale', '1 1 1');
-          el.setAttribute('material', 'transparent: false; opacity: 1; shader: flat;');
+          el.object3D.scale.set(1, 1, 1);
+          if (mesh && mesh.material) {
+            mesh.material.transparent = false;
+            mesh.material.opacity = 1.0;
+            mesh.material.needsUpdate = true;
+          }
         }
       };
       requestAnimationFrame(animateIn);
@@ -39,8 +52,8 @@ AFRAME.registerComponent('smooth-materialize', {
     el.addEventListener('video-first-frame', this.onFrameReady);
 
     parentEntity.addEventListener('targetLost', () => {
-      el.setAttribute('scale', '0 0 0');
-      el.setAttribute('material', 'transparent: true; opacity: 0; shader: flat;');
+      el.object3D.scale.set(0.001, 0.001, 0.001);
+      el.object3D.visible = false;
     });
   }
 });
@@ -222,41 +235,31 @@ function playTargetVideo(id) {
   vid.defaultMuted = isMuted;
   vid.playsInline = true;
 
-  if (vid._revealHandler) {
-    vid.removeEventListener('timeupdate', vid._revealHandler);
+  // Очищаем предыдущий обработчик
+  if (vid._checkReadyInterval) {
+    clearInterval(vid._checkReadyInterval);
+    vid._checkReadyInterval = null;
   }
 
-  // Запуск появления строго после того, как декодирован реальный видеокадр
-  vid._revealHandler = () => {
+  // Запуск появления строго когда видео физически декодировало кадры
+  vid._checkReadyInterval = setInterval(() => {
     const isCurrentActive = (id === SCHOOL_TARGET_ID && currentHeroId === null) || (currentHeroId === id);
-    if (aVideo && vid.currentTime > 0.08 && isCurrentActive && visibleTargets.has(id)) {
-      aVideo.dispatchEvent(new CustomEvent('video-first-frame'));
-      vid.removeEventListener('timeupdate', vid._revealHandler);
-      vid._revealHandler = null;
+    if (vid.readyState >= 2 && vid.currentTime > 0.05 && isCurrentActive && visibleTargets.has(id)) {
+      clearInterval(vid._checkReadyInterval);
+      vid._checkReadyInterval = null;
+      if (aVideo) {
+        aVideo.dispatchEvent(new CustomEvent('video-first-frame'));
+      }
     }
-  };
-
-  vid.addEventListener('timeupdate', vid._revealHandler);
+  }, 40);
 
   const playPromise = vid.play();
   if (playPromise !== undefined) {
-    playPromise
-      .then(() => {
-        if (!visibleTargets.has(id)) {
-          vid.pause();
-          vid.muted = true;
-          vid.currentTime = 0;
-        }
-      })
-      .catch((err) => {
-        if (err && err.name === "AbortError") return;
-        vid.muted = true;
-        isMuted = true;
-        if (soundBtn) soundBtn.innerText = "ЗВУК: ВЫКЛ";
-        if (visibleTargets.has(id)) {
-          vid.play().catch(() => {});
-        }
-      });
+    playPromise.catch(() => {
+      // Если браузер заблокировал автоплей — пробуем принудительно заглушить и включить
+      vid.muted = true;
+      vid.play().catch(() => {});
+    });
   }
 }
 
