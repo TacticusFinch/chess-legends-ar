@@ -190,8 +190,12 @@ document.addEventListener("touchstart", handleFirstInteraction, { once: true, pa
 document.addEventListener("click", handleFirstInteraction, { once: true });
 
 // ==========================================
-// 4. ЖЕСТКОЕ УПРАВЛЕНИЕ ВИДЕО (БЕЗ НАЛОЖЕНИЙ)
+// 4. ЖЕСТКОЕ УПРАВЛЕНИЕ ВИДЕО (СТРОГО ВСЕ 18 ТАРГЕТОВ)
 // ==========================================
+// Гарантируем наличие всех индексов от 0 до 17 вне зависимости от heroes-data.js
+const ALL_TARGET_IDS = Array.from({ length: 18 }, (_, i) => i);
+const visibleTargets = new Set();
+
 function stopAllVideosExcept(activeId = null) {
   ALL_TARGET_IDS.forEach(id => {
     if (id !== activeId) {
@@ -201,10 +205,6 @@ function stopAllVideosExcept(activeId = null) {
       if (vid) {
         vid.pause();
         vid.currentTime = 0;
-        if (vid._revealHandler) {
-          vid.removeEventListener('timeupdate', vid._revealHandler);
-          vid._revealHandler = null;
-        }
       }
 
       if (targetEl) {
@@ -217,9 +217,6 @@ function stopAllVideosExcept(activeId = null) {
     }
   });
 }
-
-// Хранилище активных в данный момент маркеров
-const visibleTargets = new Set();
 
 function playTargetVideo(id) {
   stopAllVideosExcept(id);
@@ -235,50 +232,40 @@ function playTargetVideo(id) {
   vid.defaultMuted = isMuted;
   vid.playsInline = true;
 
-  // Очищаем предыдущий обработчик
-  if (vid._checkReadyInterval) {
-    clearInterval(vid._checkReadyInterval);
-    vid._checkReadyInterval = null;
-  }
-
-  // Запуск появления строго когда видео физически декодировало кадры
-  vid._checkReadyInterval = setInterval(() => {
-    const isCurrentActive = (id === SCHOOL_TARGET_ID && currentHeroId === null) || (currentHeroId === id);
-    if (vid.readyState >= 2 && vid.currentTime > 0.05 && isCurrentActive && visibleTargets.has(id)) {
-      clearInterval(vid._checkReadyInterval);
-      vid._checkReadyInterval = null;
-      if (aVideo) {
-        aVideo.dispatchEvent(new CustomEvent('video-first-frame'));
-      }
+  // Прямой и надежный запуск показа видео без задержки 0.08с
+  const revealVideo = () => {
+    if (aVideo && visibleTargets.has(id)) {
+      aVideo.setAttribute('scale', '1 1.54 1');
+      aVideo.setAttribute('material', 'transparent: false; opacity: 1;');
     }
-  }, 40);
+  };
+
+  vid.onplaying = revealVideo;
+  vid.ontimeupdate = () => {
+    if (vid.currentTime > 0) revealVideo();
+  };
 
   const playPromise = vid.play();
   if (playPromise !== undefined) {
     playPromise.catch(() => {
-      // Если браузер заблокировал автоплей — пробуем принудительно заглушить и включить
+      // Автоплей-фоллбэк для мобильных
       vid.muted = true;
-      vid.play().catch(() => {});
+      vid.play().then(revealVideo).catch(() => {});
     });
   }
 }
 
 function stopTargetVideo(id) {
-  visibleTargets.delete(id); // Маркер ушел из кадра
+  visibleTargets.delete(id);
 
   const vid = document.getElementById(`vid-${id}`);
   const targetEl = document.getElementById(`target-${id}`);
 
-  // Мгновенно глушим звук и сбрасываем картинку без ожидания
   if (vid) {
-    vid.muted = true; // Сразу выключаем звук
     vid.pause();
     vid.currentTime = 0;
-
-    if (vid._revealHandler) {
-      vid.removeEventListener('timeupdate', vid._revealHandler);
-      vid._revealHandler = null;
-    }
+    vid.onplaying = null;
+    vid.ontimeupdate = null;
   }
 
   if (targetEl) {
@@ -291,27 +278,27 @@ function stopTargetVideo(id) {
 }
 
 // ==========================================
-// 5. СЛУШАТЕЛИ ТАРГЕТОВ (С СОХРАНЕНИЕМ ИНТЕРФЕЙСА)
+// 5. СЛУШАТЕЛИ ТАРГЕТОВ
 // ==========================================
 ALL_TARGET_IDS.forEach(id => {
   const targetEl = document.getElementById(`target-${id}`);
   if (!targetEl) return;
 
   targetEl.addEventListener("targetFound", () => {
-    // Фиксируем героя
     currentHeroId = (id === SCHOOL_TARGET_ID) ? null : id;
 
     if (typeof sfx !== "undefined" && sfx.playTargetFound) sfx.playTargetFound();
 
-    // Прячем рамку сканера и показываем меню действий
     if (hint) hint.classList.add("hidden");
     if (dock) dock.style.display = "flex";
     if (soundBtn) soundBtn.style.display = "inline-flex";
 
     if (id === SCHOOL_TARGET_ID) {
       showSchoolUI();
-    } else if (typeof HEROES !== "undefined" && HEROES[id]) {
-      applyHeroTheme(HEROES[id]);
+    } else {
+      if (typeof HEROES !== "undefined" && HEROES[id]) {
+        applyHeroTheme(HEROES[id]);
+      }
       showChampionUI();
     }
 
@@ -319,15 +306,9 @@ ALL_TARGET_IDS.forEach(id => {
   });
 
   targetEl.addEventListener("targetLost", () => {
-    // 1. Останавливаем только видео карточки
     stopTargetVideo(id);
-
-    // 2. ВАЖНО: мы НЕ прячем dock и НЕ обнуляем currentHeroId!
-    // Кнопки остаются активными, герой остается выбранным,
-    // пользователь может спокойно положить карту на стол и проходить тест.
   });
 });
-
 
 // ==========================================
 // 6. ТЕМЫ И ЗВУК
