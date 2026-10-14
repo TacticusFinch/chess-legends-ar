@@ -219,26 +219,41 @@ function playTargetVideo(id) {
   vid.defaultMuted = isMuted;
   vid.playsInline = true;
 
+  // ЕСЛИ ВИДЕО ЕЩЕ НЕ НАЧАЛО ГРУЗИТЬСЯ — ПРИНУДИТЕЛЬНО ИНИЦИАЛИЗИРУЕМ
+  if (vid.readyState === 0) {
+    vid.load();
+  }
+
+  // Очищаем предыдущий таймер проверки
   if (vid._checkReadyInterval) {
     clearInterval(vid._checkReadyInterval);
     vid._checkReadyInterval = null;
   }
 
-  // Запуск появления строго когда видео физически декодировало первый кадр
+  // Запасной тайм-аут: если видео уже воспроизводится, но currentTime еще на 0
+  let attempts = 0;
+
   vid._checkReadyInterval = setInterval(() => {
     const isCurrentActive = (id === SCHOOL_TARGET_ID && currentHeroId === null) || (currentHeroId === id);
-    if (vid.readyState >= 2 && vid.currentTime > 0.05 && isCurrentActive && visibleTargets.has(id)) {
+    attempts++;
+
+    // Показываем если кадр декодирован ИЛИ если прошло больше 1.5 сек попыток (фоллбэк)
+    const isDecoded = (vid.readyState >= 2 && vid.currentTime > 0.05);
+    const isFallbackReady = (attempts > 30 && vid.readyState >= 1);
+
+    if ((isDecoded || isFallbackReady) && isCurrentActive && visibleTargets.has(id)) {
       clearInterval(vid._checkReadyInterval);
       vid._checkReadyInterval = null;
       if (aVideo) {
         aVideo.dispatchEvent(new CustomEvent('video-first-frame'));
       }
     }
-  }, 40);
+  }, 50);
 
   const playPromise = vid.play();
   if (playPromise !== undefined) {
-    playPromise.catch(() => {
+    playPromise.catch((e) => {
+      console.warn("Автоплей заблокирован, пробуем принудительно с mute:", e);
       vid.muted = true;
       vid.play().catch(() => {});
     });
@@ -255,6 +270,8 @@ function stopTargetVideo(id) {
     vid.muted = true;
     vid.pause();
     vid.currentTime = 0;
+    
+    // Сбрасываем интервалы проверки
     if (vid._checkReadyInterval) {
       clearInterval(vid._checkReadyInterval);
       vid._checkReadyInterval = null;
