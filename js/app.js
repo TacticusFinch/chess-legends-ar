@@ -27,7 +27,7 @@ AFRAME.registerComponent('smooth-materialize', {
 
         el.object3D.scale.set(curScale, curScale, curScale);
 
-        // Безопасное изменение прозрачности материала без сброса текстуры видео
+        // Безопасное изменение прозрачности без сброса текстуры видео
         const mesh = el.getObject3D('mesh');
         if (mesh && mesh.material) {
           mesh.material.transparent = true;
@@ -59,9 +59,31 @@ AFRAME.registerComponent('smooth-materialize', {
 });
 
 // ==========================================
-// 1. ЧЕСТНАЯ ИНИЦИАЛИЗАЦИЯ И СТАРТ AR ДВИЖКА
+// 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ==========================================
+let currentHeroId = null;
+let isMuted = true;
+let currentPuzzleIndex = 0;
+let testScore = 0;
+let userHasInteracted = false;
+
+const SCHOOL_TARGET_ID = 17;
+// Строго один раз объявляем все 18 таргетов
+const ALL_TARGET_IDS = Array.from({ length: 18 }, (_, i) => i);
+const visibleTargets = new Set();
+
+let hint, dock, soundBtn, modal, modalContent;
+
+// ==========================================
+// 2. БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ И СТАРТ AR ДВИЖКА
 // ==========================================
 document.addEventListener("DOMContentLoaded", async () => {
+  hint = document.getElementById("scanner-hint");
+  dock = document.getElementById("interactive-dock");
+  soundBtn = document.getElementById("sound-toggle");
+  modal = document.getElementById("modal-container");
+  modalContent = document.getElementById("modal-content");
+
   const sceneEl = document.querySelector('a-scene');
   const barFill = document.getElementById('load-bar-fill');
   const percentText = document.getElementById('load-percent');
@@ -72,60 +94,45 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   try {
     if (percentText) percentText.innerText = "Подключение A-Frame...";
-    if (barFill) barFill.style.width = "25%";
+    if (barFill) barFill.style.width = "30%";
 
     if (!sceneEl.hasLoaded) {
       await new Promise(res => sceneEl.addEventListener('loaded', res, { once: true }));
     }
 
     if (percentText) percentText.innerText = "Загрузка базы героев...";
-    if (barFill) barFill.style.width = "60%";
+    if (barFill) barFill.style.width = "65%";
 
     const arSystem = sceneEl.systems["mindar-image-system"];
     if (!arSystem) {
       throw new Error("MindAR система не найдена на сцене");
     }
 
-    // Слушаем реальную готовность таргетов от самого движка MindAR
-    const onARReady = new Promise((resolve, reject) => {
-      sceneEl.addEventListener("arReady", () => resolve(), { once: true });
-      sceneEl.addEventListener("arError", (err) => reject(err), { once: true });
-    });
-
-    // Запускаем камеру и чтение файла таргетов
+    // Запускаем AR систему (без зависания Promise)
     await arSystem.start();
-
-    // ЖДЕМ, пока браузер действительно скачает и скомпилирует cards.mind
-    await onARReady;
 
     if (barFill) barFill.style.width = "100%";
     if (percentText) percentText.innerText = "Готово!";
 
-    // Внутри DOMContentLoaded после await onARReady:
-setTimeout(() => {
-  if (loadBox) loadBox.style.display = "none";
-  if (readySub) readySub.style.display = "block";
-  
-  // Переводим верхний бар в режим готовности (развод по углам)
-  const topHud = document.getElementById("top-hud");
-  if (topHud) {
-    topHud.classList.remove("preloading");
-    topHud.classList.add("ready");
-  }
+    setTimeout(() => {
+      if (loadBox) loadBox.style.display = "none";
+      if (readySub) readySub.style.display = "block";
+      
+      const topHud = document.getElementById("top-hud");
+      if (topHud) {
+        topHud.classList.remove("preloading");
+        topHud.classList.add("ready");
+      }
 
-  // Показываем кнопку звука
-  if (soundBtn) {
-    soundBtn.style.display = "inline-flex";
-  }
+      if (soundBtn) soundBtn.style.display = "inline-flex";
 
-  if (badge) {
-    badge.innerText = "AR СКАНЕР АКТИВЕН";
-    badge.style.borderColor = "var(--accent-color)";
-    badge.style.color = "var(--accent-color)";
-  }
-  if (title) title.innerText = "НАВЕДИТЕ НА КАРТОЧКУ";
-}, 250);
-
+      if (badge) {
+        badge.innerText = "AR СКАНЕР АКТИВЕН";
+        badge.style.borderColor = "var(--accent-color)";
+        badge.style.color = "var(--accent-color)";
+      }
+      if (title) title.innerText = "НАВЕДИТЕ НА КАРТОЧКУ";
+    }, 250);
 
   } catch (err) {
     console.error("Ошибка инициализации AR:", err);
@@ -155,27 +162,7 @@ setTimeout(() => {
 });
 
 // ==========================================
-// 2. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-// ==========================================
-let currentHeroId = null;
-let isMuted = true;
-let currentPuzzleIndex = 0;
-let testScore = 0;
-let userHasInteracted = false;
-
-const hint = document.getElementById("scanner-hint");
-const dock = document.getElementById("interactive-dock");
-const soundBtn = document.getElementById("sound-toggle");
-const modal = document.getElementById("modal-container");
-const modalContent = document.getElementById("modal-content");
-
-const SCHOOL_TARGET_ID = 17;
-const ALL_TARGET_IDS = typeof HEROES !== "undefined"
-  ? [...Object.keys(HEROES).map(Number), SCHOOL_TARGET_ID]
-  : Array.from({ length: 18 }, (_, i) => i);
-
-// ==========================================
-// 3. РАЗБЛОКИРОВКА АУДИОКОНТЕКСТА (ЖЕСТ ПОЛЬЗОВАТЕЛЯ)
+// 3. РАЗБЛОКИРОВКА АУДИОКОНТЕКСТА
 // ==========================================
 function handleFirstInteraction() {
   if (userHasInteracted) return;
@@ -190,12 +177,8 @@ document.addEventListener("touchstart", handleFirstInteraction, { once: true, pa
 document.addEventListener("click", handleFirstInteraction, { once: true });
 
 // ==========================================
-// 4. ЖЕСТКОЕ УПРАВЛЕНИЕ ВИДЕО (СТРОГО ВСЕ 18 ТАРГЕТОВ)
+// 4. ЖЕСТКОЕ УПРАВЛЕНИЕ ВИДЕО (СТРОГО ВСЕ 18 ГЕРОЕВ)
 // ==========================================
-// Гарантируем наличие всех индексов от 0 до 17 вне зависимости от heroes-data.js
-const ALL_TARGET_IDS = Array.from({ length: 18 }, (_, i) => i);
-const visibleTargets = new Set();
-
 function stopAllVideosExcept(activeId = null) {
   ALL_TARGET_IDS.forEach(id => {
     if (id !== activeId) {
@@ -205,6 +188,10 @@ function stopAllVideosExcept(activeId = null) {
       if (vid) {
         vid.pause();
         vid.currentTime = 0;
+        if (vid._checkReadyInterval) {
+          clearInterval(vid._checkReadyInterval);
+          vid._checkReadyInterval = null;
+        }
       }
 
       if (targetEl) {
@@ -232,25 +219,28 @@ function playTargetVideo(id) {
   vid.defaultMuted = isMuted;
   vid.playsInline = true;
 
-  // Прямой и надежный запуск показа видео без задержки 0.08с
-  const revealVideo = () => {
-    if (aVideo && visibleTargets.has(id)) {
-      aVideo.setAttribute('scale', '1 1.54 1');
-      aVideo.setAttribute('material', 'transparent: false; opacity: 1;');
-    }
-  };
+  if (vid._checkReadyInterval) {
+    clearInterval(vid._checkReadyInterval);
+    vid._checkReadyInterval = null;
+  }
 
-  vid.onplaying = revealVideo;
-  vid.ontimeupdate = () => {
-    if (vid.currentTime > 0) revealVideo();
-  };
+  // Запуск появления строго когда видео физически декодировало первый кадр
+  vid._checkReadyInterval = setInterval(() => {
+    const isCurrentActive = (id === SCHOOL_TARGET_ID && currentHeroId === null) || (currentHeroId === id);
+    if (vid.readyState >= 2 && vid.currentTime > 0.05 && isCurrentActive && visibleTargets.has(id)) {
+      clearInterval(vid._checkReadyInterval);
+      vid._checkReadyInterval = null;
+      if (aVideo) {
+        aVideo.dispatchEvent(new CustomEvent('video-first-frame'));
+      }
+    }
+  }, 40);
 
   const playPromise = vid.play();
   if (playPromise !== undefined) {
     playPromise.catch(() => {
-      // Автоплей-фоллбэк для мобильных
       vid.muted = true;
-      vid.play().then(revealVideo).catch(() => {});
+      vid.play().catch(() => {});
     });
   }
 }
@@ -262,10 +252,13 @@ function stopTargetVideo(id) {
   const targetEl = document.getElementById(`target-${id}`);
 
   if (vid) {
+    vid.muted = true;
     vid.pause();
     vid.currentTime = 0;
-    vid.onplaying = null;
-    vid.ontimeupdate = null;
+    if (vid._checkReadyInterval) {
+      clearInterval(vid._checkReadyInterval);
+      vid._checkReadyInterval = null;
+    }
   }
 
   if (targetEl) {
@@ -278,7 +271,7 @@ function stopTargetVideo(id) {
 }
 
 // ==========================================
-// 5. СЛУШАТЕЛИ ТАРГЕТОВ
+// 5. СЛУШАТЕЛИ ТАРГЕТОВ (С СОХРАНЕНИЕМ ИНТЕРФЕЙСА)
 // ==========================================
 ALL_TARGET_IDS.forEach(id => {
   const targetEl = document.getElementById(`target-${id}`);
@@ -295,10 +288,8 @@ ALL_TARGET_IDS.forEach(id => {
 
     if (id === SCHOOL_TARGET_ID) {
       showSchoolUI();
-    } else {
-      if (typeof HEROES !== "undefined" && HEROES[id]) {
-        applyHeroTheme(HEROES[id]);
-      }
+    } else if (typeof HEROES !== "undefined" && HEROES[id]) {
+      applyHeroTheme(HEROES[id]);
       showChampionUI();
     }
 
@@ -320,24 +311,27 @@ function applyHeroTheme(hero) {
   if (soundBtn) soundBtn.style.borderColor = hero.color;
 }
 
-if (soundBtn) {
-  soundBtn.addEventListener("click", () => {
-    const isEnabled = (typeof sfx !== "undefined" && sfx.toggle) ? sfx.toggle() : !isMuted;
-    isMuted = !isEnabled;
-    
-    const activeTargetId = currentHeroId !== null ? currentHeroId : SCHOOL_TARGET_ID;
-    const vid = document.getElementById(`vid-${activeTargetId}`);
-    if (vid) {
-      vid.muted = isMuted;
-      vid.volume = 1.0;
-    }
-    
-    soundBtn.innerHTML = isEnabled ? "<span>🔊</span> ЗВУК: ВКЛ" : "<span>🔇</span> ЗВУК: ВЫКЛ";
-    if (isEnabled && typeof sfx !== "undefined" && sfx.playMove) {
-      sfx.playMove();
-    }
-  });
-}
+document.addEventListener("DOMContentLoaded", () => {
+  const sBtn = document.getElementById("sound-toggle");
+  if (sBtn) {
+    sBtn.addEventListener("click", () => {
+      const isEnabled = (typeof sfx !== "undefined" && sfx.toggle) ? sfx.toggle() : !isMuted;
+      isMuted = !isEnabled;
+      
+      const activeTargetId = currentHeroId !== null ? currentHeroId : SCHOOL_TARGET_ID;
+      const vid = document.getElementById(`vid-${activeTargetId}`);
+      if (vid) {
+        vid.muted = isMuted;
+        vid.volume = 1.0;
+      }
+      
+      sBtn.innerHTML = isEnabled ? "<span>🔊</span> ЗВУК: ВКЛ" : "<span>🔇</span> ЗВУК: ВЫКЛ";
+      if (isEnabled && typeof sfx !== "undefined" && sfx.playMove) {
+        sfx.playMove();
+      }
+    });
+  }
+});
 
 // ==========================================
 // 7. МОДАЛЬНЫЕ ОКНА И МЕНЮ
@@ -458,7 +452,6 @@ function openSchoolModal() {
   modal.classList.add("active");
 }
 
-
 function stopAllTargetVideosImmediate() {
   ALL_TARGET_IDS.forEach(id => {
     const vid = document.getElementById(`vid-${id}`);
@@ -467,6 +460,10 @@ function stopAllTargetVideosImmediate() {
       vid.pause();
       vid.muted = true;
       vid.currentTime = 0;
+      if (vid._checkReadyInterval) {
+        clearInterval(vid._checkReadyInterval);
+        vid._checkReadyInterval = null;
+      }
     }
     if (targetEl) {
       const aVideo = targetEl.querySelector('a-video');
@@ -482,12 +479,10 @@ function closeModal() {
   if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
   modal.classList.remove("active");
 
-  // Запускаем видео ТОЛЬКО если маркер РЕАЛЬНО сейчас находится в поле зрения камеры!
   if (currentHeroId !== null && visibleTargets.has(currentHeroId)) {
     const activeVideo = document.getElementById(`vid-${currentHeroId}`);
     if (activeVideo) activeVideo.play().catch(() => {});
   } else {
-    // Иначе жестко глушим
     stopAllTargetVideosImmediate();
   }
 }
