@@ -277,7 +277,7 @@ openLobby() {
       aiBtn.className = "duel-secondary-btn";
       aiBtn.style.borderColor = "var(--accent-gold)";
       aiBtn.style.color = "var(--accent-gold)";
-      aiBtn.textContent = "Бой с Ботвинником (Одиночный)";
+      aiBtn.textContent = "Дуэль со случайным соперником (Одиночный)";
       aiBtn.onclick = () => NetDuel.startOfflineAiMatch();
       actionsStack.appendChild(aiBtn);
     }
@@ -379,22 +379,48 @@ openLobby() {
   startOfflineAiMatch() {
     this.isNet = false;
     this.mySide = "white";
-    const bData = (typeof HERO_STATS_DATA !== "undefined" && HERO_STATS_DATA[7]) 
-      ? HERO_STATS_DATA[7] 
-      : { atk: 6, def: 8, rank: "legend", skillName: "Архитектор мысли", skillId: "BOTVINNIK_ARCHITECT" };
 
+    // 1. Получаем список всех ID героев из базы статов
+    const availableHeroIds = (typeof HERO_STATS_DATA !== "undefined")
+      ? Object.keys(HERO_STATS_DATA).map(Number)
+      : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+
+    // 2. Исключаем текущего героя игрока, чтобы не играть зеркальный матч
+    const candidateIds = availableHeroIds.filter(id => id !== this.myHero.id);
+
+    // 3. Выбираем случайного соперника
+    const randomEnemyId = candidateIds.length > 0
+      ? candidateIds[Math.floor(Math.random() * candidateIds.length)]
+      : 7;
+
+    // 4. Достаем данные выбранного героя из HEROES и HERO_STATS_DATA
+    const baseHero = (typeof HEROES !== "undefined" && HEROES[randomEnemyId]) 
+      ? HEROES[randomEnemyId] 
+      : null;
+
+    const statsData = (typeof HERO_STATS_DATA !== "undefined" && HERO_STATS_DATA[randomEnemyId])
+      ? HERO_STATS_DATA[randomEnemyId]
+      : { atk: 7, def: 7, rank: "legend", skillName: "Коронный ход", skillId: "DEFAULT" };
+
+    const rankInfo = (typeof HERO_RANKS !== "undefined" && HERO_RANKS[statsData.rank])
+      ? HERO_RANKS[statsData.rank]
+      : { name: "ЛЕГЕНДА", color: "#e2b868" };
+
+    // 5. Инициализируем бота
     this.enemyHero = {
-      id: 7,
-      name: "Михаил Ботвинник",
-      atk: bData.atk,
-      def: bData.def,
-      rank: "ЛЕГЕНДА",
-      rankKey: "legend",
-      rankColor: "#e2b868",
-      skillName: bData.skillName,
-      skillId: bData.skillId,
-      img: "./assets/avatars/botvinnik.png"
+      id: randomEnemyId,
+      name: baseHero?.name || `Гроссмейстер #${randomEnemyId}`,
+      atk: statsData.atk,
+      def: statsData.def,
+      rank: rankInfo.name,
+      rankKey: statsData.rank,
+      rankColor: rankInfo.color,
+      skillName: statsData.skillName,
+      skillId: statsData.skillId,
+      // Берем аватарку из объекта героя или фоллбэк
+      img: baseHero?.avatar || `./assets/avatars/hero_${randomEnemyId}.png`
     };
+
     this.hideLobbyModal();
     this.startBattle();
   },
@@ -813,9 +839,52 @@ runAiTurn(playerAct, isCrit) {
       eDmg = this.enemyHero.atk;
     } else if (oppAct === "skill") {
       eCard?.classList.add("anim-skill-blast");
-      eDmg = this.enemyHero.atk * 2;
       this.enemyEnergy = 0;
       this.showSuperCutIn(this.enemyHero, this.enemyHero.skillName);
+
+      // Уникальные формулы для ультимейта бота
+      const enemySkill = this.enemyHero.skillId;
+      switch (enemySkill) {
+        case "TAL_STORM":
+          this.enemyHp = Math.max(1, this.enemyHp - 4);
+          eDmg = this.enemyHero.atk * 2 + 6;
+          this.spawnDamageNumber("enemy-card-anchor", 4, false);
+          this.setLog(`БОТ (${this.enemyHero.name}): ЖЕРТВА ТАЛЯ!`);
+          break;
+
+        case "STOCKFISH_ENGINE":
+          eDmg = Math.round(this.enemyHero.atk * 1.8);
+          this.enemyHp = Math.min(50, this.enemyHp + 8);
+          this.spawnDamageNumber("enemy-card-anchor", "+8", true);
+          this.setLog(`БОТ (${this.enemyHero.name}): СУПЕРКОМПЬЮТЕР!`);
+          break;
+
+        case "PETROSYAN_FORTRESS":
+          this.enemyShield = true;
+          this.enemyHp = Math.min(50, this.enemyHp + 14);
+          eDmg = this.enemyHero.atk;
+          this.spawnDamageNumber("enemy-card-anchor", "+14", true);
+          this.setLog(`БОТ (${this.enemyHero.name}): ЖЕЛЕЗНАЯ КРЕПОСТЬ!`);
+          break;
+
+        case "CAPABLANCA_INTUITION":
+        case "FISCHER_TORNADO":
+        case "STEINITZ_EQUILIBRIUM":
+          ignoreEnemyDef = true; // пробивает щит игрока
+          eDmg = this.enemyHero.atk * 2 + (enemySkill === "FISCHER_TORNADO" ? 5 : 4);
+          this.setLog(`БОТ (${this.enemyHero.name}): ПРОБИВАЮЩИЙ УДАР!`);
+          break;
+
+        case "CARUANA_PALACE":
+          eDmg = this.enemyHero.atk * 2 + 2;
+          this.myEnergy = 0; // Сжигает энергию игрока
+          this.setLog(`БОТ (${this.enemyHero.name}): СЖИГАНИЕ ВАШЕЙ ЭНЕРГИИ!`);
+          break;
+
+        default:
+          eDmg = this.enemyHero.atk * 2;
+          break;
+      }
     } else {
       this.enemyShield = true;
       this.enemyEnergy = Math.min(2, this.enemyEnergy + 1);
