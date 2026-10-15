@@ -361,3 +361,42 @@ function getRandomDuelPuzzle() {
   const idx = Math.floor(Math.random() * DUEL_STRIKE_PUZZLES.length);
   return DUEL_STRIKE_PUZZLES[idx];
 }
+
+
+// --- БАЗА ЗАДАЧ ДЛЯ ЗАЩИТЫ (DEFENSE / PARRY) ---
+const DUEL_DEFENSE_PUZZLES = [
+  {
+    id: "def_1_block_bishop",
+    fen: "rnb1k1nr/pppp1ppp/8/4p3/1b2P3/2N5/PPPP1PPP/R1BQKBNR w KQkq - 0 1",
+    move: { from: "c1", to: "d2" },
+    desc: "Связка слоном! Перекройте диагональ слоном c1-d2"
+  },
+  {
+    id: "def_2_backrank_air",
+    fen: "6k1/5ppp/8/8/8/8/4rPPP/5RK1 w - - 0 1",
+    move: { from: "g2", to: "g3" }
+  },
+  {
+    id: "def_3_trade_rook",
+    fen: "4r1k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1",
+    move: { from: "e1", to: "e8" },
+    desc: "Разменяйте атакующую ладью, сняв напряжение"
+  },
+  {
+    id: "def_4_save_queen",
+    fen: "r1b1k2r/pppp1ppp/2n5/4p1q1/2B1P1n1/3P4/PPP2PPP/RN1QK2R w KQkq - 0 8",
+    move: { from: "d1", to: "d2" },
+    desc: "Укрепите позицию под атакой"
+  },
+  {
+    id: "def_5_interpose",
+    fen: "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2",
+    move: { from: "g1", to: "f3" },
+    desc: "Защитите центр развивающим ходом"
+  }
+];
+
+function getRandomDefensePuzzle() {
+  const idx = Math.floor(Math.random() * DUEL_DEFENSE_PUZZLES.length);
+  return DUEL_DEFENSE_PUZZLES[idx];
+}

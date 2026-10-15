@@ -215,45 +215,63 @@ function playTargetVideo(id) {
 
   const aVideo = targetEl.querySelector('a-video');
 
+  // Гарантируем, что до реального кадра объект скрыт
+  if (aVideo) {
+    aVideo.object3D.visible = false;
+    const mesh = aVideo.getObject3D('mesh');
+    if (mesh && mesh.material) {
+      mesh.material.transparent = true;
+      mesh.material.opacity = 0;
+    }
+  }
+
   vid.muted = isMuted;
   vid.defaultMuted = isMuted;
   vid.playsInline = true;
 
-  // ЕСЛИ ВИДЕО ЕЩЕ НЕ НАЧАЛО ГРУЗИТЬСЯ — ПРИНУДИТЕЛЬНО ИНИЦИАЛИЗИРУЕМ
   if (vid.readyState === 0) {
     vid.load();
   }
 
-  // Очищаем предыдущий таймер проверки
   if (vid._checkReadyInterval) {
     clearInterval(vid._checkReadyInterval);
     vid._checkReadyInterval = null;
   }
 
-  // Запасной тайм-аут: если видео уже воспроизводится, но currentTime еще на 0
-  let attempts = 0;
-
-  vid._checkReadyInterval = setInterval(() => {
+  const triggerFirstFrame = () => {
     const isCurrentActive = (id === SCHOOL_TARGET_ID && currentHeroId === null) || (currentHeroId === id);
-    attempts++;
-
-    // Показываем если кадр декодирован ИЛИ если прошло больше 1.5 сек попыток (фоллбэк)
-    const isDecoded = (vid.readyState >= 2 && vid.currentTime > 0.05);
-    const isFallbackReady = (attempts > 30 && vid.readyState >= 1);
-
-    if ((isDecoded || isFallbackReady) && isCurrentActive && visibleTargets.has(id)) {
-      clearInterval(vid._checkReadyInterval);
-      vid._checkReadyInterval = null;
+    if (isCurrentActive && visibleTargets.has(id)) {
       if (aVideo) {
         aVideo.dispatchEvent(new CustomEvent('video-first-frame'));
       }
     }
-  }, 50);
+  };
+
+  // 1. СОВРЕМЕННЫЙ СПОСОБ: гарантирует, что кадр уже отрисован графическим чипом
+  if ('requestVideoFrameCallback' in vid) {
+    vid.requestVideoFrameCallback(() => {
+      triggerFirstFrame();
+    });
+  } else {
+    // 2. ФОЛЛБЭК ДЛЯ СТАРЫХ УСТРОЙСТВ: ждем реального сдвига времени и готовности данных
+    vid._checkReadyInterval = setInterval(() => {
+      const isCurrentActive = (id === SCHOOL_TARGET_ID && currentHeroId === null) || (currentHeroId === id);
+      
+      // readyState >= 3 (HAVE_FUTURE_DATA) гарантирует наличие кадров для показа
+      const isReallyDecoded = (vid.readyState >= 3 && vid.currentTime > 0.08);
+
+      if (isReallyDecoded && isCurrentActive && visibleTargets.has(id)) {
+        clearInterval(vid._checkReadyInterval);
+        vid._checkReadyInterval = null;
+        triggerFirstFrame();
+      }
+    }, 50);
+  }
 
   const playPromise = vid.play();
   if (playPromise !== undefined) {
     playPromise.catch((e) => {
-      console.warn("Автоплей заблокирован, пробуем принудительно с mute:", e);
+      console.warn("Автоплей заблокирован, принудительный mute:", e);
       vid.muted = true;
       vid.play().catch(() => {});
     });
