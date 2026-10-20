@@ -756,6 +756,15 @@ runAiTurn(playerAct, isCrit) {
           this.setLog("РАВНОВЕСИЕ: АТАКА ВРАГА СНИЖЕНА НА 3!");
           break;
 
+
+        case "ALEKHINE_BLINDING_STRIKE": // Алехин (Ослепляющая атака: Атака 9, Защита 7)
+          ignoreEnemyDef = true; // Полностью игнорирует блок и щит противника!
+          pDmg = (this.myHero.atk * 2) + 6; // 9 * 2 + 6 = 24 урона сквозь любую защиту
+          this.screenShake(true);
+          this.vibrate([60, 40, 100]);
+          this.setLog("ОСЛЕПЛЯЮЩАЯ АТАКА АЛЕХИНА: БРОНЯ ВРАГА СОКРУШЕНА!");
+          break;
+
         case "LASKER_GAMBIT": // Ласкер (Психологический гамбит)
           pDmg = this.myHero.atk * 2 + 3;
           this.setLog("ГАМБИТ: ПСИХОЛОГИЧЕСКИЙ НОКАУТ!");
@@ -880,6 +889,14 @@ runAiTurn(playerAct, isCrit) {
           this.myEnergy = 0; // Сжигает энергию игрока
           this.setLog(`БОТ (${this.enemyHero.name}): СЖИГАНИЕ ВАШЕЙ ЭНЕРГИИ!`);
           break;
+
+        // Внутри switch (enemySkill) (2. ДЕЙСТВИЕ СОПЕРНИКА):
+        case "ALEKHINE_BLINDING_STRIKE":
+          ignoreEnemyDef = true; // Пробивает щит игрока
+          eDmg = this.enemyHero.atk * 2 + 6;
+          this.setLog(`БОТ (${this.enemyHero.name}): ОСЛЕПЛЯЮЩАЯ АТАКА!`);
+          break;
+  
 
         default:
           eDmg = this.enemyHero.atk * 2;
