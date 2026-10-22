@@ -4,13 +4,16 @@
  */
 const AMVERA_WS = "wss://chesslegendsai-tacticusfinch.mia0.amvera.tech";
 
-/* ================= 1. ДВИЖОК ТАКТИЧЕСКОЙ ДОСКИ (ТАПАМИ) ================= */
+/* ================= 1. ДВИЖОК ТАКТИЧЕСКОЙ ДОСКИ (ТАПАМИ С ТАЙМЕРОМ 30 СЕК) ================= */
 const InteractiveBoardEngine = {
   board: null,
   game: null,
   currentPuzzle: null,
   active: false,
   selectedSquare: null,
+  timerInterval: null,
+  timeLeftMs: 30000,
+  TOTAL_TIME_MS: 30000,
 
   start() {
     const modal = document.getElementById("tactical-board-modal");
@@ -36,9 +39,94 @@ const InteractiveBoardEngine = {
 
     if (descEl) descEl.textContent = "Найдите лучший ход";
 
+    this.startTimer();
+
     setTimeout(() => {
       this.initBoard();
     }, 60);
+  },
+
+  startTimer() {
+    this.stopTimer();
+    this.timeLeftMs = this.TOTAL_TIME_MS;
+    this.updateTimerUI();
+
+    const stepMs = 100;
+    this.timerInterval = setInterval(() => {
+      this.timeLeftMs -= stepMs;
+
+      if (this.timeLeftMs <= 0) {
+        this.timeLeftMs = 0;
+        this.updateTimerUI();
+        this.stopTimer();
+        this.onTimeExpired();
+      } else {
+        this.updateTimerUI();
+      }
+    }, stepMs);
+  },
+
+  stopTimer() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+  },
+
+  updateTimerUI() {
+    const secEl = document.getElementById("tactical-timer-sec");
+    const barEl = document.getElementById("tactical-timer-bar");
+    const badgeEl = document.getElementById("tactical-timer-badge");
+
+    const seconds = Math.ceil(this.timeLeftMs / 1000);
+    const percent = Math.max(0, (this.timeLeftMs / this.TOTAL_TIME_MS) * 100);
+
+    if (secEl) secEl.textContent = seconds;
+    if (barEl) {
+      barEl.style.width = `${percent}%`;
+      // Когда времени мало (< 10 сек) — красивое предупреждение красным цветом
+      if (seconds <= 10) {
+        barEl.style.backgroundColor = "#ff4d6d";
+        if (badgeEl) {
+          badgeEl.style.color = "#ff4d6d";
+          badgeEl.style.borderColor = "#ff4d6d";
+          badgeEl.style.background = "rgba(255, 77, 109, 0.2)";
+        }
+      } else {
+        barEl.style.backgroundColor = "#f1c40f";
+        if (badgeEl) {
+          badgeEl.style.color = "#f1c40f";
+          badgeEl.style.borderColor = "rgba(241, 196, 15, 0.4)";
+          badgeEl.style.background = "rgba(241, 196, 15, 0.15)";
+        }
+      }
+    }
+  },
+
+  onTimeExpired() {
+    if (!this.active) return;
+    this.active = false;
+    this.removeHighlights();
+
+    const descEl = document.getElementById("tactical-task-title");
+    if (descEl) {
+      descEl.textContent = "ВРЕМЯ ВЫШЛО!";
+      descEl.style.color = "#ff4d6d";
+    }
+
+    if (typeof sfx !== "undefined" && sfx.playWrong) sfx.playWrong();
+    if (navigator.vibrate) navigator.vibrate(250);
+
+    setTimeout(() => {
+      const modal = document.getElementById("tactical-board-modal");
+      if (modal) modal.style.display = "none";
+
+      const skillTooltip = document.getElementById("battle-skill-tooltip");
+      if (skillTooltip) skillTooltip.style.display = "flex";
+
+      // Ход считается неуспешным (атака без крита / со штрафом)
+      NetDuel.resolveTacticalStrike(false);
+    }, 700);
   },
 
   initBoard() {
@@ -102,6 +190,7 @@ const InteractiveBoardEngine = {
         const targetMove = self.currentPuzzle.move;
 
         self.active = false;
+        self.stopTimer(); // Останавливаем таймер при ходе
         self.removeHighlights();
 
         const isCorrect = (source === targetMove.from && target === targetMove.to);
@@ -120,6 +209,7 @@ const InteractiveBoardEngine = {
   },
 
   onSuccess() {
+    this.stopTimer();
     if (typeof sfx !== "undefined" && sfx.playCorrect) sfx.playCorrect();
 
     setTimeout(() => {
@@ -134,6 +224,7 @@ const InteractiveBoardEngine = {
   },
 
   onError(originalSquare) {
+    this.stopTimer();
     if (typeof sfx !== "undefined" && sfx.playWrong) sfx.playWrong();
 
     setTimeout(() => {
@@ -151,6 +242,7 @@ const InteractiveBoardEngine = {
     }, 550);
   }
 };
+
 
 /* ================= 2. КОНТРОЛЛЕР СЕТЕВОЙ И ИИ ДУЭЛИ ================= */
 window.NetDuel = {
@@ -291,6 +383,7 @@ openLobby() {
   },
 
   closeLobby() {
+    InteractiveBoardEngine.stopTimer();
     if (this.ws) {
       try { this.ws.close(); } catch (e) {}
       this.ws = null;
@@ -547,13 +640,18 @@ updateHUD() {
     if (el) el.textContent = text;
   },
 
-  chooseAction(type) {
+    chooseAction(type) {
+    // Если игрок уже нажал кнопку в этом раунде — повторные клики игнорируются!
     if (this.isWaitingOpponent) return;
 
     if (type === "attack") {
+      // 1. СРАЗУ блокируем все кнопки внизу, чтобы нельзя было кликнуть повторно или сменить действие
+      this.lockActions(true);
+      this.setLog("РЕШИТЕ ТАКТИЧЕСКУЮ ЗАДАЧУ...");
       InteractiveBoardEngine.start();
       return;
     }
+
     if (type === "defend") {
       this.lockActions(true);
       if (typeof sfx !== "undefined" && sfx.playShield) sfx.playShield();
@@ -573,6 +671,7 @@ updateHUD() {
       }
       return;
     }
+
     if (type === "skill") {
       if (this.myEnergy < 2) return this.setLog("НЕДОСТАТОЧНО ЭНЕРГИИ!");
       this.lockActions(true);
@@ -589,6 +688,7 @@ updateHUD() {
       }
     }
   },
+
 
   resolveTacticalStrike(isCrit) {
     this.lockActions(true);
@@ -1014,6 +1114,7 @@ runAiTurn(playerAct, isCrit) {
   },
 
   closeVictoryModal() {
+    InteractiveBoardEngine.stopTimer();
     document.getElementById("duel-victory-modal")?.classList.remove("active");
     document.getElementById("net-battle-overlay").style.display = "none";
     if (this.ws) {

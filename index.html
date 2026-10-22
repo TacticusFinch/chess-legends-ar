@@ -164,17 +164,31 @@
         <div class="round-status-badge" id="round-title-badge">РАУНД 1</div>
         <div id="battle-log" class="tactical-teletype">ВЫБЕРИТЕ ДЕЙСТВИЕ</div>
 
-        <!-- Интерактивная доска атаки -->
-        <div id="tactical-board-modal" class="qte-strike-modal" style="display: none;">
-          <div class="qte-card" style="width: 310px; max-width: 95vw; padding: 16px 12px; background: rgba(12, 17, 26, 0.95); border: 1px solid var(--border-gold); border-radius: 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.85); backdrop-filter: blur(20px);">
-            <div id="tactical-task-title" style="font-size: 13px; font-weight: 800; color: var(--accent-gold); letter-spacing: 1px; text-transform: uppercase; text-align: center; margin-bottom: 12px;">
-              Найдите лучший ход
-            </div>
-            <div style="display: flex; justify-content: center;">
-              <div id="strike-board" style="width: 270px;"></div>
-            </div>
-          </div>
-        </div>
+        <!-- Интерактивная доска атаки с таймером -->
+<div id="tactical-board-modal" class="qte-strike-modal" style="display: none;">
+  <div class="qte-card" style="width: 310px; max-width: 95vw; padding: 16px 12px; background: rgba(12, 17, 26, 0.95); border: 1px solid var(--border-gold); border-radius: 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.85); backdrop-filter: blur(20px);">
+    
+    <!-- Заголовок и таймер -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+      <div id="tactical-task-title" style="font-size: 13px; font-weight: 800; color: var(--accent-gold); letter-spacing: 1px; text-transform: uppercase;">
+        Найдите лучший ход
+      </div>
+      <div id="tactical-timer-badge" style="font-size: 12px; font-weight: 800; color: #f1c40f; background: rgba(241, 196, 15, 0.15); padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(241, 196, 15, 0.4); font-variant-numeric: tabular-nums;">
+        ⏱ <span id="tactical-timer-sec">30</span>с
+      </div>
+    </div>
+
+    <!-- Полоска таймера -->
+    <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 12px;">
+      <div id="tactical-timer-bar" style="width: 100%; height: 100%; background: #f1c40f; transition: width 0.1s linear, background-color 0.3s ease;"></div>
+    </div>
+
+    <div style="display: flex; justify-content: center;">
+      <div id="strike-board" style="width: 270px;"></div>
+    </div>
+  </div>
+</div>
+
 
        <div id="battle-skill-tooltip" class="skill-tooltip-bar">
         <div class="tooltip-header">
