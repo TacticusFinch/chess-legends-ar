@@ -200,7 +200,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         badge.style.borderColor = "var(--accent-color)";
         badge.style.color = "var(--accent-color)";
       }
-      if (title) title.innerText = "НАВЕДИТЕ НА КАРТОЧКУ";
+      if (title) title.innerText = "ВЫБЕРИТЕ РАНГ И НАВЕДИТЕ НА КАРТОЧКУ";
     }, 250);
 
   } catch (err) {
