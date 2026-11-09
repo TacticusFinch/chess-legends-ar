@@ -61,8 +61,19 @@ AFRAME.registerComponent('smooth-materialize', {
 // ==========================================
 // 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 // ==========================================
+const RANK_CONFIGS = {
+  'legends':      { name: 'Легенды',      file: './targets/legends.mind' },
+  'grandmasters': { name: 'Грандмастеры', file: './targets/grandmasters.mind' },
+  'maestro':      { name: 'Маэстро',      file: './targets/maestro.mind' },
+  'secrets':      { name: 'Секретные',    file: './targets/secrets.mind' },
+  'all':          { name: 'Все карты',    file: './cards.mind?v=1001' }
+};
+
+let currentRankKey = 'legends';
+
 let currentHeroId = null;
 let isMuted = true;
+
 let currentPuzzleIndex = 0;
 let testScore = 0;
 let userHasInteracted = false;
@@ -84,6 +95,32 @@ document.addEventListener("DOMContentLoaded", async () => {
   modal = document.getElementById("modal-container");
   modalContent = document.getElementById("modal-content");
 
+  // 1. Считываем ранг из URL (?rank=...) или ставим 'legends' по умолчанию
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramRank = urlParams.get('rank');
+  if (paramRank && typeof RANK_CONFIGS !== "undefined" && RANK_CONFIGS[paramRank]) {
+    currentRankKey = paramRank;
+  }
+
+  // 2. Подсветка и переключение чипсов в нижней панели
+  const rankChips = document.querySelectorAll('.rank-chip');
+  rankChips.forEach(chip => {
+    const chipRank = chip.dataset.rank;
+    chip.classList.toggle('active', chipRank === currentRankKey);
+
+    chip.addEventListener('click', () => {
+      if (chipRank !== currentRankKey) {
+        if (navigator.vibrate) navigator.vibrate(25);
+        if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
+
+        // Мягкая перезагрузка страницы с выбранным рангом
+        const url = new URL(window.location.href);
+        url.searchParams.set('rank', chipRank);
+        window.location.href = url.toString();
+      }
+    });
+  });
+
   const sceneEl = document.querySelector('a-scene');
   const barFill = document.getElementById('load-bar-fill');
   const percentText = document.getElementById('load-percent');
@@ -91,6 +128,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   const badge = document.getElementById('loading-badge');
   const title = document.getElementById('loading-title');
   const readySub = document.getElementById('ready-status-sub');
+
+  // 3. Динамически назначаем легкий .mind файл для выбранного ранга
+  const rankInfo = (typeof RANK_CONFIGS !== "undefined" && RANK_CONFIGS[currentRankKey]) 
+    ? RANK_CONFIGS[currentRankKey] 
+    : { name: 'Легенды', file: './targets/legends.mind' };
+
+  const mindarConfig = `imageTargetSrc: ${rankInfo.file}; autoStart: true; maxTrack: 1; missTolerance: 1; uiLoading: no; uiScanning: no;`;
+  sceneEl.setAttribute('mindar-image', mindarConfig);
+
+  if (title) {
+    title.innerText = `РАНГ: ${rankInfo.name.toUpperCase()}`;
+  }
 
   try {
     if (percentText) percentText.innerText = "Подключение A-Frame...";
@@ -100,7 +149,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       await new Promise(res => sceneEl.addEventListener('loaded', res, { once: true }));
     }
 
-    if (percentText) percentText.innerText = "Загрузка базы героев...";
+    if (percentText) percentText.innerText = `Загрузка: ${rankInfo.name}...`;
     if (barFill) barFill.style.width = "65%";
 
     const arSystem = sceneEl.systems["mindar-image-system"];
@@ -116,7 +165,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     setTimeout(() => {
       if (loadBox) loadBox.style.display = "none";
-      if (readySub) readySub.style.display = "block";
+      if (readySub) {
+        readySub.style.display = "block";
+        readySub.innerText = `${rankInfo.name} готовы • Наведите камеру на карту`;
+      }
       
       const topHud = document.getElementById("top-hud");
       if (topHud) {
@@ -127,7 +179,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (soundBtn) soundBtn.style.display = "inline-flex";
 
       if (badge) {
-        badge.innerText = "AR СКАНЕР АКТИВЕН";
+        badge.innerText = `AR СКАНЕР (${rankInfo.name.toUpperCase()})`;
         badge.style.borderColor = "var(--accent-color)";
         badge.style.color = "var(--accent-color)";
       }
@@ -160,6 +212,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     updatePassportCounter();
   }
 });
+
 
 // ==========================================
 // 3. РАЗБЛОКИРОВКА АУДИОКОНТЕКСТА
@@ -317,6 +370,9 @@ ALL_TARGET_IDS.forEach(id => {
 
     if (typeof sfx !== "undefined" && sfx.playTargetFound) sfx.playTargetFound();
 
+    // Добавляем класс, чтобы нижняя панель рангов деликатно приподнялась над доком кнопок
+    document.body.classList.add("card-active");
+
     if (hint) hint.classList.add("hidden");
     if (dock) dock.style.display = "flex";
     if (soundBtn) soundBtn.style.display = "inline-flex";
@@ -333,6 +389,11 @@ ALL_TARGET_IDS.forEach(id => {
 
   targetEl.addEventListener("targetLost", () => {
     stopTargetVideo(id);
+
+    // Если в поле зрения камеры больше нет активных карт — опускаем панель рангов обратно на дно
+    if (visibleTargets.size === 0) {
+      document.body.classList.remove("card-active");
+    }
   });
 });
 

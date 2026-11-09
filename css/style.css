@@ -1565,3 +1565,70 @@ body {
     transform: translate(-50%, -75px) scale(0.85); /* Плавное таяние ввысь */
   }
 }
+
+/* Нижняя плавающая панель-чипсы */
+.bottom-rank-bar {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: rgba(10, 14, 22, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(226, 184, 104, 0.35);
+  border-radius: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(226, 184, 104, 0.15);
+  max-width: 94vw;
+  overflow-x: auto;
+  scrollbar-width: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.bottom-rank-bar::-webkit-scrollbar {
+  display: none;
+}
+.bottom-rank-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #e2b868;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 0 4px 0 6px;
+  white-space: nowrap;
+  user-select: none;
+}
+.rank-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+.rank-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.rank-chip.active {
+  background: linear-gradient(135deg, rgba(241, 196, 15, 0.25), rgba(226, 184, 104, 0.12));
+  border-color: #f1c40f;
+  color: #f1c40f;
+  box-shadow: 0 0 12px rgba(241, 196, 15, 0.3);
+}
+
+/* Когда карта ожила и появился нижний док кнопок: */
+body.card-active .bottom-rank-bar {
+  bottom: 74px;
+  opacity: 0.85;
+  transform: translateX(-50%) scale(0.92);
+}
