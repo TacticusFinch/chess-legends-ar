@@ -62,14 +62,16 @@ AFRAME.registerComponent('smooth-materialize', {
 // 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 // ==========================================
 const RANK_CONFIGS = {
-  'legends':      { name: 'Легенды',      file: './targets/legends.mind' },
+  'legends-1':    { name: 'Легенды I',    file: './targets/legends-1.mind' },
+  'legends-2':    { name: 'Легенды II',   file: './targets/legends-2.mind' },
   'grandmasters': { name: 'Грандмастеры', file: './targets/grandmasters.mind' },
   'maestro':      { name: 'Маэстро',      file: './targets/maestro.mind' },
   'secrets':      { name: 'Секретные',    file: './targets/secrets.mind' },
   'all':          { name: 'Все карты',    file: './cards.mind?v=1001' }
 };
 
-let currentRankKey = 'legends';
+let currentRankKey = 'legends-1';
+
 
 let currentHeroId = null;
 let isMuted = true;
@@ -95,9 +97,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   modal = document.getElementById("modal-container");
   modalContent = document.getElementById("modal-content");
 
-  // 1. Считываем ранг из URL (?rank=...) или ставим 'legends' по умолчанию
+  // 1. Считываем ранг из URL (?rank=...)
   const urlParams = new URLSearchParams(window.location.search);
-  const paramRank = urlParams.get('rank');
+  let paramRank = urlParams.get('rank');
+
+  // Если передали старый общий ключ 'legends' — направляем на 'legends-1'
+  if (paramRank === 'legends') paramRank = 'legends-1';
+
   if (paramRank && typeof RANK_CONFIGS !== "undefined" && RANK_CONFIGS[paramRank]) {
     currentRankKey = paramRank;
   }
@@ -113,7 +119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const isCurrent = itemRank === currentRankKey;
     item.classList.toggle('active', isCurrent);
 
-    // Мягко центрируем текущий пункт ровно под центральный визир
+    // Центрируем выбранный пункт ровно под центральный визир
     if (isCurrent && dialTrack) {
       setTimeout(() => {
         item.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
@@ -149,7 +155,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 3. Динамически назначаем легкий .mind файл для выбранного ранга
   const rankInfo = (typeof RANK_CONFIGS !== "undefined" && RANK_CONFIGS[currentRankKey]) 
     ? RANK_CONFIGS[currentRankKey] 
-    : { name: 'Легенды', file: './targets/legends.mind' };
+    : { name: 'Легенды I', file: './targets/legends-1.mind' };
 
   const mindarConfig = `imageTargetSrc: ${rankInfo.file}; autoStart: true; maxTrack: 1; missTolerance: 1; uiLoading: no; uiScanning: no;`;
   sceneEl.setAttribute('mindar-image', mindarConfig);
@@ -174,7 +180,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       throw new Error("MindAR система не найдена на сцене");
     }
 
-    // Запускаем AR систему (без зависания Promise)
+    // Запускаем AR систему
     await arSystem.start();
 
     if (barFill) barFill.style.width = "100%";
@@ -200,7 +206,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         badge.style.borderColor = "var(--accent-color)";
         badge.style.color = "var(--accent-color)";
       }
-      if (title) title.innerText = "ВЫБЕРИТЕ РАНГ И НАВЕДИТЕ НА КАРТОЧКУ";
+      if (title) title.innerText = "НАВЕДИТЕ НА КАРТОЧКУ";
     }, 250);
 
   } catch (err) {
@@ -229,6 +235,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     updatePassportCounter();
   }
 });
+
 
 
 // ==========================================
