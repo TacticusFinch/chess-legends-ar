@@ -102,20 +102,37 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentRankKey = paramRank;
   }
 
-  // 2. Подсветка и переключение чипсов в нижней панели
-  const rankChips = document.querySelectorAll('.rank-chip');
-  rankChips.forEach(chip => {
-    const chipRank = chip.dataset.rank;
-    chip.classList.toggle('active', chipRank === currentRankKey);
+  // 2. Оптический лимб: окрашиваем лазер и центрируем активный пункт под визир
+  document.body.setAttribute('data-active-rank', currentRankKey);
 
-    chip.addEventListener('click', () => {
-      if (chipRank !== currentRankKey) {
-        if (navigator.vibrate) navigator.vibrate(25);
+  const dialTrack = document.getElementById('dial-scroll-track');
+  const dialItems = document.querySelectorAll('.dial-item');
+
+  dialItems.forEach(item => {
+    const itemRank = item.dataset.rank;
+    const isCurrent = itemRank === currentRankKey;
+    item.classList.toggle('active', isCurrent);
+
+    // Мягко центрируем текущий пункт ровно под центральный визир
+    if (isCurrent && dialTrack) {
+      setTimeout(() => {
+        item.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }, 100);
+    }
+
+    item.addEventListener('click', () => {
+      if (itemRank !== currentRankKey) {
+        if (navigator.vibrate) navigator.vibrate(20);
         if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
 
-        // Мягкая перезагрузка страницы с выбранным рангом
+        // Моментальная смена цвета визира и луча до перезагрузки
+        document.body.setAttribute('data-active-rank', itemRank);
+        dialItems.forEach(b => b.classList.remove('active'));
+        item.classList.add('active');
+
+        // Перезагрузка страницы с выбранным рангом
         const url = new URL(window.location.href);
-        url.searchParams.set('rank', chipRank);
+        url.searchParams.set('rank', itemRank);
         window.location.href = url.toString();
       }
     });
