@@ -249,7 +249,6 @@
 
   <!-- ОПТИЧЕСКИЙ ЛИМБ КАМЕРЫ (3 КОМПИЛЯЦИИ: ЛЕГЕНДЫ I, ЛЕГЕНДЫ II, СЕКРЕТНЫЕ) -->
   <div class="optical-dial-container" id="optical-dial-container">
-
     <div class="dial-track-wrapper">
       <div class="dial-scroll-track" id="dial-scroll-track">
         <button class="dial-item active" data-rank="legends-1">
@@ -488,7 +487,7 @@
     <!-- Каталог видео ассетов для всех карточек -->
     <!-- timeout="10000" защищает от блокировки сцены отсутствующими видеофайлами -->
     <a-assets timeout="10000">
-      <!-- Легенды 1 (0..8) -->
+      <!-- Легенды 1 (0..7) -->
       <video id="vid-steinitz" src="./assets/videos/steinitz.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-lasker" src="./assets/videos/lasker.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-capablanca" src="./assets/videos/capablanca.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
@@ -496,10 +495,10 @@
       <video id="vid-euwe" src="./assets/videos/euwe.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-botvinnik" src="./assets/videos/botvinnik.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-smyslov" src="./assets/videos/smyslov.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
-      <video id="vid-petrosyan" src="./assets/videos/petrosyan.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-tal" src="./assets/videos/tal.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
 
-      <!-- Легенды 2 (0..5) -->
+      <!-- Легенды 2 (0..6) -->
+      <video id="vid-petrosyan" src="./assets/videos/petrosyan.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-spassky" src="./assets/videos/spassky.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-fischer" src="./assets/videos/fischer.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-karpov" src="./assets/videos/karpov.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
@@ -519,7 +518,7 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Мишени AR (максимум 9 таргетов: индексы 0..8 для наибольшего файла legends-1.mind) -->
+    <!-- Мишени AR (максимум 8 таргетов: индексы 0..7 для наибольшего файла legends-1.mind) -->
     <a-entity id="target-0" mindar-image-target="targetIndex: 0"><a-video id="ar-video-0" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
     <a-entity id="target-1" mindar-image-target="targetIndex: 1"><a-video id="ar-video-1" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
     <a-entity id="target-2" mindar-image-target="targetIndex: 2"><a-video id="ar-video-2" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
@@ -528,8 +527,6 @@
     <a-entity id="target-5" mindar-image-target="targetIndex: 5"><a-video id="ar-video-5" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
     <a-entity id="target-6" mindar-image-target="targetIndex: 6"><a-video id="ar-video-6" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
     <a-entity id="target-7" mindar-image-target="targetIndex: 7"><a-video id="ar-video-7" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-8" mindar-image-target="targetIndex: 8"><a-video id="ar-video-8" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-  </a-scene>
 
   <!-- Шахматная логика и доска -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>

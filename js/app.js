@@ -62,9 +62,9 @@ AFRAME.registerComponent('smooth-materialize', {
 // 1. КОНФИГУРАЦИЯ РАНГОВ И КОМПИЛЯЦИЙ ФАЙЛОВ .MIND
 // ==========================================================
 // Строгий порядок согласно компиляциям .mind файлов:
-// 1. legends-1.mind: Стейниц, Ласкер, Капабланка, Алехин, Эйве, Ботвинник, Смыслов, Петросян, Таль
-// 2. legends-2.mind: Спасский, Фишер, Карпов, Ананд, Лижэнь, Гукеш
-// 3. secrets.mind:   Стокфиш, Энигма, Каспаров, Карлсен
+// 1. legends-1.mind (8 карт): Стейниц, Ласкер, Капабланка, Алехин, Эйве, Ботвинник, Смыслов, Таль
+// 2. legends-2.mind (7 карт): Петросян, Спасский, Фишер, Карпов, Ананд, Лижэнь, Гукеш
+// 3. secrets.mind   (4 карты): Стокфиш, Энигма, Каспаров, Карлсен
 const RANK_CONFIGS = {
   'legends-1': {
     name: 'Легенды I',
@@ -77,20 +77,20 @@ const RANK_CONFIGS = {
       { id: 'euwe',       globalIndex: 4,  videoId: 'vid-euwe',       name: 'Макс Эйве' },
       { id: 'botvinnik',  globalIndex: 5,  videoId: 'vid-botvinnik',  name: 'Михаил Ботвинник' },
       { id: 'smyslov',    globalIndex: 6,  videoId: 'vid-smyslov',    name: 'Василий Смыслов' },
-      { id: 'petrosyan',  globalIndex: 7,  videoId: 'vid-petrosyan',  name: 'Тигран Петросян' },
-      { id: 'tal',        globalIndex: 8,  videoId: 'vid-tal',        name: 'Михаил Таль' }
+      { id: 'tal',        globalIndex: 7,  videoId: 'vid-tal',        name: 'Михаил Таль' }
     ]
   },
   'legends-2': {
     name: 'Легенды II',
     file: './targets/legends-2.mind',
     targets: [
-      { id: 'spassky', globalIndex: 9,  videoId: 'vid-spassky', name: 'Борис Спасский' },
-      { id: 'fischer', globalIndex: 10, videoId: 'vid-fischer', name: 'Роберт Фишер' },
-      { id: 'karpov',  globalIndex: 11, videoId: 'vid-karpov',  name: 'Анатолий Карпов' },
-      { id: 'anand',   globalIndex: 12, videoId: 'vid-anand',   name: 'Вишванатан Ананд' },
-      { id: 'liren',   globalIndex: 13, videoId: 'vid-liren',   name: 'Дин Лижэнь' },
-      { id: 'gukesh',  globalIndex: 14, videoId: 'vid-gukesh',  name: 'Доммараджу Гукеш' }
+      { id: 'petrosyan',  globalIndex: 8,  videoId: 'vid-petrosyan',  name: 'Тигран Петросян' },
+      { id: 'spassky',    globalIndex: 9,  videoId: 'vid-spassky',    name: 'Борис Спасский' },
+      { id: 'fischer',    globalIndex: 10, videoId: 'vid-fischer',    name: 'Роберт Фишер' },
+      { id: 'karpov',     globalIndex: 11, videoId: 'vid-karpov',     name: 'Анатолий Карпов' },
+      { id: 'anand',      globalIndex: 12, videoId: 'vid-anand',      name: 'Вишванатан Ананд' },
+      { id: 'liren',      globalIndex: 13, videoId: 'vid-liren',      name: 'Дин Лижэнь' },
+      { id: 'gukesh',     globalIndex: 14, videoId: 'vid-gukesh',     name: 'Доммараджу Гукеш' }
     ]
   },
   'secrets': {
@@ -777,9 +777,9 @@ function renderTestResult() {
     if (typeof registerTestPassed === "function") registerTestPassed(currentHeroId);
 
     if (testScore === hero.puzzles.length) {
-      evaluation = `🏆 <b>Абсолютный триумф!</b><br>${hero.name} признал ваше мастерство и добавлен в Паспорт!`;
+      evaluation = `<b>Абсолютный триумф!</b><br>${hero.name} признал ваше мастерство и добавлен в Паспорт!`;
     } else {
-      evaluation = `🎉 <b>Экзамен успешно сдан!</b><br>Отличная тактика. ${hero.name} открыт в вашей Коллекции!`;
+      evaluation = `<b>Экзамен успешно сдан!</b><br>Отличная тактика. ${hero.name} открыт в вашей Коллекции!`;
     }
   } else {
     if (typeof sfx !== "undefined" && sfx.playWrong) sfx.playWrong();
@@ -799,7 +799,7 @@ function renderTestResult() {
 
     ${!isPassed ? `
       <button class="action-link-btn" style="background: rgba(255,255,255,0.08); border: 1px solid var(--accent-color); color: #fff; margin-bottom: 8px;" onclick="openModal('bio')">
-        📖 Изучить биографию ${hero.name.split(' ')[0]}
+        Изучить биографию ${hero.name.split(' ')[0]}
       </button>
     ` : ''}
 
@@ -815,7 +815,7 @@ function renderTestResult() {
     </div>
 
     <button class="action-link-btn secondary" style="width: 100%; margin-top: 10px; cursor: pointer;" onclick="openModal('test')">
-      ${isPassed ? 'Пройти еще раз' : 'Попробовать снова 🔄'}
+      ${isPassed ? 'Пройти еще раз' : 'Попробовать снова'}
     </button>
   `;
 }
