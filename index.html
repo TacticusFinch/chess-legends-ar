@@ -518,15 +518,16 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Мишени AR (максимум 8 таргетов: индексы 0..7 для наибольшего файла legends-1.mind) -->
-    <a-entity id="target-0" mindar-image-target="targetIndex: 0"><a-video id="ar-video-0" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-1" mindar-image-target="targetIndex: 1"><a-video id="ar-video-1" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-2" mindar-image-target="targetIndex: 2"><a-video id="ar-video-2" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-3" mindar-image-target="targetIndex: 3"><a-video id="ar-video-3" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-4" mindar-image-target="targetIndex: 4"><a-video id="ar-video-4" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-5" mindar-image-target="targetIndex: 5"><a-video id="ar-video-5" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-6" mindar-image-target="targetIndex: 6"><a-video id="ar-video-6" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-7" mindar-image-target="targetIndex: 7"><a-video id="ar-video-7" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
+    <!-- Мишени AR: максимум 8 таргетов (индексы 0..7) -->
+<a-entity id="target-0" mindar-image-target="targetIndex: 0"><a-video id="ar-video-0" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+<a-entity id="target-1" mindar-image-target="targetIndex: 1"><a-video id="ar-video-1" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+<a-entity id="target-2" mindar-image-target="targetIndex: 2"><a-video id="ar-video-2" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+<a-entity id="target-3" mindar-image-target="targetIndex: 3"><a-video id="ar-video-3" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+<a-entity id="target-4" mindar-image-target="targetIndex: 4"><a-video id="ar-video-4" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+<a-entity id="target-5" mindar-image-target="targetIndex: 5"><a-video id="ar-video-5" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+<a-entity id="target-6" mindar-image-target="targetIndex: 6"><a-video id="ar-video-6" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+<a-entity id="target-7" mindar-image-target="targetIndex: 7"><a-video id="ar-video-7" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+
 
   <!-- Шахматная логика и доска -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>

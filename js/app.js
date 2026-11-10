@@ -253,9 +253,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     setTimeout(() => {
       if (loadBox) loadBox.style.display = "none";
       if (readySub) {
-        readySub.style.display = "block";
-        readySub.innerText = `${currentRankConfig.name} готовы • Наведите камеру на карту`;
-      }
+  	readySub.style.display = "block";
+  	const heroNamesList = currentRankConfig.targets.map(t => t.name.split(' ').pop()).join(', ');
+  	readySub.innerText = `${currentRankConfig.name} готовы: ${heroNamesList}.`;
+	}
+
       
       const topHud = document.getElementById("top-hud");
       if (topHud) {
@@ -454,19 +456,13 @@ function playTargetVideo(targetIndex) {
   }
 
   vid._checkReadyInterval = setInterval(() => {
-    const isReallyDecoded = (vid.readyState >= 2 && vid.currentTime >= 0);
+    const isReallyDecoded = (vid.readyState >= 3 && vid.currentTime > 0.05);
     if (isReallyDecoded && currentActiveTargetIndex === targetIndex && visibleTargets.has(targetIndex)) {
       safeTrigger();
     }
   }, 50);
 
-  // Страховочный таймаут: если видео уже декодировано или событие кадра задержалось, проявляем карточку
-  setTimeout(() => {
-    if (currentActiveTargetIndex === targetIndex && visibleTargets.has(targetIndex) && !vid.paused) {
-      safeTrigger();
-    }
-  }, 400);
-
+  
   const playPromise = vid.play();
   if (playPromise !== undefined) {
     playPromise.catch((e) => {
