@@ -3,20 +3,45 @@
 // ==========================================================
 AFRAME.registerComponent('smooth-materialize', {
   schema: {
-    duration: { type: 'number', default: 500 }
+    duration: { type: 'number', default: 450 }
   },
   init: function () {
     const el = this.el;
     const parentEntity = el.parentElement;
 
     // Скрываем плоскость на старте
-    el.object3D.scale.set(0.001, 0.001, 0.001);
+    el.object3D.scale.set(0.0001, 0.0001, 0.0001);
     el.object3D.visible = false;
 
+    // Гарантируем прозрачность материала трехмерного меша без черного фона
+    el.addEventListener('loaded', () => {
+      const mesh = el.getObject3D('mesh');
+      if (mesh && mesh.material) {
+        mesh.material.transparent = true;
+        mesh.material.opacity = 0;
+        mesh.material.alphaTest = 0.01;
+        mesh.material.needsUpdate = true;
+      }
+    });
+
+    this.isMaterializing = false;
+
     this.onFrameReady = () => {
+      if (this.isMaterializing) return;
+      this.isMaterializing = true;
+
       if (navigator.vibrate) navigator.vibrate(20);
 
+      const mesh = el.getObject3D('mesh');
+      if (mesh && mesh.material) {
+        mesh.material.transparent = true;
+        mesh.material.opacity = 0;
+        mesh.material.needsUpdate = true;
+      }
+
+      el.object3D.scale.set(0.85, 0.85, 0.85);
       el.object3D.visible = true;
+
       let startTime = null;
 
       const animateIn = (time) => {
@@ -27,10 +52,7 @@ AFRAME.registerComponent('smooth-materialize', {
 
         el.object3D.scale.set(curScale, curScale, curScale);
 
-        // Безопасное изменение прозрачности без сброса текстуры видео
-        const mesh = el.getObject3D('mesh');
         if (mesh && mesh.material) {
-          mesh.material.transparent = true;
           mesh.material.opacity = ease;
           mesh.material.needsUpdate = true;
         }
@@ -44,6 +66,7 @@ AFRAME.registerComponent('smooth-materialize', {
             mesh.material.opacity = 1.0;
             mesh.material.needsUpdate = true;
           }
+          this.isMaterializing = false;
         }
       };
       requestAnimationFrame(animateIn);
@@ -52,8 +75,15 @@ AFRAME.registerComponent('smooth-materialize', {
     el.addEventListener('video-first-frame', this.onFrameReady);
 
     parentEntity.addEventListener('targetLost', () => {
-      el.object3D.scale.set(0.001, 0.001, 0.001);
+      this.isMaterializing = false;
+      el.object3D.scale.set(0.0001, 0.0001, 0.0001);
       el.object3D.visible = false;
+      const mesh = el.getObject3D('mesh');
+      if (mesh && mesh.material) {
+        mesh.material.transparent = true;
+        mesh.material.opacity = 0;
+        mesh.material.needsUpdate = true;
+      }
     });
   }
 });
@@ -117,7 +147,7 @@ let testScore = 0;
 let userHasInteracted = false;
 
 const SCHOOL_TARGET_ID = 19;
-const MAX_TARGET_ENTITIES = 9; // Максимальное число таргетов (0..8) в legends-1
+const MAX_TARGET_ENTITIES = 8; // Максимальное число таргетов (0..7) в legends-1
 const ALL_TARGET_INDICES = Array.from({ length: MAX_TARGET_ENTITIES }, (_, i) => i);
 const visibleTargets = new Set();
 
@@ -777,9 +807,9 @@ function renderTestResult() {
     if (typeof registerTestPassed === "function") registerTestPassed(currentHeroId);
 
     if (testScore === hero.puzzles.length) {
-      evaluation = `<b>Абсолютный триумф!</b><br>${hero.name} признал ваше мастерство и добавлен в Паспорт!`;
+      evaluation = `🏆 <b>Абсолютный триумф!</b><br>${hero.name} признал ваше мастерство и добавлен в Паспорт!`;
     } else {
-      evaluation = `<b>Экзамен успешно сдан!</b><br>Отличная тактика. ${hero.name} открыт в вашей Коллекции!`;
+      evaluation = `🎉 <b>Экзамен успешно сдан!</b><br>Отличная тактика. ${hero.name} открыт в вашей Коллекции!`;
     }
   } else {
     if (typeof sfx !== "undefined" && sfx.playWrong) sfx.playWrong();
@@ -799,7 +829,7 @@ function renderTestResult() {
 
     ${!isPassed ? `
       <button class="action-link-btn" style="background: rgba(255,255,255,0.08); border: 1px solid var(--accent-color); color: #fff; margin-bottom: 8px;" onclick="openModal('bio')">
-        Изучить биографию ${hero.name.split(' ')[0]}
+        📖 Изучить биографию ${hero.name.split(' ')[0]}
       </button>
     ` : ''}
 
@@ -815,7 +845,7 @@ function renderTestResult() {
     </div>
 
     <button class="action-link-btn secondary" style="width: 100%; margin-top: 10px; cursor: pointer;" onclick="openModal('test')">
-      ${isPassed ? 'Пройти еще раз' : 'Попробовать снова'}
+      ${isPassed ? 'Пройти еще раз' : 'Попробовать снова 🔄'}
     </button>
   `;
 }
