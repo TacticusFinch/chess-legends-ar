@@ -492,7 +492,8 @@
     device-orientation-permission-ui="enabled: false">
 
     <!-- Каталог видео ассетов для всех карточек -->
-    <a-assets>
+    <!-- timeout="10000" защищает от блокировки сцены отсутствующими видеофайлами -->
+    <a-assets timeout="10000">
       <!-- Легенды 1 (0..8) -->
       <video id="vid-steinitz" src="./assets/videos/steinitz.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-lasker" src="./assets/videos/lasker.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>

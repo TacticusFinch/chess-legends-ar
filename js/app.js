@@ -405,27 +405,44 @@ function playTargetVideo(targetIndex) {
     }
   };
 
+  // Гарантируем запуск анимации появления по первому кадру или по событию play/timeupdate
+  let triggered = false;
+  const safeTrigger = () => {
+    if (triggered) return;
+    triggered = true;
+    if (vid._checkReadyInterval) {
+      clearInterval(vid._checkReadyInterval);
+      vid._checkReadyInterval = null;
+    }
+    triggerFirstFrame();
+  };
+
   if ('requestVideoFrameCallback' in vid) {
     vid.requestVideoFrameCallback(() => {
-      triggerFirstFrame();
+      safeTrigger();
     });
-  } else {
-    vid._checkReadyInterval = setInterval(() => {
-      const isReallyDecoded = (vid.readyState >= 3 && vid.currentTime > 0.08);
-      if (isReallyDecoded && currentActiveTargetIndex === targetIndex && visibleTargets.has(targetIndex)) {
-        clearInterval(vid._checkReadyInterval);
-        vid._checkReadyInterval = null;
-        triggerFirstFrame();
-      }
-    }, 50);
   }
+
+  vid._checkReadyInterval = setInterval(() => {
+    const isReallyDecoded = (vid.readyState >= 2 && vid.currentTime >= 0);
+    if (isReallyDecoded && currentActiveTargetIndex === targetIndex && visibleTargets.has(targetIndex)) {
+      safeTrigger();
+    }
+  }, 50);
+
+  // Страховочный таймаут: если видео уже декодировано или событие кадра задержалось, проявляем карточку
+  setTimeout(() => {
+    if (currentActiveTargetIndex === targetIndex && visibleTargets.has(targetIndex) && !vid.paused) {
+      safeTrigger();
+    }
+  }, 400);
 
   const playPromise = vid.play();
   if (playPromise !== undefined) {
     playPromise.catch((e) => {
       console.warn("Автоплей заблокирован браузером, принудительный mute:", e);
       vid.muted = true;
-      vid.play().catch(() => {});
+      vid.play().then(() => safeTrigger()).catch(() => {});
     });
   }
 }
@@ -495,7 +512,19 @@ ALL_TARGET_INDICES.forEach(index => {
     stopTargetVideo(index);
 
     if (visibleTargets.size === 0) {
+      currentActiveTargetIndex = null;
+      currentHeroId = null;
       document.body.classList.remove("card-active");
+
+      // Скрываем нижний интерактивный док кнопок (Биография/Экзамен/Дуэль)
+      if (dock) {
+        dock.style.display = "none";
+        dock.innerHTML = "";
+      }
+      // Возвращаем прицел сканера
+      if (hint) {
+        hint.classList.remove("hidden");
+      }
     }
   });
 });
