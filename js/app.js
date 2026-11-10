@@ -58,31 +58,67 @@ AFRAME.registerComponent('smooth-materialize', {
   }
 });
 
-// ==========================================
-// 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-// ==========================================
+// ==========================================================
+// 1. КОНФИГУРАЦИЯ РАНГОВ И КОМПИЛЯЦИЙ ФАЙЛОВ .MIND
+// ==========================================================
+// Строгий порядок согласно компиляциям .mind файлов:
+// 1. legends-1.mind: Стейниц, Ласкер, Капабланка, Алехин, Эйве, Ботвинник, Смыслов, Петросян, Таль
+// 2. legends-2.mind: Спасский, Фишер, Карпов, Ананд, Лижэнь, Гукеш
+// 3. secrets.mind:   Стокфиш, Энигма, Каспаров, Карлсен
 const RANK_CONFIGS = {
-  'legends-1':    { name: 'Легенды I',    file: './targets/legends-1.mind' },
-  'legends-2':    { name: 'Легенды II',   file: './targets/legends-2.mind' },
-  'grandmasters': { name: 'Грандмастеры', file: './targets/grandmasters.mind' },
-  'maestro':      { name: 'Маэстро',      file: './targets/maestro.mind' },
-  'secrets':      { name: 'Секретные',    file: './targets/secrets.mind' },
-  'all':          { name: 'Все карты',    file: './cards.mind?v=1001' }
+  'legends-1': {
+    name: 'Легенды I',
+    file: './targets/legends-1.mind',
+    targets: [
+      { id: 'steinitz',   globalIndex: 0,  videoId: 'vid-steinitz',   name: 'Вильгельм Стейниц' },
+      { id: 'lasker',     globalIndex: 1,  videoId: 'vid-lasker',     name: 'Эммануил Ласкер' },
+      { id: 'capablanca', globalIndex: 2,  videoId: 'vid-capablanca', name: 'Хосе Рауль Капабланка' },
+      { id: 'alekhine',   globalIndex: 3,  videoId: 'vid-alekhine',   name: 'Александр Алехин' },
+      { id: 'euwe',       globalIndex: 4,  videoId: 'vid-euwe',       name: 'Макс Эйве' },
+      { id: 'botvinnik',  globalIndex: 5,  videoId: 'vid-botvinnik',  name: 'Михаил Ботвинник' },
+      { id: 'smyslov',    globalIndex: 6,  videoId: 'vid-smyslov',    name: 'Василий Смыслов' },
+      { id: 'petrosyan',  globalIndex: 7,  videoId: 'vid-petrosyan',  name: 'Тигран Петросян' },
+      { id: 'tal',        globalIndex: 8,  videoId: 'vid-tal',        name: 'Михаил Таль' }
+    ]
+  },
+  'legends-2': {
+    name: 'Легенды II',
+    file: './targets/legends-2.mind',
+    targets: [
+      { id: 'spassky', globalIndex: 9,  videoId: 'vid-spassky', name: 'Борис Спасский' },
+      { id: 'fischer', globalIndex: 10, videoId: 'vid-fischer', name: 'Роберт Фишер' },
+      { id: 'karpov',  globalIndex: 11, videoId: 'vid-karpov',  name: 'Анатолий Карпов' },
+      { id: 'anand',   globalIndex: 12, videoId: 'vid-anand',   name: 'Вишванатан Ананд' },
+      { id: 'liren',   globalIndex: 13, videoId: 'vid-liren',   name: 'Дин Лижэнь' },
+      { id: 'gukesh',  globalIndex: 14, videoId: 'vid-gukesh',  name: 'Доммараджу Гукеш' }
+    ]
+  },
+  'secrets': {
+    name: 'Секретные',
+    file: './targets/secrets.mind',
+    targets: [
+      { id: 'stockfish', globalIndex: 15, videoId: 'vid-stockfish', name: 'Стокфиш' },
+      { id: 'enigma',    globalIndex: 16, videoId: 'vid-enigma',    name: 'Энигма' },
+      { id: 'kasparov',  globalIndex: 17, videoId: 'vid-kasparov',  name: 'Гарри Каспаров' },
+      { id: 'carlsen',   globalIndex: 18, videoId: 'vid-carlsen',   name: 'Магнус Карлсен' }
+    ]
+  }
 };
 
 let currentRankKey = 'legends-1';
-
+let currentRankConfig = RANK_CONFIGS['legends-1'];
 
 let currentHeroId = null;
+let currentActiveTargetIndex = null;
 let isMuted = true;
 
 let currentPuzzleIndex = 0;
 let testScore = 0;
 let userHasInteracted = false;
 
-const SCHOOL_TARGET_ID = 17;
-// Строго один раз объявляем все 18 таргетов
-const ALL_TARGET_IDS = Array.from({ length: 18 }, (_, i) => i);
+const SCHOOL_TARGET_ID = 19;
+const MAX_TARGET_ENTITIES = 9; // Максимальное число таргетов (0..8) в legends-1
+const ALL_TARGET_INDICES = Array.from({ length: MAX_TARGET_ENTITIES }, (_, i) => i);
 const visibleTargets = new Set();
 
 let hint, dock, soundBtn, modal, modalContent;
@@ -101,12 +137,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const urlParams = new URLSearchParams(window.location.search);
   let paramRank = urlParams.get('rank');
 
-  // Если передали старый общий ключ 'legends' — направляем на 'legends-1'
+  // Совместимость со старыми параметрами
   if (paramRank === 'legends') paramRank = 'legends-1';
+  if (paramRank === 'all') paramRank = 'legends-1';
 
-  if (paramRank && typeof RANK_CONFIGS !== "undefined" && RANK_CONFIGS[paramRank]) {
+  if (paramRank && RANK_CONFIGS[paramRank]) {
     currentRankKey = paramRank;
   }
+  currentRankConfig = RANK_CONFIGS[currentRankKey] || RANK_CONFIGS['legends-1'];
 
   // 2. Оптический лимб: окрашиваем лазер и центрируем активный пункт под визир
   document.body.setAttribute('data-active-rank', currentRankKey);
@@ -119,7 +157,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const isCurrent = itemRank === currentRankKey;
     item.classList.toggle('active', isCurrent);
 
-    // Центрируем выбранный пункт ровно под центральный визир
     if (isCurrent && dialTrack) {
       setTimeout(() => {
         item.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
@@ -131,18 +168,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (navigator.vibrate) navigator.vibrate(20);
         if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
 
-        // Моментальная смена цвета визира и луча до перезагрузки
         document.body.setAttribute('data-active-rank', itemRank);
         dialItems.forEach(b => b.classList.remove('active'));
         item.classList.add('active');
 
-        // Перезагрузка страницы с выбранным рангом
         const url = new URL(window.location.href);
         url.searchParams.set('rank', itemRank);
         window.location.href = url.toString();
       }
     });
   });
+
+  // 3. Связываем a-video с видеороликами для текущего ранга
+  bindVideosForCurrentRank();
 
   const sceneEl = document.querySelector('a-scene');
   const barFill = document.getElementById('load-bar-fill');
@@ -152,16 +190,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const title = document.getElementById('loading-title');
   const readySub = document.getElementById('ready-status-sub');
 
-  // 3. Динамически назначаем легкий .mind файл для выбранного ранга
-  const rankInfo = (typeof RANK_CONFIGS !== "undefined" && RANK_CONFIGS[currentRankKey]) 
-    ? RANK_CONFIGS[currentRankKey] 
-    : { name: 'Легенды I', file: './targets/legends-1.mind' };
-
-  const mindarConfig = `imageTargetSrc: ${rankInfo.file}; autoStart: true; maxTrack: 1; missTolerance: 1; uiLoading: no; uiScanning: no;`;
+  // 4. Динамически назначаем целевой .mind файл для выбранного ранга
+  const mindarConfig = `imageTargetSrc: ${currentRankConfig.file}; autoStart: true; maxTrack: 1; missTolerance: 1; uiLoading: no; uiScanning: no;`;
   sceneEl.setAttribute('mindar-image', mindarConfig);
 
   if (title) {
-    title.innerText = `РАНГ: ${rankInfo.name.toUpperCase()}`;
+    title.innerText = `РАНГ: ${currentRankConfig.name.toUpperCase()}`;
   }
 
   try {
@@ -172,7 +206,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       await new Promise(res => sceneEl.addEventListener('loaded', res, { once: true }));
     }
 
-    if (percentText) percentText.innerText = `Загрузка: ${rankInfo.name}...`;
+    if (percentText) percentText.innerText = `Загрузка: ${currentRankConfig.name}...`;
     if (barFill) barFill.style.width = "65%";
 
     const arSystem = sceneEl.systems["mindar-image-system"];
@@ -180,7 +214,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       throw new Error("MindAR система не найдена на сцене");
     }
 
-    // Запускаем AR систему
+    // Запуск системы трекинга
     await arSystem.start();
 
     if (barFill) barFill.style.width = "100%";
@@ -190,7 +224,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (loadBox) loadBox.style.display = "none";
       if (readySub) {
         readySub.style.display = "block";
-        readySub.innerText = `${rankInfo.name} готовы • Наведите камеру на карту`;
+        readySub.innerText = `${currentRankConfig.name} готовы • Наведите камеру на карту`;
       }
       
       const topHud = document.getElementById("top-hud");
@@ -202,9 +236,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (soundBtn) soundBtn.style.display = "inline-flex";
 
       if (badge) {
-        badge.innerText = `AR СКАНЕР (${rankInfo.name.toUpperCase()})`;
-        badge.style.borderColor = "var(--accent-color)";
-        badge.style.color = "var(--accent-color)";
+        badge.innerText = `AR СКАНЕР (${currentRankConfig.name.toUpperCase()})`;
+        badge.style.borderColor = "var(--accent-color, #f1c40f)";
+        badge.style.color = "var(--accent-color, #f1c40f)";
       }
       if (title) title.innerText = "НАВЕДИТЕ НА КАРТОЧКУ";
     }, 250);
@@ -236,10 +270,49 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
+// ==========================================
+// 3. СВЯЗЫВАНИЕ ТАРГЕТОВ С АССЕТАМИ ВИДЕО
+// ==========================================
+function bindVideosForCurrentRank() {
+  const targets = currentRankConfig.targets;
 
+  ALL_TARGET_INDICES.forEach(index => {
+    const targetEl = document.getElementById(`target-${index}`);
+    if (!targetEl) return;
+
+    const aVideo = targetEl.querySelector('a-video');
+    if (!aVideo) return;
+
+    if (index < targets.length) {
+      const targetMeta = targets[index];
+      aVideo.setAttribute('src', `#${targetMeta.videoId}`);
+      targetEl.setAttribute('data-hero-id', targetMeta.id);
+      targetEl.setAttribute('data-global-index', targetMeta.globalIndex);
+      targetEl.style.display = '';
+    } else {
+      // Таргет не используется в данном ранге
+      targetEl.removeAttribute('data-hero-id');
+      aVideo.removeAttribute('src');
+    }
+  });
+}
+
+function getHeroDataForTarget(index) {
+  const targets = currentRankConfig.targets;
+  if (!targets || index >= targets.length) return null;
+
+  const meta = targets[index];
+  let heroObj = null;
+
+  if (typeof HEROES !== "undefined") {
+    heroObj = HEROES[meta.id] || HEROES[meta.globalIndex] || HEROES[index];
+  }
+
+  return { meta, heroObj };
+}
 
 // ==========================================
-// 3. РАЗБЛОКИРОВКА АУДИОКОНТЕКСТА
+// 4. РАЗБЛОКИРОВКА АУДИОКОНТЕКСТА
 // ==========================================
 function handleFirstInteraction() {
   if (userHasInteracted) return;
@@ -254,13 +327,22 @@ document.addEventListener("touchstart", handleFirstInteraction, { once: true, pa
 document.addEventListener("click", handleFirstInteraction, { once: true });
 
 // ==========================================
-// 4. ЖЕСТКОЕ УПРАВЛЕНИЕ ВИДЕО (СТРОГО ВСЕ 18 ГЕРОЕВ)
+// 5. УПРАВЛЕНИЕ ВИДЕОПЛЕЕРАМИ
 // ==========================================
-function stopAllVideosExcept(activeId = null) {
-  ALL_TARGET_IDS.forEach(id => {
-    if (id !== activeId) {
-      const vid = document.getElementById(`vid-${id}`);
-      const targetEl = document.getElementById(`target-${id}`);
+function getVideoElementForTarget(targetIndex) {
+  const targets = currentRankConfig.targets;
+  if (targets && targetIndex < targets.length) {
+    const vid = document.getElementById(targets[targetIndex].videoId);
+    if (vid) return vid;
+  }
+  return document.getElementById(`vid-${targetIndex}`);
+}
+
+function stopAllVideosExcept(activeTargetIndex = null) {
+  ALL_TARGET_INDICES.forEach(index => {
+    if (index !== activeTargetIndex) {
+      const vid = getVideoElementForTarget(index);
+      const targetEl = document.getElementById(`target-${index}`);
 
       if (vid) {
         vid.pause();
@@ -282,17 +364,17 @@ function stopAllVideosExcept(activeId = null) {
   });
 }
 
-function playTargetVideo(id) {
-  stopAllVideosExcept(id);
-  visibleTargets.add(id);
+function playTargetVideo(targetIndex) {
+  stopAllVideosExcept(targetIndex);
+  visibleTargets.add(targetIndex);
 
-  const vid = document.getElementById(`vid-${id}`);
-  const targetEl = document.getElementById(`target-${id}`);
+  const vid = getVideoElementForTarget(targetIndex);
+  const targetEl = document.getElementById(`target-${targetIndex}`);
   if (!vid || !targetEl) return;
 
   const aVideo = targetEl.querySelector('a-video');
 
-  // Гарантируем, что до реального кадра объект скрыт
+  // Гарантируем скрытие до подтверждения отрисованного кадра
   if (aVideo) {
     aVideo.object3D.visible = false;
     const mesh = aVideo.getObject3D('mesh');
@@ -316,28 +398,21 @@ function playTargetVideo(id) {
   }
 
   const triggerFirstFrame = () => {
-    const isCurrentActive = (id === SCHOOL_TARGET_ID && currentHeroId === null) || (currentHeroId === id);
-    if (isCurrentActive && visibleTargets.has(id)) {
+    if (currentActiveTargetIndex === targetIndex && visibleTargets.has(targetIndex)) {
       if (aVideo) {
         aVideo.dispatchEvent(new CustomEvent('video-first-frame'));
       }
     }
   };
 
-  // 1. СОВРЕМЕННЫЙ СПОСОБ: гарантирует, что кадр уже отрисован графическим чипом
   if ('requestVideoFrameCallback' in vid) {
     vid.requestVideoFrameCallback(() => {
       triggerFirstFrame();
     });
   } else {
-    // 2. ФОЛЛБЭК ДЛЯ СТАРЫХ УСТРОЙСТВ: ждем реального сдвига времени и готовности данных
     vid._checkReadyInterval = setInterval(() => {
-      const isCurrentActive = (id === SCHOOL_TARGET_ID && currentHeroId === null) || (currentHeroId === id);
-      
-      // readyState >= 3 (HAVE_FUTURE_DATA) гарантирует наличие кадров для показа
       const isReallyDecoded = (vid.readyState >= 3 && vid.currentTime > 0.08);
-
-      if (isReallyDecoded && isCurrentActive && visibleTargets.has(id)) {
+      if (isReallyDecoded && currentActiveTargetIndex === targetIndex && visibleTargets.has(targetIndex)) {
         clearInterval(vid._checkReadyInterval);
         vid._checkReadyInterval = null;
         triggerFirstFrame();
@@ -348,25 +423,24 @@ function playTargetVideo(id) {
   const playPromise = vid.play();
   if (playPromise !== undefined) {
     playPromise.catch((e) => {
-      console.warn("Автоплей заблокирован, принудительный mute:", e);
+      console.warn("Автоплей заблокирован браузером, принудительный mute:", e);
       vid.muted = true;
       vid.play().catch(() => {});
     });
   }
 }
 
-function stopTargetVideo(id) {
-  visibleTargets.delete(id);
+function stopTargetVideo(targetIndex) {
+  visibleTargets.delete(targetIndex);
 
-  const vid = document.getElementById(`vid-${id}`);
-  const targetEl = document.getElementById(`target-${id}`);
+  const vid = getVideoElementForTarget(targetIndex);
+  const targetEl = document.getElementById(`target-${targetIndex}`);
 
   if (vid) {
     vid.muted = true;
     vid.pause();
     vid.currentTime = 0;
     
-    // Сбрасываем интервалы проверки
     if (vid._checkReadyInterval) {
       clearInterval(vid._checkReadyInterval);
       vid._checkReadyInterval = null;
@@ -383,38 +457,43 @@ function stopTargetVideo(id) {
 }
 
 // ==========================================
-// 5. СЛУШАТЕЛИ ТАРГЕТОВ (С СОХРАНЕНИЕМ ИНТЕРФЕЙСА)
+// 6. СЛУШАТЕЛИ ТАРГЕТОВ
 // ==========================================
-ALL_TARGET_IDS.forEach(id => {
-  const targetEl = document.getElementById(`target-${id}`);
+ALL_TARGET_INDICES.forEach(index => {
+  const targetEl = document.getElementById(`target-${index}`);
   if (!targetEl) return;
 
   targetEl.addEventListener("targetFound", () => {
-    currentHeroId = (id === SCHOOL_TARGET_ID) ? null : id;
+    const heroData = getHeroDataForTarget(index);
+    if (!heroData) return;
+
+    currentActiveTargetIndex = index;
+    // Поддерживаем как строковый id, так и глобальный индекс
+    currentHeroId = (typeof HEROES !== "undefined" && HEROES[heroData.meta.id]) 
+      ? heroData.meta.id 
+      : heroData.meta.globalIndex;
 
     if (typeof sfx !== "undefined" && sfx.playTargetFound) sfx.playTargetFound();
 
-    // Добавляем класс, чтобы нижняя панель рангов деликатно приподнялась над доком кнопок
     document.body.classList.add("card-active");
 
     if (hint) hint.classList.add("hidden");
     if (dock) dock.style.display = "flex";
     if (soundBtn) soundBtn.style.display = "inline-flex";
 
-    if (id === SCHOOL_TARGET_ID) {
-      showSchoolUI();
-    } else if (typeof HEROES !== "undefined" && HEROES[id]) {
-      applyHeroTheme(HEROES[id]);
+    if (heroData.heroObj) {
+      applyHeroTheme(heroData.heroObj);
+      showChampionUI();
+    } else {
       showChampionUI();
     }
 
-    playTargetVideo(id);
+    playTargetVideo(index);
   });
 
   targetEl.addEventListener("targetLost", () => {
-    stopTargetVideo(id);
+    stopTargetVideo(index);
 
-    // Если в поле зрения камеры больше нет активных карт — опускаем панель рангов обратно на дно
     if (visibleTargets.size === 0) {
       document.body.classList.remove("card-active");
     }
@@ -422,13 +501,13 @@ ALL_TARGET_IDS.forEach(id => {
 });
 
 // ==========================================
-// 6. ТЕМЫ И ЗВУК
+// 7. ТЕМЫ И ЗВУК
 // ==========================================
 function applyHeroTheme(hero) {
   if (!hero) return;
-  document.documentElement.style.setProperty('--accent-color', hero.color);
-  document.documentElement.style.setProperty('--accent-glow', hero.colorGlow);
-  if (soundBtn) soundBtn.style.borderColor = hero.color;
+  if (hero.color) document.documentElement.style.setProperty('--accent-color', hero.color);
+  if (hero.colorGlow) document.documentElement.style.setProperty('--accent-glow', hero.colorGlow);
+  if (soundBtn && hero.color) soundBtn.style.borderColor = hero.color;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -438,11 +517,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const isEnabled = (typeof sfx !== "undefined" && sfx.toggle) ? sfx.toggle() : !isMuted;
       isMuted = !isEnabled;
       
-      const activeTargetId = currentHeroId !== null ? currentHeroId : SCHOOL_TARGET_ID;
-      const vid = document.getElementById(`vid-${activeTargetId}`);
-      if (vid) {
-        vid.muted = isMuted;
-        vid.volume = 1.0;
+      if (currentActiveTargetIndex !== null) {
+        const vid = getVideoElementForTarget(currentActiveTargetIndex);
+        if (vid) {
+          vid.muted = isMuted;
+          vid.volume = 1.0;
+        }
       }
       
       sBtn.innerHTML = isEnabled ? "<span>🔊</span> ЗВУК: ВКЛ" : "<span>🔇</span> ЗВУК: ВЫКЛ";
@@ -454,27 +534,30 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ==========================================
-// 7. МОДАЛЬНЫЕ ОКНА И МЕНЮ
+// 8. МОДАЛЬНЫЕ ОКНА И МЕНЮ
 // ==========================================
 function openModal(type) {
   if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
   if (currentHeroId === null || typeof HEROES === "undefined") return;
   const hero = HEROES[currentHeroId];
+  if (!hero) return;
 
-  const activeVideo = document.getElementById(`vid-${currentHeroId}`);
-  if (activeVideo) activeVideo.pause();
+  if (currentActiveTargetIndex !== null) {
+    const activeVideo = getVideoElementForTarget(currentActiveTargetIndex);
+    if (activeVideo) activeVideo.pause();
+  }
 
   if (navigator.vibrate) navigator.vibrate(35);
 
   if (type === 'bio') {
     modalContent.innerHTML = `
       <div class="modal-title">${hero.name}</div>
-      <div class="modal-subtitle">${hero.title}</div>
-      <div class="modal-quote">${hero.quote}</div>
-      ${hero.bio.map(sec => `
+      <div class="modal-subtitle">${hero.title || ''}</div>
+      ${hero.quote ? `<div class="modal-quote">${hero.quote}</div>` : ''}
+      ${hero.bio ? hero.bio.map(sec => `
         <div class="bio-section-title">${sec.title}</div>
         <div class="bio-paragraph">${sec.text}</div>
-      `).join('')}
+      `).join('') : ''}
     `;
   } else if (type === 'test') {
     currentPuzzleIndex = 0;
@@ -484,17 +567,18 @@ function openModal(type) {
     modalContent.innerHTML = `
       <div class="modal-title">Характеристики</div>
       <div class="modal-subtitle">${hero.name}</div>
-      ${hero.stats.map(s => `
+      ${hero.stats ? hero.stats.map(s => `
         <div class="stat-row">
           <div class="stat-header"><span>${s.name}</span><span>${s.val}%</span></div>
           <div class="stat-track"><div class="stat-fill" style="width: ${s.val}%"></div></div>
         </div>
-      `).join('')}
+      `).join('') : ''}
+      ${hero.skillName ? `
       <div class="skill-box">
         <div style="font-size: 11px; color: var(--accent-color); font-weight: 700; text-transform: uppercase;">Ключевой навык:</div>
         <div style="font-size: 14px; font-weight: bold; margin-top: 3px;">${hero.skillName}</div>
-        <div style="font-size: 12px; color: #aaa; margin-top: 5px; line-height: 1.4;">${hero.skillDesc}</div>
-      </div>
+        <div style="font-size: 12px; color: #aaa; margin-top: 5px; line-height: 1.4;">${hero.skillDesc || ''}</div>
+      </div>` : ''}
       <div class="external-promo-box">
         <div style="font-size: 12px; font-weight: 600;">Хотите записаться на занятия?</div>
         <div style="font-size: 11px; color: #aaa; margin-top: 3px;">Узнайте расписание и подробности о школе:</div>
@@ -509,25 +593,6 @@ function openModal(type) {
   }
 
   modal.classList.add("active");
-}
-
-function showSchoolUI() {
-  document.documentElement.style.setProperty('--accent-color', '#00e5ff');
-  document.documentElement.style.setProperty('--accent-glow', 'rgba(0, 229, 255, 0.4)');
-
-  if (!dock) return;
-  dock.style.display = "flex";
-  dock.innerHTML = `
-    <a class="dock-btn" href="https://tacticusfinch.ru/" target="_blank" onclick="if(typeof sfx!=='undefined'&&sfx.playMove)sfx.playMove()">
-      <span>Сайт школы</span>
-    </a>
-    <a class="dock-btn" href="https://max.ru/se14097294_bot" target="_blank" onclick="if(typeof sfx!=='undefined'&&sfx.playMove)sfx.playMove()" style="border-color: #00ffcc; box-shadow: 0 0 15px rgba(0,255,204,0.4);">
-      <span style="color: #00ffcc;">Запись (Бот)</span>
-    </a>
-    <button class="dock-btn" onclick="openSchoolModal()">
-      <span>Реквизиты</span>
-    </button>
-  `;
 }
 
 function showChampionUI() {
@@ -545,37 +610,10 @@ function showChampionUI() {
   `;
 }
 
-function openSchoolModal() {
-  if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
-  const vidSchool = document.getElementById(`vid-${SCHOOL_TARGET_ID}`);
-  if (vidSchool) vidSchool.pause();
-
-  modalContent.innerHTML = `
-    <div class="modal-title">Тактикус Финч</div>
-    <div class="modal-subtitle">Шахматная школа нового поколения</div>
-    <div class="skill-box" style="margin-top: 10px;">
-      <div style="font-size: 12px; line-height: 1.6; color: #ddd;">
-        <b>Обучение:</b> Индивидуально и в мини-группах<br>
-        <b>Цель:</b> Логика, концентрация и турнирный рост<br>
-        <b>Формат:</b> Онлайн по всему миру + очные клубы
-      </div>
-    </div>
-    <div class="bio-section-title">Контакты</div>
-    <div class="bio-paragraph" style="font-size: 12px; color: #aaa;">
-      Официальный сайт: <a href="https://tacticusfinch.ru/" target="_blank" style="color: var(--accent-color);">tacticusfinch.ru</a><br>
-      Бот записи в Telegram: @se14097294_bot
-    </div>
-    <a href="https://max.ru/se14097294_bot" target="_blank" class="action-link-btn" style="margin-top: 14px;">
-      Записаться на пробный урок
-    </a>
-  `;
-  modal.classList.add("active");
-}
-
 function stopAllTargetVideosImmediate() {
-  ALL_TARGET_IDS.forEach(id => {
-    const vid = document.getElementById(`vid-${id}`);
-    const targetEl = document.getElementById(`target-${id}`);
+  ALL_TARGET_INDICES.forEach(index => {
+    const vid = getVideoElementForTarget(index);
+    const targetEl = document.getElementById(`target-${index}`);
     if (vid) {
       vid.pause();
       vid.muted = true;
@@ -599,8 +637,8 @@ function closeModal() {
   if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
   modal.classList.remove("active");
 
-  if (currentHeroId !== null && visibleTargets.has(currentHeroId)) {
-    const activeVideo = document.getElementById(`vid-${currentHeroId}`);
+  if (currentActiveTargetIndex !== null && visibleTargets.has(currentActiveTargetIndex)) {
+    const activeVideo = getVideoElementForTarget(currentActiveTargetIndex);
     if (activeVideo) activeVideo.play().catch(() => {});
   } else {
     stopAllTargetVideosImmediate();
@@ -608,10 +646,11 @@ function closeModal() {
 }
 
 // ==========================================
-// 8. ВИКТОРИНЫ И ТЕСТЫ
+// 9. ВИКТОРИНЫ И ТЕСТЫ
 // ==========================================
 function renderPuzzleQuestion() {
   const hero = HEROES[currentHeroId];
+  if (!hero || !hero.puzzles || !hero.puzzles.length) return;
   const p = hero.puzzles[currentPuzzleIndex];
 
   if (!p._shuffledOptions) {
@@ -628,7 +667,7 @@ function renderPuzzleQuestion() {
   modalContent.innerHTML = `
     <div class="modal-title">Экзамен чемпиона</div>
     <div class="modal-subtitle">${hero.name} — Вопрос ${currentPuzzleIndex + 1} из ${hero.puzzles.length}</div>
-    <div class="difficulty-badge">${p.difficulty}</div>
+    <div class="difficulty-badge">${p.difficulty || 'Тактика'}</div>
     <div style="font-size: 13px; color: #ccc; line-height: 1.45; margin-bottom: 8px;">${p.desc}</div>
     ${diagramHtml}
     <div id="puzzle-feedback" style="display:none; font-size: 12px; line-height: 1.4; margin: 10px 0; padding: 10px; border-radius: 8px;"></div>
@@ -672,14 +711,14 @@ function checkAnswer(index) {
     fb.style.background = "rgba(46, 204, 113, 0.2)";
     fb.style.color = "#2ecc71";
     fb.style.border = "1px solid #2ecc71";
-    fb.innerHTML = `<b>ВЕРНО!</b> ${opt.comment}`;
+    fb.innerHTML = `<b>ВЕРНО!</b> ${opt.comment || ''}`;
   } else {
     if (typeof sfx !== "undefined" && sfx.playWrong) sfx.playWrong();
     if (navigator.vibrate) navigator.vibrate(180);
     fb.style.background = "rgba(231, 76, 60, 0.2)";
     fb.style.color = "#e74c3c";
     fb.style.border = "1px solid #e74c3c";
-    fb.innerHTML = `<b>НЕВЕРНО.</b> ${opt.comment}`;
+    fb.innerHTML = `<b>НЕВЕРНО.</b> ${opt.comment || ''}`;
   }
 
   nextContainer.style.display = "block";
@@ -718,7 +757,7 @@ function renderTestResult() {
     evaluation = `❌ <b>Экзамен не сдан.</b><br>Для зачета нужно набрать минимум <b>${passThreshold} из ${hero.puzzles.length}</b>.<br>Изучите биографию и попробуйте снова!`;
   }
 
-  const resultColor = isPassed ? "var(--accent-color)" : "#ff4d6d";
+  const resultColor = isPassed ? "var(--accent-color, #2ecc71)" : "#ff4d6d";
 
   modalContent.innerHTML = `
     <div class="modal-title">${isPassed ? 'Экзамен пройден!' : 'Экзамен не сдан'}</div>

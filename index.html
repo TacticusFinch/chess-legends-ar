@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css">
   <style>
     /* ==============================================================
-       КОНЦЕПТ 1: ОПТИЧЕСКИЙ ЛИМБ КАМЕРЫ (TACTICAL CAMERA DIAL)
+       ОПТИЧЕСКИЙ ЛИМБ КАМЕРЫ (TACTICAL CAMERA DIAL)
        ============================================================== */
     :root {
       --dial-accent: #f5c542;
@@ -144,25 +144,17 @@
     }
 
     /* Цветовые спектры лазерной сетки и визира при выборе ранга */
-    body[data-active-rank="legends"] {
+    body[data-active-rank="legends-1"] {
       --dial-accent: #f5c542;
       --dial-glow: rgba(245, 197, 66, 0.5);
     }
-    body[data-active-rank="grandmasters"] {
+    body[data-active-rank="legends-2"] {
       --dial-accent: #38bdf8;
       --dial-glow: rgba(56, 189, 248, 0.5);
-    }
-    body[data-active-rank="maestro"] {
-      --dial-accent: #f97316;
-      --dial-glow: rgba(249, 115, 22, 0.5);
     }
     body[data-active-rank="secrets"] {
       --dial-accent: #c084fc;
       --dial-glow: rgba(192, 132, 252, 0.5);
-    }
-    body[data-active-rank="all"] {
-      --dial-accent: #e2e8f0;
-      --dial-glow: rgba(226, 232, 240, 0.4);
     }
 
     /* Лазер сканера окрашивается в спектр выбранного ранга */
@@ -207,7 +199,7 @@
   </style>
 </head>
 
-<body data-active-rank="legends">
+<body data-active-rank="legends-1">
   <!-- Прелоадер -->
   <div id="scanner-hint">
     <div class="ar-reticle">
@@ -244,10 +236,10 @@
     </div>
   </div>
 
-  <!-- Верхний HUD (чистый: только Коллекция и Звук) -->
+  <!-- Верхний HUD -->
   <div class="top-hud preloading" id="top-hud">
     <button id="passport-btn" class="hud-btn hud-collection" onclick="openPassportModal()">
-      <span>КОЛЛЕКЦИЯ</span> <span id="passport-counter">(0/18)</span>
+      <span>КОЛЛЕКЦИЯ</span> <span id="passport-counter">(0/19)</span>
     </button>
 
     <button id="sound-toggle" class="hud-btn hud-sound" style="display: none;">
@@ -255,27 +247,25 @@
     </button>
   </div>
 
-  <!-- ОПТИЧЕСКИЙ ЛИМБ КАМЕРЫ (КАК В КАМЕРЕ IPHONE / LEICA) -->
+  <!-- ОПТИЧЕСКИЙ ЛИМБ КАМЕРЫ (3 КОМПИЛЯЦИИ: ЛЕГЕНДЫ I, ЛЕГЕНДЫ II, СЕКРЕТНЫЕ) -->
   <div class="optical-dial-container" id="optical-dial-container">
+    <div class="dial-reticle-pip">
+      <div class="dial-pip-line"></div>
+      <div class="dial-pip-dot"></div>
+    </div>
     <div class="dial-track-wrapper">
       <div class="dial-scroll-track" id="dial-scroll-track">
-        <button class="dial-item" data-rank="maestro">
-          <span class="dial-label">МАЭСТРО</span>
-        </button>
-        <button class="dial-item" data-rank="grandmasters">
-          <span class="dial-label">ГРАНДМАСТЕРЫ</span>
-        </button>
         <button class="dial-item active" data-rank="legends-1">
+          <span class="dial-symbol">♔</span>
           <span class="dial-label">ЛЕГЕНДЫ I</span>
         </button>
-	 <button class="dial-item" data-rank="legends-2">
+        <button class="dial-item" data-rank="legends-2">
+          <span class="dial-symbol">♕</span>
           <span class="dial-label">ЛЕГЕНДЫ II</span>
         </button>
         <button class="dial-item" data-rank="secrets">
+          <span class="dial-symbol">⚡</span>
           <span class="dial-label">СЕКРЕТНЫЕ</span>
-        </button>
-        <button class="dial-item" data-rank="all">
-          <span class="dial-label">ВСЕ КАРТЫ</span>
         </button>
       </div>
     </div>
@@ -493,7 +483,7 @@
     </div>
   </div>
 
-  <!-- MindAR Сцена (конфигурация mindar-image подставляется динамически в js/app.js) -->
+  <!-- MindAR Сцена (mindar-image подставляется динамически в app.js) -->
   <a-scene
     id="ar-scene"
     color-space="sRGB"
@@ -501,40 +491,49 @@
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false">
 
+    <!-- Каталог видео ассетов для всех карточек -->
     <a-assets>
-      <video id="vid-0" src="./assets/videos/steinitz.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
-      <video id="vid-1" src="./assets/videos/lasker.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
-      <video id="vid-2" src="./assets/videos/alekhine.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
-      <video id="vid-3" src="./assets/videos/carlsen.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
-      <video id="vid-4" src="./assets/videos/enigma.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
-      <video id="vid-5" src="./assets/videos/tal.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
-      <video id="vid-6" src="./assets/videos/fischer.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
-      <video id="vid-7" src="./assets/videos/gukesh.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
-      <video id="vid-8" src="./assets/videos/rubinstein.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
-      <video id="vid-9" src="./assets/videos/petrosyan.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
-      <video id="vid-10" src="./assets/videos/smyslov.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
-      <video id="vid-11" src="./assets/videos/kasparov.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
-      <video id="vid-12" src="./assets/videos/liren.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
-      <video id="vid-13" src="./assets/videos/school.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <!-- Легенды 1 (0..8) -->
+      <video id="vid-steinitz" src="./assets/videos/steinitz.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-lasker" src="./assets/videos/lasker.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-capablanca" src="./assets/videos/capablanca.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-alekhine" src="./assets/videos/alekhine.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-euwe" src="./assets/videos/euwe.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-botvinnik" src="./assets/videos/botvinnik.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-smyslov" src="./assets/videos/smyslov.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-petrosyan" src="./assets/videos/petrosyan.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-tal" src="./assets/videos/tal.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+
+      <!-- Легенды 2 (0..5) -->
+      <video id="vid-spassky" src="./assets/videos/spassky.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-fischer" src="./assets/videos/fischer.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-karpov" src="./assets/videos/karpov.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-anand" src="./assets/videos/anand.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-liren" src="./assets/videos/liren.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-gukesh" src="./assets/videos/gukesh.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+
+      <!-- Секретные (0..3) -->
+      <video id="vid-stockfish" src="./assets/videos/stockfish.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-enigma" src="./assets/videos/enigma.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-kasparov" src="./assets/videos/kasparov.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+      <video id="vid-carlsen" src="./assets/videos/carlsen.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
+
+      <!-- Школа / Бонус -->
+      <video id="vid-school" src="./assets/videos/school.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Мишени -->
-    <a-entity id="target-0" mindar-image-target="targetIndex: 0"><a-video src="#vid-0" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-1" mindar-image-target="targetIndex: 1"><a-video src="#vid-1" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-2" mindar-image-target="targetIndex: 2"><a-video src="#vid-2" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-3" mindar-image-target="targetIndex: 3"><a-video src="#vid-3" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-4" mindar-image-target="targetIndex: 4"><a-video src="#vid-4" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-5" mindar-image-target="targetIndex: 5"><a-video src="#vid-5" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-6" mindar-image-target="targetIndex: 6"><a-video src="#vid-6" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-7" mindar-image-target="targetIndex: 7"><a-video src="#vid-7" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-8" mindar-image-target="targetIndex: 8"><a-video src="#vid-8" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-9" mindar-image-target="targetIndex: 9"><a-video src="#vid-9" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-10" mindar-image-target="targetIndex: 10"><a-video src="#vid-10" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-11" mindar-image-target="targetIndex: 11"><a-video src="#vid-11" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-12" mindar-image-target="targetIndex: 12"><a-video src="#vid-12" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
-    <a-entity id="target-13" mindar-image-target="targetIndex: 13"><a-video src="#vid-13" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
+    <!-- Мишени AR (максимум 9 таргетов: индексы 0..8 для наибольшего файла legends-1.mind) -->
+    <a-entity id="target-0" mindar-image-target="targetIndex: 0"><a-video id="ar-video-0" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-1" mindar-image-target="targetIndex: 1"><a-video id="ar-video-1" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-2" mindar-image-target="targetIndex: 2"><a-video id="ar-video-2" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-3" mindar-image-target="targetIndex: 3"><a-video id="ar-video-3" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-4" mindar-image-target="targetIndex: 4"><a-video id="ar-video-4" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-5" mindar-image-target="targetIndex: 5"><a-video id="ar-video-5" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-6" mindar-image-target="targetIndex: 6"><a-video id="ar-video-6" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-7" mindar-image-target="targetIndex: 7"><a-video id="ar-video-7" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-8" mindar-image-target="targetIndex: 8"><a-video id="ar-video-8" width="1" height="1.54" position="0 0 0" scale="0 0 0" material="transparent: true; opacity: 0;" smooth-materialize></a-video></a-entity>
   </a-scene>
 
   <!-- Шахматная логика и доска -->
