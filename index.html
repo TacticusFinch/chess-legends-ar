@@ -476,14 +476,15 @@
     </div>
   </div>
 
-    <!-- MindAR Сцена -->
+  <!-- MindAR Сцена (mindar-image подставляется динамически в app.js) -->
   <a-scene
     id="ar-scene"
-    renderer="colorManagement: false; precision: high;"
+    renderer="colorManagement: true; precision: high;"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false">
 
     <!-- Каталог видео ассетов для всех карточек -->
+    <!-- timeout="10000" защищает от блокировки сцены отсутствующими видеофайлами -->
     <a-assets timeout="10000">
       <!-- Легенды 1 (0..7) -->
       <video id="vid-steinitz" src="./assets/videos/steinitz.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
@@ -517,15 +518,15 @@
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <!-- Мишени AR: максимум 8 таргетов (индексы 0..7) -->
-    <a-video id="ar-video-0" width="1" height="1.54" position="0 0 0.03" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video>
-    <a-video id="ar-video-1" width="1" height="1.54" position="0 0 0.03" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video>
-    <a-video id="ar-video-2" width="1" height="1.54" position="0 0 0.03" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video>
-    <a-video id="ar-video-3" width="1" height="1.54" position="0 0 0.03" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video>
-    <a-video id="ar-video-4" width="1" height="1.54" position="0 0 0.03" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video>
-    <a-video id="ar-video-5" width="1" height="1.54" position="0 0 0.03" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video>
-    <a-video id="ar-video-6" width="1" height="1.54" position="0 0 0.03" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video>
-    <a-video id="ar-video-7" width="1" height="1.54" position="0 0 0.03" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video>
-  </a-scene>
+<a-entity id="target-0" mindar-image-target="targetIndex: 0"><a-video id="ar-video-0" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+<a-entity id="target-1" mindar-image-target="targetIndex: 1"><a-video id="ar-video-1" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+<a-entity id="target-2" mindar-image-target="targetIndex: 2"><a-video id="ar-video-2" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+<a-entity id="target-3" mindar-image-target="targetIndex: 3"><a-video id="ar-video-3" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+<a-entity id="target-4" mindar-image-target="targetIndex: 4"><a-video id="ar-video-4" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+<a-entity id="target-5" mindar-image-target="targetIndex: 5"><a-video id="ar-video-5" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+<a-entity id="target-6" mindar-image-target="targetIndex: 6"><a-video id="ar-video-6" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+<a-entity id="target-7" mindar-image-target="targetIndex: 7"><a-video id="ar-video-7" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+
 
   <!-- Шахматная логика и доска -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
@@ -533,13 +534,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
 
   <!-- Скрипты проекта -->
-  <script src="js/heroes-data.js?v=4"></script>
-  <script src="js/duel-puzzles.js?v=4"></script>
-  <script src="js/sound.js?v=4"></script>
-  <script src="js/passport.js?v=4"></script>
-  <script src="js/ai-chat.js?v=4"></script>
-  <script src="js/net-duel.js?v=4"></script>
-  <script src="js/app.js?v=4"></script>
-  <script src="js/parallax.js?v=4"></script>
+  <script src="js/heroes-data.js"></script>
+  <script src="js/duel-puzzles.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/passport.js"></script>
+  <script src="js/ai-chat.js"></script>
+  <script src="js/net-duel.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/parallax.js"></script>
+</a-scene>
 </body>
 </html>
