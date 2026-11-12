@@ -154,9 +154,6 @@ const visibleTargets = new Set();
 let hint, dock, soundBtn, modal, modalContent;
 
 
-// ==========================================================
-// БЕСШОВНЫЙ ПЕРЕКЛЮЧАТЕЛЬ РАНГОВ И КЭШИРОВАНИЕ
-// ==========================================================
 let isSwitchingRank = false;
 
 async function switchRank(newRankKey) {
@@ -167,16 +164,19 @@ async function switchRank(newRankKey) {
   currentRankKey = newRankKey;
   currentRankConfig = RANK_CONFIGS[currentRankKey];
 
+  // 1. Обновляем тему и URL
   document.body.setAttribute('data-active-rank', currentRankKey);
   const url = new URL(window.location.href);
   url.searchParams.set('rank', currentRankKey);
   window.history.replaceState({}, '', url.toString());
 
+  // 2. Останавливаем видео предыдущего ранга
   stopAllVideosExcept(null);
 
   const badge = document.getElementById('loading-badge');
   const title = document.getElementById('loading-title');
   const readySub = document.getElementById('ready-status-sub');
+
   if (badge) badge.innerText = `СМЕНА: ${currentRankConfig.name.toUpperCase()}`;
   if (title) title.innerText = "ПОДГОТОВКА КАРТОЧЕК...";
   if (readySub) readySub.style.display = "none";
@@ -185,18 +185,42 @@ async function switchRank(newRankKey) {
   const arSystem = sceneEl ? sceneEl.systems["mindar-image-system"] : null;
 
   try {
-    if (arSystem && arSystem.controller) {
-      await arSystem.stop();
+    if (!arSystem) throw new Error("AR система не найдена");
+
+    // 3. Если контроллер уже работает, мягко подменяем target-данные
+    if (arSystem.controller && typeof arSystem.controller.changeData === 'function') {
+      // Прямой метод смены данных компилятора в памяти
+      const response = await fetch(currentRankConfig.file);
+      const buffer = await response.arrayBuffer();
+      await arSystem.controller.changeData(buffer);
+    } else {
+      // Надежный метод перезапуска для MindAR A-Frame:
+      // Останавливаем только цикл обработки кадров, не ломая контроллер
+      if (arSystem.controller) {
+        arSystem.pause(); // Приостанавливаем цикл распознавания
+      }
+
+      // Перепривязываем атрибут файла к сцене
+      const mindarConfig = `imageTargetSrc: ${currentRankConfig.file}; autoStart: false; maxTrack: 1; missTolerance: 1; uiLoading: no; uiScanning: no;`;
+      sceneEl.setAttribute('mindar-image', mindarConfig);
+
+      // Полная чистая инициализация контроллера под новый файл:
+      if (typeof arSystem.setup === 'function') {
+        await arSystem.setup();
+      } else {
+        // Если setup приватный, восстанавливаем через _startVideo / init:
+        await arSystem.init();
+      }
+
+      // Запускаем распознавание
+      await arSystem.unpause ? arSystem.unpause() : arSystem.start();
     }
 
+    // 4. Перепривязываем видео и разогреваем их
     bindVideosForCurrentRank();
     warmupRankVideos(currentRankConfig);
 
-    const mindarConfig = `imageTargetSrc: ${currentRankConfig.file}; autoStart: true; maxTrack: 1; missTolerance: 1; uiLoading: no; uiScanning: no;`;
-    sceneEl.setAttribute('mindar-image', mindarConfig);
-
-    await arSystem.start();
-
+    // 5. Успешный статус
     if (badge) badge.innerText = `AR СКАНЕР (${currentRankConfig.name.toUpperCase()})`;
     if (title) title.innerText = "НАВЕДИТЕ НА КАРТОЧКУ";
     if (readySub) {
@@ -205,11 +229,17 @@ async function switchRank(newRankKey) {
       readySub.innerText = `${currentRankConfig.name} готовы: ${heroNamesList}.`;
     }
   } catch (err) {
-    console.error("Ошибка при бесшовной смене ранга:", err);
+    console.warn("Мягкая смена не удалась, выполняем быстрый перезапуск сессии:", err);
+    // Безопасный фоллбек: если сборка MindAR не разрешает горячую замену в одном WebGL-контексте,
+    // делаем штатный переход (с уже закэшированным через sw.js файлом это займет всего ~1 секунду)
+    const fallbackUrl = new URL(window.location.href);
+    fallbackUrl.searchParams.set('rank', currentRankKey);
+    window.location.href = fallbackUrl.toString();
   } finally {
     isSwitchingRank = false;
   }
 }
+
 
 function preloadBackgroundRanks() {
   const currentFile = currentRankConfig.file;
