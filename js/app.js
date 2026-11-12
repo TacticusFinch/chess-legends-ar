@@ -153,6 +153,89 @@ const visibleTargets = new Set();
 
 let hint, dock, soundBtn, modal, modalContent;
 
+
+// ==========================================================
+// БЕСШОВНЫЙ ПЕРЕКЛЮЧАТЕЛЬ РАНГОВ И КЭШИРОВАНИЕ
+// ==========================================================
+let isSwitchingRank = false;
+
+async function switchRank(newRankKey) {
+  if (isSwitchingRank || newRankKey === currentRankKey) return;
+  if (!RANK_CONFIGS[newRankKey]) return;
+
+  isSwitchingRank = true;
+  currentRankKey = newRankKey;
+  currentRankConfig = RANK_CONFIGS[currentRankKey];
+
+  document.body.setAttribute('data-active-rank', currentRankKey);
+  const url = new URL(window.location.href);
+  url.searchParams.set('rank', currentRankKey);
+  window.history.replaceState({}, '', url.toString());
+
+  stopAllVideosExcept(null);
+
+  const badge = document.getElementById('loading-badge');
+  const title = document.getElementById('loading-title');
+  const readySub = document.getElementById('ready-status-sub');
+  if (badge) badge.innerText = `СМЕНА: ${currentRankConfig.name.toUpperCase()}`;
+  if (title) title.innerText = "ПОДГОТОВКА КАРТОЧЕК...";
+  if (readySub) readySub.style.display = "none";
+
+  const sceneEl = document.querySelector('a-scene');
+  const arSystem = sceneEl ? sceneEl.systems["mindar-image-system"] : null;
+
+  try {
+    if (arSystem && arSystem.controller) {
+      await arSystem.stop();
+    }
+
+    bindVideosForCurrentRank();
+    warmupRankVideos(currentRankConfig);
+
+    const mindarConfig = `imageTargetSrc: ${currentRankConfig.file}; autoStart: true; maxTrack: 1; missTolerance: 1; uiLoading: no; uiScanning: no;`;
+    sceneEl.setAttribute('mindar-image', mindarConfig);
+
+    await arSystem.start();
+
+    if (badge) badge.innerText = `AR СКАНЕР (${currentRankConfig.name.toUpperCase()})`;
+    if (title) title.innerText = "НАВЕДИТЕ НА КАРТОЧКУ";
+    if (readySub) {
+      readySub.style.display = "block";
+      const heroNamesList = currentRankConfig.targets.map(t => t.name.split(' ').pop()).join(', ');
+      readySub.innerText = `${currentRankConfig.name} готовы: ${heroNamesList}.`;
+    }
+  } catch (err) {
+    console.error("Ошибка при бесшовной смене ранга:", err);
+  } finally {
+    isSwitchingRank = false;
+  }
+}
+
+function preloadBackgroundRanks() {
+  const currentFile = currentRankConfig.file;
+  const filesToPreload = Object.values(RANK_CONFIGS)
+    .map(c => c.file)
+    .filter(file => file !== currentFile);
+
+  filesToPreload.forEach(filePath => {
+    fetch(filePath, { cache: 'force-cache', priority: 'low' }).catch(() => {});
+  });
+}
+
+function warmupRankVideos(config) {
+  if (!config || !config.targets) return;
+  config.targets.forEach(target => {
+    const vid = document.getElementById(target.videoId);
+    if (vid) {
+      vid.preload = "metadata";
+      vid.muted = true;
+      vid.playsInline = true;
+      if (vid.readyState === 0) vid.load();
+    }
+  });
+}
+
+
 // ==========================================
 // 2. БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ И СТАРТ AR ДВИЖКА
 // ==========================================
@@ -202,9 +285,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         dialItems.forEach(b => b.classList.remove('active'));
         item.classList.add('active');
 
-        const url = new URL(window.location.href);
-        url.searchParams.set('rank', itemRank);
-        window.location.href = url.toString();
+        switchRank(itemRank);
       }
     });
   });
@@ -246,6 +327,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Запуск системы трекинга
     await arSystem.start();
+
+    // Прогреваем видео текущего ранга и затягиваем в кэш остальные .mind
+    warmupRankVideos(currentRankConfig);
+    setTimeout(preloadBackgroundRanks, 1200);
 
     if (barFill) barFill.style.width = "100%";
     if (percentText) percentText.innerText = "Готово!";

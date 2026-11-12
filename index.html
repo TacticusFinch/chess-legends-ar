@@ -543,5 +543,20 @@
   <script src="js/app.js"></script>
   <script src="js/parallax.js"></script>
 </a-scene>
+
+  <!-- Регистрация Service Worker для кэширования .mind файлов -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
+
+
+
+
 </body>
 </html>
