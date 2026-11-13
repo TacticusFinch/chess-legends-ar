@@ -270,6 +270,24 @@ window.NetDuel = {
   mySide: "white",
   isWaitingOpponent: false,
 
+  // Статусы и тактические эффекты раундов:
+  playerBuffs: {
+    invulnerable: false,   // Капабланка (100% блок следующей атаки)
+    guaranteedCrit: false, // Спасский (гарантированный крит следующей атаки)
+    tempoBoost: false,     // Фишер (+2⚡ за следующее действие)
+    openBreachTurns: 0,    // Алехин (+3 урона ко всем атакам)
+    energyLocked: false,   // Ботвинник (запрет получения энергии)
+    stunned: false         // Ласкер (дезориентация / запрет атаки)
+  },
+  enemyBuffs: {
+    invulnerable: false,
+    guaranteedCrit: false,
+    tempoBoost: false,
+    openBreachTurns: 0,
+    energyLocked: false,
+    stunned: false
+  },
+
   vibrate(ms) {
     if (navigator.vibrate) {
       try { navigator.vibrate(ms); } catch (e) {}
@@ -586,6 +604,9 @@ window.NetDuel = {
     this.enemyShield = false;
     this.isWaitingOpponent = false;
 
+    this.playerBuffs = { invulnerable: false, guaranteedCrit: false, tempoBoost: false, openBreachTurns: 0, energyLocked: false, stunned: false };
+    this.enemyBuffs = { invulnerable: false, guaranteedCrit: false, tempoBoost: false, openBreachTurns: 0, energyLocked: false, stunned: false };
+
     if (typeof sfx !== "undefined" && sfx.playBattleStart) {
       sfx.playBattleStart();
     }
@@ -698,6 +719,13 @@ window.NetDuel = {
   chooseAction(type) {
     if (this.isWaitingOpponent) return;
 
+    // Проверка оглушения (Ласкер)
+    if (type === "attack" && this.playerBuffs.stunned) {
+      this.setLog("ВЫ ОШЕЛОМЛЕНЫ ПСИХОЛОГИЧЕСКИМ ГАМБИТОМ! Выберите защиту.");
+      this.vibrate([40, 40]);
+      return;
+    }
+
     if (type === "attack") {
       this.lockActions(true);
       this.setLog("РЕШИТЕ ТАКТИЧЕСКУЮ ЗАДАЧУ...");
@@ -717,7 +745,15 @@ window.NetDuel = {
         this.setLog("ЗАЩИТА! ЖДЕМ ОППОНЕНТА...");
       } else {
         this.myShield = true;
-        this.myEnergy = Math.min(2, this.myEnergy + 1);
+        // Учет блокировки энергии (Ботвинник) и ускорения темпа (Фишер)
+        if (!this.playerBuffs.energyLocked) {
+          const energyGain = this.playerBuffs.tempoBoost ? 2 : 1;
+          this.myEnergy = Math.min(2, this.myEnergy + energyGain);
+          if (this.playerBuffs.tempoBoost) this.playerBuffs.tempoBoost = false;
+        } else {
+          this.setLog("ЭНЕРГИЯ ЗАБЛОКИРОВАНА АРХИТЕКТОРОМ МЫСЛИ!");
+          this.playerBuffs.energyLocked = false;
+        }
         this.fx("cyan");
         this.updateHUD();
         this.runAiTurn("defend", false);
@@ -744,6 +780,12 @@ window.NetDuel = {
 
   resolveTacticalStrike(isCrit) {
     this.lockActions(true);
+
+    // Учет гарантированного крита (Спасский)
+    if (this.playerBuffs.guaranteedCrit) {
+      isCrit = true;
+      this.playerBuffs.guaranteedCrit = false;
+    }
 
     if (typeof sfx !== "undefined") {
       if (isCrit && sfx.playCritHit) sfx.playCritHit();
@@ -844,7 +886,21 @@ window.NetDuel = {
     const eCard = document.getElementById("enemy-card-anchor");
 
     const CRIT_BONUS = 5;
-    let oppAct = this.enemyEnergy >= 2 ? "skill" : (Math.random() > 0.45 ? "attack" : "defend");
+    
+    // Проверка оглушения бота (Ласкер)
+    let oppAct = "defend";
+    if (this.enemyBuffs.stunned) {
+      oppAct = "defend";
+      this.enemyBuffs.stunned = false;
+      this.setLog("БОТ ОШЕЛОМЛЕН ПСИХОЛОГИЧЕСКИМ ГАМБИТОМ И ПРОПУСКАЕТ АТАКУ!");
+    } else {
+      oppAct = this.enemyEnergy >= 2 ? "skill" : (Math.random() > 0.45 ? "attack" : "defend");
+    }
+
+    // Снимаем оглушение игрока после совершения действия
+    if (this.playerBuffs.stunned) {
+      this.playerBuffs.stunned = false;
+    }
 
     let pDmg = 0;
     let eDmg = 0;
@@ -852,7 +908,7 @@ window.NetDuel = {
     let ignorePlayerDef = false;
     let reflectDamageToEnemy = false;
 
-    // 1. ДЕЙСТВИЕ ИГРОКА (УЛЬТИМЕЙТЫ 19 ЧЕМПИОНОВ)
+    // 1. ДЕЙСТВИЕ ИГРОКА (СБАЛАНСИРОВАННЫЕ УЛЬТИМЕЙТЫ 19 ЧЕМПИОНОВ)
     if (playerAct === "skill") {
       pCard?.classList.add("anim-skill-blast");
       this.myEnergy = 0;
@@ -860,187 +916,208 @@ window.NetDuel = {
       const skill = this.myHero.skillId;
 
       switch (skill) {
-        // 0. Стейниц: 12 DMG сквозь щит и снижение атаки врага на 3
+        // 0. Стейниц: 12 DMG сквозь щит + дебафф атаки врага (-3 ATK на 2 раунда)
         case "STEINITZ_EQUILIBRIUM":
           ignoreEnemyDef = true;
           pDmg = 12;
-          this.enemyHero.atk = Math.max(2, this.enemyHero.atk - 3);
-          this.setLog("ТЕОРИЯ РАВНОВЕСИЯ: 12 DMG СКВОЗЬ ЩИТ, АТАКА ВРАГА -3!");
+          this.enemyHero.atk = Math.max(2, (this.enemyHero.atk || 6) - 3);
+          this.setLog("ТЕОРИЯ РАВНОВЕСИЯ: 12 DMG СКВОЗЬ ЩИТ, АТАКА ВРАГА ПОДАВЛЕНА НА -3!");
           break;
 
-        // 1. Ласкер: Психологический нокаут на 17 DMG
+        // 1. Ласкер: «Психологический гамбит» — 12 DMG + Психологический шок (лишает соперника атаки в след. раунде)
         case "LASKER_GAMBIT":
-          pDmg = 17;
-          this.setLog("ПСИХОЛОГИЧЕСКИЙ ГАМБИТ: НОКАУТ НА 17 DMG!");
+          pDmg = 12;
+          this.enemyBuffs.stunned = true;
+          this.screenShake(true);
+          this.setLog("ПСИХОЛОГИЧЕСКИЙ ГАМБИТ: 12 DMG! ВРАГ ОШЕЛОМЛЕН И НЕ СМОЖЕТ АТАКОВАТЬ В СЛЕД. ХОДУ!");
           break;
 
-        // 2. Капабланка: Чистый урон 16 DMG, полностью игнорирующий блок щитом
+        // 2. Капабланка: «Шахматный автомат» — 12 DMG сквозь блок + Аура неуязвимости (100% блок на след. раунд)
         case "CAPABLANCA_INTUITION":
           ignoreEnemyDef = true;
-          pDmg = 16;
-          this.setLog("ГЕНИАЛЬНАЯ ИНТУИЦИЯ: 16 DMG ЧИСТОГО УРОНА СКВОЗЬ БЛОК!");
+          pDmg = 12;
+          this.playerBuffs.invulnerable = true;
+          this.setLog("ШАХМАТНЫЙ АВТОМАТ: 12 DMG! КАПАБЛАНКА ВКЛЮЧАЕТ АБСОЛЮТНУЮ НЕУЯЗВИМОСТЬ НА СЛЕД. ХОД!");
           break;
 
-        // 3. Алехин: Пробивающий удар: 24 DMG сквозь щит и броню соперника
+        // 3. Алехин: «Пушка Алехина» — Залп батареи: 5+5+6 DMG (16 DMG) + эффект Вскрытой линии (+3 ко всем атакам на 2 раунда)
         case "ALEKHINE_BLINDING_STRIKE":
           ignoreEnemyDef = true;
-          pDmg = 24;
+          pDmg = 16;
+          this.enemyBuffs.openBreachTurns = 2;
           this.screenShake(true);
-          this.vibrate([60, 40, 100]);
-          this.setLog("ОСЛЕПЛЯЮЩАЯ АТАКА АЛЕХИНА: 24 DMG СКВОЗЬ ЛЮБУЮ БРОНЮ!");
+          this.vibrate([40, 30, 40, 30, 70]);
+          this.spawnDamageNumber("enemy-card-anchor", 5, true);
+          setTimeout(() => this.spawnDamageNumber("enemy-card-anchor", 5, true), 160);
+          setTimeout(() => this.spawnDamageNumber("enemy-card-anchor", 6, true), 320);
+          this.setLog("ПУШКА АЛЕХИНА: ЗАЛП БАТАРЕИ 16 DMG! ВСКРЫТА ВЕРТИКАЛЬ (+3 DMG КО ВСЕМ СЛЕДУЮЩИМ АТАКАМ)!");
           break;
 
-        // 4. Эйве: Удар 14 DMG и усиление собственной защиты на 5
+        // 4. Эйве: 13 DMG + перманентная защита (+3 DEF)
         case "EUWE_LOGIC":
-          pDmg = 14;
-          this.myHero.def = (this.myHero.def || 8) + 5;
-          this.setLog("МАТЕМАТИЧЕСКИЙ РАСЧЕТ: УДАР 14 DMG И ЗАЩИТА +5!");
+          pDmg = 13;
+          this.myHero.def = Math.min(13, (this.myHero.def || 8) + 3);
+          this.setLog("МАТЕМАТИЧЕСКИЙ РАСЧЕТ: 13 DMG И КРИСТАЛЬНАЯ ЗАЩИТА +3 DEF ДО КОНЦА ПАРТИИ!");
           break;
 
-        // 5. Ботвинник: Удар на 12 DMG и автоматический железный блок
+        // 5. Ботвинник: 11 DMG + железный щит + блокировка энергии врага
         case "BOTVINNIK_ARCHITECT":
-          pDmg = 12;
+          pDmg = 11;
           this.myShield = true;
-          this.setLog("АРХИТЕКТОР МЫСЛИ: 12 DMG И АВТОМАТИЧЕСКИЙ ЖЕЛЕЗНЫЙ БЛОК!");
+          this.enemyBuffs.energyLocked = true;
+          this.setLog("АРХИТЕКТОР МЫСЛИ: 11 DMG, ЩИТ И БЛОКИРОВКА НАКОПЛЕНИЯ ЭНЕРГИИ ВРАГА!");
           break;
 
-        // 6. Смыслов: Удар 12 DMG. Если отстаете по здоровью — исцеление +10 HP
+        // 6. Смыслов: 11 DMG + гармонизация HP (+6 HP, а при отставании +10 HP)
         case "SMYSLOV_SYMPHONY":
-          pDmg = 12;
-          if (this.myHp < this.enemyHp) {
-            this.myHp = Math.min(50, this.myHp + 10);
-            this.spawnDamageNumber("player-card-anchor", "+10", true);
-            this.setLog("МАГИСТР ГАРМОНИИ: 12 DMG И ИСЦЕЛЕНИЕ +10 HP!");
-          } else {
-            this.setLog("МАГИСТР ГАРМОНИИ: 12 DMG ГАРМОНИЧНОГО НАСТУПЛЕНИЯ!");
-          }
+          pDmg = 11;
+          const healSmyslov = (this.myHp < this.enemyHp) ? 10 : 6;
+          this.myHp = Math.min(50, this.myHp + healSmyslov);
+          this.spawnDamageNumber("player-card-anchor", `+${healSmyslov}`, true);
+          this.setLog(`МАГИСТР ГАРМОНИИ: 11 DMG И СИМФОНИЧЕСКОЕ ИСЦЕЛЕНИЕ (+${healSmyslov} HP)!`);
           break;
 
-        // 7. Таль: Жертвует 4 HP ради сокрушительного шторма на 26 DMG
+        // 7. Таль: Жертвует 3 HP ради сокрушительного удара на 18 DMG + пробитие вражеского блока с критом
         case "TAL_STORM":
-          this.myHp = Math.max(1, this.myHp - 4);
-          pDmg = 26;
-          this.spawnDamageNumber("player-card-anchor", 4, false);
+          this.myHp = Math.max(1, this.myHp - 3);
+          pDmg = 18;
+          if (oppAct === "defend") {
+            this.enemyShield = false;
+            pDmg += 4; // Бонус за наказание пассивности
+            this.setLog("ЯРОСТЬ ШТОРМА: ЖЕРТВА 3 HP, РАЗБИТЫЙ БЛОК И КРИТ НА 22 DMG!");
+          } else {
+            this.setLog("ЯРОСТЬ ШТОРМА ТАЛЯ: ЖЕРТВА 3 HP РАДИ ВЗРЫВА НА 18 DMG!");
+          }
           this.screenShake(true);
-          this.setLog("ЯРОСТЬ ШТОРМА ТАЛЯ: ЖЕРТВА 4 HP И УДАР НА 26 DMG!");
           break;
 
-        // 8. Петросян: Удар 6 DMG, непробиваемый щит и лечение +14 HP
+        // 8. Петросян: 7 DMG, непробиваемый щит и лечение +8 HP
         case "PETROSYAN_FORTRESS":
           this.myShield = true;
-          this.myHp = Math.min(50, this.myHp + 14);
-          pDmg = 6;
-          this.spawnDamageNumber("player-card-anchor", "+14", true);
-          this.setLog("ЖЕЛЕЗНАЯ ПРОФИЛАКТИКА: НЕПРОБИВАЕМЫЙ ЩИТ И +14 HP!");
+          this.myHp = Math.min(50, this.myHp + 8);
+          pDmg = 7;
+          this.spawnDamageNumber("player-card-anchor", "+8", true);
+          this.setLog("ЖЕЛЕЗНАЯ ПРОФИЛАКТИКА: ПОЗИЦИОННАЯ КРЕПОСТЬ, ЩИТ И +8 HP!");
           break;
 
-        // 9. Спасский: Удар 18 DMG и снятие щитов с оппонента
+        // 9. Спасский: Жертва 2 HP ради темпа: 15 DMG, слом всех щитов и гарантированный крит на след. ход
         case "SPASSKY_GAMBIT":
+          this.myHp = Math.max(1, this.myHp - 2);
           ignoreEnemyDef = true;
           this.enemyShield = false;
-          pDmg = 18;
-          this.setLog("КОРОЛЕВСКИЙ ГАМБИТ: 18 DMG И СНЯТИЕ ВСЕХ ЩИТОВ ВРАГА!");
+          pDmg = 15;
+          this.playerBuffs.guaranteedCrit = true;
+          this.setLog("КОРОЛЕВСКИЙ ГАМБИТ: ЖЕРТВА 2 HP, 15 DMG, СНЯТИЕ ЩИТА И ГАРАНТИРОВАННЫЙ КРИТ!");
           break;
 
-        // 10. Фишер: Партия века: 21 DMG сквозь любые щиты
+        // 10. Фишер: Партия века: 14 DMG сквозь любые блоки + ускорение темпа (+2⚡ при след. действии)
         case "FISCHER_TORNADO":
           ignoreEnemyDef = true;
-          pDmg = 21;
-          this.screenShake(true);
-          this.setLog("МЕНТАЛЬНЫЙ ТОРНАДО ФИШЕРА: 21 DMG СКВОЗЬ ВСЕ ЩИТЫ!");
-          break;
-
-        // 11. Карпов: Удар 14 DMG и блокировка энергии оппонента на 1 ход
-        case "KARPOV_ANACONDA":
           pDmg = 14;
-          this.enemyEnergy = 0;
-          this.setLog("ХВАТКА АНАКОНДЫ КАРПОВА: 14 DMG И ЭНЕРГИЯ ВРАГА СБРОШЕНА!");
-          break;
-
-        // 12. Ананд: «Молния Мадраса» — Двойной блиц-разряд (11+11 = 22 DMG) сквозь блок + возврат 1⚡ энергии
-        case "ANAND_LIGHTNING":
-          ignoreEnemyDef = true; // Пробивает блок за счет сверхсветовой скорости
-          pDmg = 22;
-          this.myEnergy = 1; // Скорость мышления восстанавливает темп
+          this.playerBuffs.tempoBoost = true;
           this.screenShake(true);
-          this.vibrate([40, 30, 40, 30, 80]);
-          // Двойной спавн циферок урона как два быстрых удара молнии
-          this.spawnDamageNumber("enemy-card-anchor", 11, true);
-          setTimeout(() => this.spawnDamageNumber("enemy-card-anchor", 11, true), 220);
-          this.setLog("МОЛНИЯ МАДРАСА: ДВОЙНОЙ РАЗРЯД 11+11 DMG СКВОЗЬ БЛОК (+1⚡ ТЕМПА)!");
+          this.setLog("МЕНТАЛЬНЫЙ ТОРНАДО ФИШЕРА: 14 DMG СКВОЗЬ БЛОК + ЦЕЙТНОТНЫЙ БУСТ (+2⚡ В СЛЕД. ХОДУ)!");
           break;
 
-        // 13. Дин Лижэнь: «Воля дракона (Ход 46...Rg6!)» — Ва-банк: урон растет от потерянного здоровья Дина + щит
-        case "DING_DRAGON":
-          const dingLostHp = Math.max(0, 50 - this.myHp);
-          const dragonBonus = Math.min(14, Math.round(dingLostHp * 0.45));
-          pDmg = 14 + dragonBonus;
-          this.myShield = true; // Стойкая самосвязка и щит дракона
-          this.screenShake(true);
-          this.vibrate([70, 50, 110]);
-          this.setLog(`ВОЛЯ ДРАКОНА (46...Rg6!): ВА-БАНК 14+${dragonBonus} DMG И БРОНЯ ДРАКОНА!`);
-          break;
-
-        // 14. Гукеш: «Сакральный разум» — Стальные нервы Торонто: 16 DMG, сокрушение щита, похищение 1⚡ и лечение +8 HP
-        case "GUKESH_MIND":
-          ignoreEnemyDef = true;
-          this.enemyShield = false; // Сокрушает защиту врага
-          pDmg = 16;
-          // Похищение энергии у соперника
+        // 11. Карпов: «Хватка анаконды» — 11 DMG + кража 1⚡ + удушение позиции (-2 DEF врага)
+        case "KARPOV_ANACONDA":
+          pDmg = 11;
           if (this.enemyEnergy > 0) {
-            this.enemyEnergy = Math.max(0, this.enemyEnergy - 1);
+            this.enemyEnergy--;
             this.myEnergy = Math.min(2, this.myEnergy + 1);
           }
-          // Медитативное восстановление хладнокровия
-          this.myHp = Math.min(50, this.myHp + 8);
-          this.spawnDamageNumber("player-card-anchor", "+8", true);
+          this.enemyHero.def = Math.max(3, (this.enemyHero.def || 8) - 2);
+          this.setLog("ХВАТКА АНАКОНДЫ: 11 DMG, КРАЖА 1⚡ И СНИЖЕНИЕ ЗАЩИТЫ ВРАГА (-2 DEF)!");
+          break;
+
+        // 12. Ананд: «Молния Мадраса» — Два быстрых такта 7+7 DMG (14 DMG) сквозь щит + возврат 1⚡ темпа
+        case "ANAND_LIGHTNING":
+          ignoreEnemyDef = true;
+          pDmg = 14;
+          this.myEnergy = 1;
           this.screenShake(false);
-          this.vibrate([50, 40, 60]);
-          this.setLog("САКРАЛЬНЫЙ РАЗУМ: 16 DMG, СЛОМ ЩИТА, КРАЖА 1⚡ И +8 HP!");
+          this.vibrate([30, 20, 30, 20, 60]);
+          this.spawnDamageNumber("enemy-card-anchor", 7, true);
+          setTimeout(() => this.spawnDamageNumber("enemy-card-anchor", 7, true), 180);
+          this.setLog("МОЛНИЯ МАДРАСА: ДВА БЛИЦ-ТАКТА 7+7 DMG И ВОЗВРАТ 1⚡ ТЕМПА!");
           break;
 
-        // 15. Stockfish: Квантовый расчет на 27 DMG и исцеление +8 HP
-        case "STOCKFISH_ENGINE":
-          pDmg = 27;
-          this.myHp = Math.min(50, this.myHp + 8);
-          this.spawnDamageNumber("player-card-anchor", "+8", true);
+        // 13. Дин Лижэнь: «Воля дракона» — 11 DMG + ярость от потери HP (до +6) + щит самосвязки
+        case "DING_DRAGON":
+          const dingLostHp = Math.max(0, 50 - this.myHp);
+          const dragonBonus = Math.min(6, Math.round(dingLostHp * 0.25));
+          pDmg = 11 + dragonBonus;
+          this.myShield = true;
           this.screenShake(true);
-          this.setLog("СУПЕРКОМПЬЮТЕР (+M12): КВАНТОВЫЙ РАСЧЕТ 27 DMG И +8 HP!");
+          this.setLog(`ВОЛЯ ДРАКОНА (46...Rg6!): 11+${dragonBonus} DMG И ЩИТ САМОСВЯЗКИ!`);
           break;
 
-        // 16. Рэй Энигма: Удар 12 DMG: отражает атаку врага обратно или крадет энергию
+        // 14. Гукеш: «Сакральный разум» — 12 DMG сквозь блок + кража 1⚡ энергии + снятие дебаффов
+        case "GUKESH_MIND":
+          ignoreEnemyDef = true;
+          pDmg = 12;
+          if (this.enemyEnergy > 0) {
+            this.enemyEnergy--;
+            this.myEnergy = Math.min(2, this.myEnergy + 1);
+          }
+          // Восстановление базовых статов (снятие дебаффов)
+          const gukeshBase = (typeof HERO_STATS_DATA !== "undefined" && HERO_STATS_DATA[this.myHero.numericId]) ? HERO_STATS_DATA[this.myHero.numericId] : null;
+          if (gukeshBase) {
+            this.myHero.atk = gukeshBase.atk;
+            this.myHero.def = gukeshBase.def;
+          }
+          this.setLog("САКРАЛЬНЫЙ РАЗУМ: 12 DMG СКВОЗЬ БЛОК, КРАЖА 1⚡ И ПОЛНОЕ СНЯТИЕ ДЕБАФФОВ!");
+          break;
+
+        // 15. Stockfish (Сингулярность): 16 DMG + исцеление +5 HP + анализ бреши (+2 DMG на 1 раунд)
+        case "STOCKFISH_ENGINE":
+          pDmg = 16;
+          this.myHp = Math.min(50, this.myHp + 5);
+          this.enemyBuffs.openBreachTurns = 1;
+          this.spawnDamageNumber("player-card-anchor", "+5", true);
+          this.screenShake(true);
+          this.setLog("СУПЕРКОМПЬЮТЕР (NNUE): 16 DMG, +5 HP И АНАЛИЗ БРЕШИ ВРАГА (+3 DMG В СЛЕД. ХОДУ)!");
+          break;
+
+        // 16. Рэй Энигма (Джокер): 11 DMG + зеркальное отражение атаки врага или кража 1⚡
         case "ENIGMA_CHAMELEON":
+          pDmg = 11;
           if (oppAct === "attack") {
             reflectDamageToEnemy = true;
-            this.setLog("ХАМЕЛЕОН ЭНИГМЫ: АТАКА ВРАГА ПОЛНОСТЬЮ ОТРАЖЕНА!");
+            this.setLog("ХАМЕЛЕОН ЭНИГМЫ: 11 DMG И ОТРАЖЕНИЕ АТАКИ ВРАГА ОБРАТНО!");
           } else {
-            this.enemyEnergy = 0;
-            this.myEnergy = 1;
-            this.setLog("ХАМЕЛЕОН ЭНИГМЫ: ЭНЕРГИЯ ВРАГА ПОХИЩЕНА (+1⚡)!");
+            if (this.enemyEnergy > 0) {
+              this.enemyEnergy--;
+              this.myEnergy = Math.min(2, this.myEnergy + 1);
+              this.setLog("ХАМЕЛЕОН ЭНИГМЫ: 11 DMG И ПОХИЩЕНИЕ 1⚡ ЭНЕРГИИ ВРАГА!");
+            } else {
+              this.setLog("ХАМЕЛЕОН ЭНИГМЫ: ТАКТИЧЕСКИЙ ВЫПАД НА 11 DMG!");
+            }
           }
-          pDmg = 12;
           break;
 
-        // 17. Каспаров: Сокрушительный штурм 24 DMG и мгновенный возврат 1⚡ энергии
+        // 17. Каспаров (Феномен): 16 DMG + возврат 1⚡ энергии + шок врага (-2 DEF)
         case "KASPAROV_ADVENTURE":
-          pDmg = 24;
+          pDmg = 16;
           this.myEnergy = 1;
+          this.enemyHero.def = Math.max(3, (this.enemyHero.def || 8) - 2);
           this.screenShake(true);
-          this.vibrate([60, 40, 100]);
-          this.setLog("ДУХ ПРИКЛЮЧЕНИЙ КАСПАРОВА: 24 DMG И ВОЗВРАТ 1⚡ ЭНЕРГИИ!");
+          this.vibrate([50, 30, 80]);
+          this.setLog("ДУХ ПРИКЛЮЧЕНИЙ: 16 DMG, ВОЗВРАТ 1⚡ И ПРОБИТИЕ ЗАЩИТЫ ВРАГА (-2 DEF)!");
           break;
 
-        // 18. Карлсен: Добивающий удар: 18 DMG + 35% от потерянного HP врага
+        // 18. Карлсен (Феномен): 13 DMG + 20% от потерянного HP врага + сброс 1⚡ врага
         case "CARLSEN_ENDGAME":
           const missingEnemyHp = Math.max(0, 50 - this.enemyHp);
-          const bonusEndgame = Math.round(missingEnemyHp * 0.35);
-          pDmg = 18 + bonusEndgame;
+          const bonusEndgame = Math.min(7, Math.round(missingEnemyHp * 0.22));
+          pDmg = 13 + bonusEndgame;
+          this.enemyEnergy = Math.max(0, this.enemyEnergy - 1);
           this.screenShake(true);
-          this.setLog(`КВАНТОВЫЙ ЭНДШПИЛЬ КАРЛСЕНА: 18 + ${bonusEndgame} БОНУСА = ${pDmg} DMG!`);
+          this.setLog(`КВАНТОВЫЙ ЭНДШПИЛЬ КАРЛСЕНА: 13+${bonusEndgame} DMG И СБРОС 1⚡ ЭНЕРГИИ ВРАГА!`);
           break;
 
         default:
-          pDmg = this.myHero.atk * 2;
+          pDmg = Math.round(this.myHero.atk * 1.8);
           this.setLog(`КОРОННЫЙ ХОД: СОКРУШИТЕЛЬНЫЙ УДАР НА ${pDmg} DMG!`);
           break;
       }
@@ -1066,158 +1143,186 @@ window.NetDuel = {
         case "STEINITZ_EQUILIBRIUM":
           ignorePlayerDef = true;
           eDmg = 12;
-          this.myHero.atk = Math.max(2, this.myHero.atk - 3);
-          this.setLog(`БОТ (${this.enemyHero.name}): ТЕОРИЯ РАВНОВЕСИЯ (-3 К ВАШЕЙ АТАКЕ)!`);
+          this.myHero.atk = Math.max(2, (this.myHero.atk || 6) - 3);
+          this.setLog(`БОТ (${this.enemyHero.name}): ТЕОРИЯ РАВНОВЕСИЯ (12 DMG, ВАША АТАКА -3)!`);
           break;
 
         // 1. Ласкер
         case "LASKER_GAMBIT":
-          eDmg = 17;
-          this.setLog(`БОТ (${this.enemyHero.name}): ПСИХОЛОГИЧЕСКИЙ ГАМБИТ НА 17 DMG!`);
+          eDmg = 12;
+          this.playerBuffs.stunned = true;
+          this.setLog(`БОТ (${this.enemyHero.name}): ПСИХОЛОГИЧЕСКИЙ ГАМБИТ! ВЫ ОШЕЛОМЛЕНЫ И НЕ СМОЖЕТЕ АТАКОВАТЬ В СЛЕД. РАУНДЕ!`);
           break;
 
         // 2. Капабланка
         case "CAPABLANCA_INTUITION":
           ignorePlayerDef = true;
-          eDmg = 16;
-          this.setLog(`БОТ (${this.enemyHero.name}): ИНТУИЦИЯ (16 DMG СКВОЗЬ ЩИТ)!`);
+          eDmg = 12;
+          this.enemyBuffs.invulnerable = true;
+          this.setLog(`БОТ (${this.enemyHero.name}): ШАХМАТНЫЙ АВТОМАТ (12 DMG И НЕУЯЗВИМОСТЬ НА СЛЕД. ХОД)!`);
           break;
 
         // 3. Алехин
         case "ALEKHINE_BLINDING_STRIKE":
           ignorePlayerDef = true;
-          eDmg = 24;
-          this.setLog(`БОТ (${this.enemyHero.name}): ОСЛЕПЛЯЮЩАЯ АТАКА (24 DMG СКВОЗЬ БРОНЮ)!`);
+          eDmg = 16;
+          this.playerBuffs.openBreachTurns = 2;
+          this.spawnDamageNumber("player-card-anchor", 5, true);
+          setTimeout(() => this.spawnDamageNumber("player-card-anchor", 5, true), 160);
+          setTimeout(() => this.spawnDamageNumber("player-card-anchor", 6, true), 320);
+          this.setLog(`БОТ (${this.enemyHero.name}): ПУШКА АЛЕХИНА (16 DMG И ВСКРЫТА ВЕРТИКАЛЬ)!`);
           break;
 
         // 4. Эйве
         case "EUWE_LOGIC":
-          eDmg = 14;
-          this.enemyHero.def = (this.enemyHero.def || 8) + 5;
-          this.setLog(`БОТ (${this.enemyHero.name}): МАТЕМАТИЧЕСКИЙ РАСЧЕТ (+5 К ЗАЩИТЕ)!`);
+          eDmg = 13;
+          this.enemyHero.def = Math.min(13, (this.enemyHero.def || 8) + 3);
+          this.setLog(`БОТ (${this.enemyHero.name}): МАТЕМАТИЧЕСКИЙ РАСЧЕТ (13 DMG И ЗАЩИТА +3 DEF)!`);
           break;
 
         // 5. Ботвинник
         case "BOTVINNIK_ARCHITECT":
-          eDmg = 12;
+          eDmg = 11;
           this.enemyShield = true;
-          this.setLog(`БОТ (${this.enemyHero.name}): АРХИТЕКТОР МЫСЛИ И ЖЕЛЕЗНЫЙ БЛОК!`);
+          this.playerBuffs.energyLocked = true;
+          this.setLog(`БОТ (${this.enemyHero.name}): АРХИТЕКТОР МЫСЛИ (11 DMG, ЩИТ И БЛОКИРОВКА ВАШЕЙ ЭНЕРГИИ)!`);
           break;
 
         // 6. Смыслов
         case "SMYSLOV_SYMPHONY":
-          eDmg = 12;
-          if (this.enemyHp < this.myHp) {
-            this.enemyHp = Math.min(50, this.enemyHp + 10);
-            this.spawnDamageNumber("enemy-card-anchor", "+10", true);
-            this.setLog(`БОТ (${this.enemyHero.name}): МАГИСТР ГАРМОНИИ (+10 HP)!`);
-          }
+          eDmg = 11;
+          const botHeal = (this.enemyHp < this.myHp) ? 10 : 6;
+          this.enemyHp = Math.min(50, this.enemyHp + botHeal);
+          this.spawnDamageNumber("enemy-card-anchor", `+${botHeal}`, true);
+          this.setLog(`БОТ (${this.enemyHero.name}): МАГИСТР ГАРМОНИИ (11 DMG И +${botHeal} HP)!`);
           break;
 
         // 7. Таль
         case "TAL_STORM":
-          this.enemyHp = Math.max(1, this.enemyHp - 4);
-          eDmg = 26;
-          this.spawnDamageNumber("enemy-card-anchor", 4, false);
-          this.setLog(`БОТ (${this.enemyHero.name}): ЯРОСТЬ ШТОРМА ТАЛЯ (-4 HP / 26 DMG)!`);
+          this.enemyHp = Math.max(1, this.enemyHp - 3);
+          eDmg = 18;
+          if (playerAct === "defend") {
+            this.myShield = false;
+            eDmg += 4;
+            this.setLog(`БОТ (${this.enemyHero.name}): ЯРОСТЬ ШТОРМА СОКРУШИЛА ВАШ БЛОК (22 DMG)!`);
+          } else {
+            this.setLog(`БОТ (${this.enemyHero.name}): ЯРОСТЬ ШТОРМА ТАЛЯ (-3 HP БОТА / 18 DMG ВАМ)!`);
+          }
           break;
 
         // 8. Петросян
         case "PETROSYAN_FORTRESS":
           this.enemyShield = true;
-          this.enemyHp = Math.min(50, this.enemyHp + 14);
-          eDmg = 6;
-          this.spawnDamageNumber("enemy-card-anchor", "+14", true);
-          this.setLog(`БОТ (${this.enemyHero.name}): ЖЕЛЕЗНАЯ КРЕПОСТЬ (+14 HP И ЩИТ)!`);
+          this.enemyHp = Math.min(50, this.enemyHp + 8);
+          eDmg = 7;
+          this.spawnDamageNumber("enemy-card-anchor", "+8", true);
+          this.setLog(`БОТ (${this.enemyHero.name}): ЖЕЛЕЗНАЯ КРЕПОСТЬ (7 DMG, ЩИТ И +8 HP)!`);
           break;
 
         // 9. Спасский
         case "SPASSKY_GAMBIT":
+          this.enemyHp = Math.max(1, this.enemyHp - 2);
           ignorePlayerDef = true;
           this.myShield = false;
-          eDmg = 18;
-          this.setLog(`БОТ (${this.enemyHero.name}): КОРОЛЕВСКИЙ ГАМБИТ (ЩИТ СНЯТ)!`);
+          eDmg = 15;
+          this.enemyBuffs.guaranteedCrit = true;
+          this.setLog(`БОТ (${this.enemyHero.name}): КОРОЛЕВСКИЙ ГАМБИТ (15 DMG, СЛОМ ЩИТА И ЗАРЯЖЕННЫЙ КРИТ)!`);
           break;
 
         // 10. Фишер
         case "FISCHER_TORNADO":
           ignorePlayerDef = true;
-          eDmg = 21;
-          this.setLog(`БОТ (${this.enemyHero.name}): МЕНТАЛЬНЫЙ ТОРНАДО (21 DMG СКВОЗЬ ЩИТ)!`);
+          eDmg = 14;
+          this.enemyBuffs.tempoBoost = true;
+          this.setLog(`БОТ (${this.enemyHero.name}): МЕНТАЛЬНЫЙ ТОРНАДО (14 DMG СКВОЗЬ БЛОК И ЦЕЙТНОТНЫЙ БУСТ)!`);
           break;
 
         // 11. Карпов
         case "KARPOV_ANACONDA":
-          eDmg = 14;
-          this.myEnergy = 0;
-          this.setLog(`БОТ (${this.enemyHero.name}): ХВАТКА АНАКОНДЫ (ВАША ЭНЕРГИЯ СБРОШЕНА)!`);
+          eDmg = 11;
+          if (this.myEnergy > 0) {
+            this.myEnergy--;
+            this.enemyEnergy = Math.min(2, this.enemyEnergy + 1);
+          }
+          this.myHero.def = Math.max(3, (this.myHero.def || 8) - 2);
+          this.setLog(`БОТ (${this.enemyHero.name}): ХВАТКА АНАКОНДЫ (11 DMG, КРАЖА 1⚡ И -2 DEF ВАМ)!`);
           break;
 
         // 12. Ананд (Бот)
         case "ANAND_LIGHTNING":
           ignorePlayerDef = true;
-          eDmg = 22;
+          eDmg = 14;
           this.enemyEnergy = 1;
-          this.spawnDamageNumber("player-card-anchor", 11, true);
-          setTimeout(() => this.spawnDamageNumber("player-card-anchor", 11, true), 220);
-          this.setLog(`БОТ (${this.enemyHero.name}): МОЛНИЯ МАДРАСА (ДВОЙНОЙ РАЗРЯД 11+11 DMG И +1⚡)!`);
+          this.spawnDamageNumber("player-card-anchor", 7, true);
+          setTimeout(() => this.spawnDamageNumber("player-card-anchor", 7, true), 180);
+          this.setLog(`БОТ (${this.enemyHero.name}): МОЛНИЯ МАДРАСА (ДВА ТАКТА 7+7 DMG И +1⚡)!`);
           break;
 
         // 13. Дин Лижэнь (Бот)
         case "DING_DRAGON":
           const enemyLostHp = Math.max(0, 50 - this.enemyHp);
-          const enemyDragonBonus = Math.min(14, Math.round(enemyLostHp * 0.45));
-          eDmg = 14 + enemyDragonBonus;
+          const enemyDragonBonus = Math.min(6, Math.round(enemyLostHp * 0.25));
+          eDmg = 11 + enemyDragonBonus;
           this.enemyShield = true;
-          this.setLog(`БОТ (${this.enemyHero.name}): ВОЛЯ ДРАКОНА ВА-БАНК (${eDmg} DMG И ЩИТ)!`);
+          this.setLog(`БОТ (${this.enemyHero.name}): ВОЛЯ ДРАКОНА (11+${enemyDragonBonus} DMG И ЩИТ)!`);
           break;
 
         // 14. Гукеш (Бот)
         case "GUKESH_MIND":
           ignorePlayerDef = true;
-          this.myShield = false;
-          eDmg = 16;
+          eDmg = 12;
           if (this.myEnergy > 0) {
-            this.myEnergy = Math.max(0, this.myEnergy - 1);
+            this.myEnergy--;
             this.enemyEnergy = Math.min(2, this.enemyEnergy + 1);
           }
-          this.enemyHp = Math.min(50, this.enemyHp + 8);
-          this.spawnDamageNumber("enemy-card-anchor", "+8", true);
-          this.setLog(`БОТ (${this.enemyHero.name}): САКРАЛЬНЫЙ РАЗУМ (16 DMG, СЛОМ ВАШЕГО ЩИТА, КРАЖА 1⚡ И +8 HP)!`);
+          const botBase = (typeof HERO_STATS_DATA !== "undefined" && HERO_STATS_DATA[this.enemyHero.numericId]) ? HERO_STATS_DATA[this.enemyHero.numericId] : null;
+          if (botBase) {
+            this.enemyHero.atk = botBase.atk;
+            this.enemyHero.def = botBase.def;
+          }
+          this.setLog(`БОТ (${this.enemyHero.name}): САКРАЛЬНЫЙ РАЗУМ (12 DMG, КРАЖА 1⚡ И СНЯТИЕ ДЕБАФФОВ)!`);
           break;
 
-        // 15. Stockfish
+        // 15. Stockfish (Сингулярность - босс-челлендж)
         case "STOCKFISH_ENGINE":
-          eDmg = 27;
-          this.enemyHp = Math.min(50, this.enemyHp + 8);
-          this.spawnDamageNumber("enemy-card-anchor", "+8", true);
-          this.setLog(`БОТ (${this.enemyHero.name}): СУПЕРКОМПЬЮТЕР 27 DMG (+8 HP)!`);
+          eDmg = 16;
+          this.enemyHp = Math.min(50, this.enemyHp + 5);
+          this.playerBuffs.openBreachTurns = 1;
+          this.spawnDamageNumber("enemy-card-anchor", "+5", true);
+          this.setLog(`БОТ (${this.enemyHero.name}): СУПЕРКОМПЬЮТЕР (16 DMG, +5 HP И АНАЛИЗ БРЕШИ)!`);
           break;
 
         // 16. Рэй Энигма
         case "ENIGMA_CHAMELEON":
-          eDmg = 12;
-          this.myEnergy = 0;
-          this.setLog(`БОТ (${this.enemyHero.name}): ХАМЕЛЕОН ЭНИГМЫ ПОХИТИЛ ВАШУ ЭНЕРГИЮ!`);
+          eDmg = 11;
+          if (this.myEnergy > 0) {
+            this.myEnergy--;
+            this.enemyEnergy = Math.min(2, this.enemyEnergy + 1);
+            this.setLog(`БОТ (${this.enemyHero.name}): ХАМЕЛЕОН (11 DMG И КРАЖА ВАШЕЙ 1⚡)!`);
+          } else {
+            this.setLog(`БОТ (${this.enemyHero.name}): ХАМЕЛЕОН ЭНИГМЫ (11 DMG)!`);
+          }
           break;
 
-        // 17. Каспаров
+        // 17. Каспаров (Феномен)
         case "KASPAROV_ADVENTURE":
-          eDmg = 24;
+          eDmg = 16;
           this.enemyEnergy = 1;
-          this.setLog(`БОТ (${this.enemyHero.name}): ДУХ ПРИКЛЮЧЕНИЙ (24 DMG + 1⚡)!`);
+          this.myHero.def = Math.max(3, (this.myHero.def || 8) - 2);
+          this.setLog(`БОТ (${this.enemyHero.name}): ДУХ ПРИКЛЮЧЕНИЙ (16 DMG, +1⚡ И ВАША ЗАЩИТА -2 DEF)!`);
           break;
 
-        // 18. Карлсен
+        // 18. Карлсен (Феномен)
         case "CARLSEN_ENDGAME":
           const missingMyHp = Math.max(0, 50 - this.myHp);
-          const botBonus = Math.round(missingMyHp * 0.35);
-          eDmg = 18 + botBonus;
-          this.setLog(`БОТ (${this.enemyHero.name}): КВАНТОВЫЙ ЭНДШПИЛЬ НА ${eDmg} DMG!`);
+          const botBonus = Math.min(7, Math.round(missingMyHp * 0.22));
+          eDmg = 13 + botBonus;
+          this.myEnergy = Math.max(0, this.myEnergy - 1);
+          this.setLog(`БОТ (${this.enemyHero.name}): КВАНТОВЫЙ ЭНДШПИЛЬ (13+${botBonus} DMG И СБРОС 1⚡ ВАШЕЙ ЭНЕРГИИ)!`);
           break;
 
         default:
-          eDmg = this.enemyHero.atk * 2;
+          eDmg = Math.round(this.enemyHero.atk * 1.8);
           break;
       }
     } else {
@@ -1231,12 +1336,30 @@ window.NetDuel = {
       eDmg = 0;
     }
 
-    // 4. ПРИМЕНЕНИЕ БРОНИ
-    if (this.enemyShield && !ignoreEnemyDef && pDmg > 0) {
+    // 4. УЧЕТ ВСКРЫТЫХ ЛИНИЙ И БРЕШЕЙ (+3 DMG)
+    if (this.enemyBuffs.openBreachTurns > 0 && pDmg > 0) {
+      pDmg += 3;
+      this.enemyBuffs.openBreachTurns--;
+    }
+    if (this.playerBuffs.openBreachTurns > 0 && eDmg > 0) {
+      eDmg += 3;
+      this.playerBuffs.openBreachTurns--;
+    }
+
+    // 5. ПРИМЕНЕНИЕ БРОНИ И НЕУЯЗВИМОСТИ (КАПАБЛАНКА)
+    if (this.enemyBuffs.invulnerable && pDmg > 0) {
+      pDmg = 0;
+      this.enemyBuffs.invulnerable = false;
+      this.setLog("НЕУЯЗВИМОСТЬ: КАПАБЛАНКА АБСОЛЮТНО ПАРИРОВАЛ ВЕСЬ УРОН!");
+    } else if (this.enemyShield && !ignoreEnemyDef && pDmg > 0) {
       pDmg = Math.max(1, pDmg - this.enemyHero.def);
     }
 
-    if (this.myShield && !ignorePlayerDef && eDmg > 0) {
+    if (this.playerBuffs.invulnerable && eDmg > 0) {
+      eDmg = 0;
+      this.playerBuffs.invulnerable = false;
+      this.setLog("НЕУЯЗВИМОСТЬ: ВЫ АБСОЛЮТНО ПАРИРОВАЛИ ВЕСЬ УРОН ВРАГА!");
+    } else if (this.myShield && !ignorePlayerDef && eDmg > 0) {
       eDmg = Math.max(1, eDmg - this.myHero.def);
     }
 

@@ -1152,28 +1152,28 @@ const HERO_RANKS = {
 const HERO_STATS_DATA = {
   // Легенды I (0..7)
   0:  { atk: 6,  def: 9,  rank: "legend",      skillName: "Теория равновесия",       tip: "Урон 12 DMG сквозь щит и снижение атаки врага на 3", skillId: "STEINITZ_EQUILIBRIUM" },
-  1:  { atk: 7,  def: 7,  rank: "legend",      skillName: "Психологический гамбит",  tip: "Психологический нокаут на 17 DMG", skillId: "LASKER_GAMBIT" },
-  2:  { atk: 6,  def: 9,  rank: "legend",      skillName: "Гениальная интуиция",     tip: "Чистый урон 16 DMG, полностью игнорирующий блок щитом", skillId: "CAPABLANCA_INTUITION" },
-  3:  { atk: 9,  def: 7,  rank: "legend",      skillName: "Ослепляющая атака",       tip: "Пробивающий удар: 24 DMG сквозь щит и броню соперника", skillId: "ALEKHINE_BLINDING_STRIKE" },
-  4:  { atk: 7,  def: 8,  rank: "legend",      skillName: "Математический расчет",   tip: "Удар 14 DMG и усиление собственной защиты на 5", skillId: "EUWE_LOGIC" },
-  5:  { atk: 6,  def: 8,  rank: "legend",      skillName: "Архитектор мысли",        tip: "Удар на 12 DMG и автоматический железный блок", skillId: "BOTVINNIK_ARCHITECT" },
-  6:  { atk: 6,  def: 7,  rank: "legend",      skillName: "Магистр гармонии",        tip: "Удар 12 DMG. Если отстаете по здоровью — исцеление +10 HP", skillId: "SMYSLOV_SYMPHONY" },
-  7:  { atk: 10, def: 6,  rank: "legend",      skillName: "Ярость шторма",          tip: "Жертвует 4 HP ради сокрушительного шторма на 26 DMG", skillId: "TAL_STORM" },
+  1:  { atk: 7,  def: 7,  rank: "legend",      skillName: "Психологический гамбит",  tip: "12 DMG + Оглушение врага (запрет атаки на 1 ход)", skillId: "LASKER_GAMBIT" },
+  2:  { atk: 6,  def: 9,  rank: "legend",      skillName: "Гениальная интуиция",     tip: "12 DMG сквозь блок + 100% неуязвимость к урону в след. раунде", skillId: "CAPABLANCA_INTUITION" },
+  3:  { atk: 9,  def: 7,  rank: "legend",      skillName: "Ослепляющая атака",       tip: "Залп 5+5+6 DMG (16 DMG) + Пушка Алехина (+3 DMG ко всем атакам)", skillId: "ALEKHINE_BLINDING_STRIKE" },
+  4:  { atk: 7,  def: 8,  rank: "legend",      skillName: "Математический расчет",   tip: "13 DMG + перманентная прибавка к защите (+3 DEF) до конца боя", skillId: "EUWE_LOGIC" },
+  5:  { atk: 6,  def: 8,  rank: "legend",      skillName: "Архитектор мысли",        tip: "11 DMG + железный щит + блокировка энергии врага на 1 ход", skillId: "BOTVINNIK_ARCHITECT" },
+  6:  { atk: 6,  def: 7,  rank: "legend",      skillName: "Магистр гармонии",        tip: "11 DMG + гармонизация HP (+6 HP, при отставании +10 HP)", skillId: "SMYSLOV_SYMPHONY" },
+  7:  { atk: 10, def: 6,  rank: "legend",      skillName: "Ярость шторма",          tip: "Жертва 3 HP ради 18 DMG + пробитие блока с критом (до 22 DMG)", skillId: "TAL_STORM" },
 
   // Легенды II (8..14)
-  8:  { atk: 6,  def: 10, rank: "legend",      skillName: "Железная профилактика",   tip: "Удар 6 DMG, непробиваемый щит и лечение +14 HP", skillId: "PETROSYAN_FORTRESS" },
-  9:  { atk: 8,  def: 8,  rank: "legend",      skillName: "Королевский гамбит",      tip: "Удар 18 DMG и снятие щитов с оппонента", skillId: "SPASSKY_GAMBIT" },
-  10: { atk: 9,  def: 8,  rank: "legend",      skillName: "Ментальный торнадо",      tip: "Партия века: 21 DMG сквозь любые щиты", skillId: "FISCHER_TORNADO" },
-  11: { atk: 7,  def: 10, rank: "legend",      skillName: "Хватка анаконды",         tip: "Удар 14 DMG и блокировка энергии оппонента на 1 ход", skillId: "KARPOV_ANACONDA" },
-  12: { atk: 8,  def: 8,  rank: "legend",      skillName: "Молния Мадраса",          tip: "Молниеносный удар 19 DMG с повышенным шансом крита", skillId: "ANAND_LIGHTNING" },
-  13: { atk: 7,  def: 8,  rank: "legend",      skillName: "Воля дракона",            tip: "Сокрушительный штурмовой удар на 19 DMG", skillId: "DING_DRAGON" },
-  14: { atk: 8,  def: 8,  rank: "legend",      skillName: "Сакральный разум",        tip: "Хладнокровный точный удар на 18 DMG", skillId: "GUKESH_MIND" },
+  8:  { atk: 6,  def: 10, rank: "legend",      skillName: "Железная профилактика",   tip: "Жертва качества: 7 DMG + непробиваемый щит + исцеление +8 HP", skillId: "PETROSYAN_FORTRESS" },
+  9:  { atk: 8,  def: 8,  rank: "legend",      skillName: "Королевский гамбит",      tip: "Жертва 2 HP ради удара: 15 DMG, слом щита + гарантированный крит", skillId: "SPASSKY_GAMBIT" },
+  10: { atk: 9,  def: 8,  rank: "legend",      skillName: "Ментальный торнадо",      tip: "14 DMG сквозь щиты + Цейтнотный буст (+2⚡ при след. действии)", skillId: "FISCHER_TORNADO" },
+  11: { atk: 7,  def: 10, rank: "legend",      skillName: "Хватка анаконды",         tip: "11 DMG + кража 1⚡ энергии + снижение защиты врага (-2 DEF)", skillId: "KARPOV_ANACONDA" },
+  12: { atk: 8,  def: 8,  rank: "legend",      skillName: "Молния Мадраса",          tip: "Сверхсветовой блиц: 7+7 DMG сквозь щит + возврат 1⚡", skillId: "ANAND_LIGHTNING" },
+  13: { atk: 7,  def: 8,  rank: "legend",      skillName: "Воля дракона",            tip: "Ва-банк: 11 DMG + ярость за потерю здоровья (до +6) + щит", skillId: "DING_DRAGON" },
+  14: { atk: 8,  def: 8,  rank: "legend",      skillName: "Сакральный разум",        tip: "12 DMG сквозь блок + кража 1⚡ энергии + снятие всех дебаффов", skillId: "GUKESH_MIND" },
 
   // Секретные (15..18)
-  15: { atk: 15, def: 15, rank: "singularity", skillName: "Суперкомпьютер",         tip: "Квантовый расчет на 27 DMG и исцеление +8 HP", skillId: "STOCKFISH_ENGINE" },
-  16: { atk: 6,  def: 6,  rank: "joker",       skillName: "Хамелеон",               tip: "Удар 12 DMG: отражает атаку врага обратно или крадет энергию", skillId: "ENIGMA_CHAMELEON" },
-  17: { atk: 10, def: 9,  rank: "phenomenon",  skillName: "Дух приключений",         tip: "Сокрушительный штурм 24 DMG и мгновенный возврат 1⚡ энергии", skillId: "KASPAROV_ADVENTURE" },
-  18: { atk: 9,  def: 10, rank: "phenomenon",  skillName: "Квантовый эндшпиль",      tip: "Добивающий удар: 18 DMG + 35% от потерянного HP врага", skillId: "CARLSEN_ENDGAME" }
+  15: { atk: 15, def: 15, rank: "singularity", skillName: "Суперкомпьютер",         tip: "16 DMG + исцеление +5 HP + анализ бреши (+3 DMG в след. ходу)", skillId: "STOCKFISH_ENGINE" },
+  16: { atk: 6,  def: 6,  rank: "joker",       skillName: "Хамелеон",               tip: "11 DMG + зеркальное отражение 100% урона атаки врага (или кража 1⚡)", skillId: "ENIGMA_CHAMELEON" },
+  17: { atk: 10, def: 9,  rank: "phenomenon",  skillName: "Дух приключений",         tip: "16 DMG + сохранение 1⚡ темпа + разрушение брони врага (-2 DEF)", skillId: "KASPAROV_ADVENTURE" },
+  18: { atk: 9,  def: 10, rank: "phenomenon",  skillName: "Квантовый эндшпиль",      tip: "13 DMG + бонус от потерянного HP врага (до +7) + сброс 1⚡ врага", skillId: "CARLSEN_ENDGAME" }
 };
 
 // Применяем параметры к объекту HEROES
