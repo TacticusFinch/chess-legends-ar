@@ -131,12 +131,57 @@
   transition: border-color 0.3s ease;
 }
 
-.hud-chess-core {
-  font-size: 24px;
-  color: rgba(255, 255, 255, 0.85);
-  z-index: 2;
-  transition: color 0.3s ease;
+.ring-outer {
+  width: 76px;
+  height: 76px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  animation: rotateCW 24s linear infinite;
 }
+
+.ring-inner {
+  width: 48px;
+  height: 48px;
+  border: 1px solid transparent;
+  border-top-color: var(--dial-accent);
+  border-bottom-color: var(--dial-accent);
+  opacity: 0.75;
+  animation: rotateCCW 6s var(--ease-smooth) infinite;
+  transition: border-color 0.3s ease;
+}
+
+.hud-chess-core {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  font-size: 0;
+  color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.hud-chess-core::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--dial-accent);
+  transform: rotate(45deg);
+  opacity: 0.85;
+  transition: border-color 0.3s ease, transform 0.4s var(--ease-smooth);
+}
+
+.hud-chess-core::after {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 6px var(--dial-accent);
+  transition: box-shadow 0.3s ease;
+}
+
 
 .scanner-status {
   display: flex;
