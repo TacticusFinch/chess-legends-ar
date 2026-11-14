@@ -427,6 +427,38 @@ body {
   color: var(--dial-accent);
 }
 
+/* Бейджи количества карт в ранге */
+.dial-count-badge {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 1.5px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
+.dial-item:hover .dial-count-badge {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.dial-item.active .dial-count-badge {
+  background: var(--dial-accent);
+  color: #000000;
+  border-color: var(--dial-accent);
+  box-shadow: 0 0 10px var(--dial-glow);
+  font-weight: 900;
+  transform: scale(1.05);
+}
+
 /* Цветовые спектры лимба при переключении рангов */
 body[data-active-rank="legends-1"] {
   --dial-accent: #f5c542;
