@@ -1,54 +1,42 @@
-/* ==========================================================
-   ПЕРЕМЕННЫЕ, ПАЛИТРА И ГЛОБАЛЬНЫЙ СБРОС (LUXURY DARK)
-   ========================================================== */
-
 :root {
-  /* Фирменная палитра */
-  --accent-gold: #e2b868;
-  --accent-gold-subtle: rgba(226, 184, 104, 0.15);
-  --accent-cyan: #38bdf8;
-  --accent-red: #ef4444;
-  --accent-purple: #c084fc;
+  --accent-gold: #dfc084;
+  --accent-gold-subtle: rgba(223, 192, 132, 0.12);
+  --accent-cyan: #7dd3fc;
+  --accent-red: #f87171;
+  --accent-purple: #d8b4fe;
   
-  /* Фоновые поверхности (Glassmorphism) */
   --bg-dark-core: #05070b;
-  --bg-surface: rgba(15, 20, 31, 0.75);
-  --bg-surface-elevated: rgba(23, 30, 46, 0.9);
+  --bg-surface: rgba(12, 16, 24, 0.72);
+  --bg-surface-elevated: rgba(18, 24, 36, 0.88);
   
-  /* Границы */
   --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-gold: rgba(226, 184, 104, 0.3);
+  --border-gold: rgba(223, 192, 132, 0.28);
 
-  /* Типографика */
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --text-dim: #64748b;
 
-  /* Функция плавности для кинематографичных переходов */
   --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Цветовые переменные лимба и сканера по умолчанию (Легенды I) */
-  --dial-accent: #f5c542;
-  --dial-glow: rgba(245, 197, 66, 0.4);
+  --dial-accent: #e5c175;
+  --dial-glow: rgba(229, 193, 117, 0.35);
 }
 
-/* Спектральные темы рангов */
 body[data-active-rank="legends-1"] {
-  --dial-accent: #f5c542;
-  --dial-glow: rgba(245, 197, 66, 0.5);
+  --dial-accent: #e5c175;
+  --dial-glow: rgba(229, 193, 117, 0.35);
 }
 
 body[data-active-rank="legends-2"] {
-  --dial-accent: #38bdf8;
-  --dial-glow: rgba(56, 189, 248, 0.5);
+  --dial-accent: #7dd3fc;
+  --dial-glow: rgba(125, 211, 252, 0.35);
 }
 
 body[data-active-rank="secrets"] {
-  --dial-accent: #c084fc;
-  --dial-glow: rgba(192, 132, 252, 0.5);
+  --dial-accent: #d8b4fe;
+  --dial-glow: rgba(216, 180, 254, 0.35);
 }
 
-/* Базовый сброс */
 *, *::before, *::after {
   box-sizing: border-box;
 }

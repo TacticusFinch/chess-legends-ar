@@ -1,11 +1,7 @@
-/* ==========================================================
-   AR СКАНЕР, ВИЗИР И ПРЕЛОАДЕР ИНИЦИАЛИЗАЦИИ
-   ========================================================== */
-
 #scanner-hint {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at center, rgba(8, 12, 19, 0.4) 0%, rgba(4, 6, 9, 0.8) 100%);
+  background: radial-gradient(circle at center, transparent 35%, rgba(4, 6, 9, 0.65) 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -21,74 +17,96 @@
   opacity: 0;
 }
 
-/* Оптическая рамка-визир */
 .ar-reticle {
   position: relative;
-  width: 70vw;
-  max-width: 290px;
+  width: 68vw;
+  max-width: 280px;
   aspect-ratio: 1 / 1.54;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 28px;
   overflow: hidden;
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.25);
+}
+
+.ar-reticle::before,
+.ar-reticle::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+}
+
+.ar-reticle::before {
+  width: 12px;
+  height: 1px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.ar-reticle::after {
+  width: 1px;
+  height: 12px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .reticle-corner {
   position: absolute;
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   border-color: var(--dial-accent);
   border-style: solid;
+  opacity: 0.9;
   transition: border-color 0.3s ease;
 }
 
 .reticle-corner.top-left {
-  top: 12px;
-  left: 12px;
-  border-width: 2px 0 0 2px;
-  border-radius: 6px 0 0 0;
+  top: 10px;
+  left: 10px;
+  border-width: 1px 0 0 1px;
+  border-radius: 4px 0 0 0;
 }
 
 .reticle-corner.top-right {
-  top: 12px;
-  right: 12px;
-  border-width: 2px 2px 0 0;
-  border-radius: 0 6px 0 0;
+  top: 10px;
+  right: 10px;
+  border-width: 1px 1px 0 0;
+  border-radius: 0 4px 0 0;
 }
 
 .reticle-corner.bottom-left {
-  bottom: 12px;
-  left: 12px;
-  border-width: 0 0 2px 2px;
-  border-radius: 0 0 0 6px;
+  bottom: 10px;
+  left: 10px;
+  border-width: 0 0 1px 1px;
+  border-radius: 0 0 0 4px;
 }
 
 .reticle-corner.bottom-right {
-  bottom: 12px;
-  right: 12px;
-  border-width: 0 2px 2px 0;
-  border-radius: 0 0 6px 0;
+  bottom: 10px;
+  right: 10px;
+  border-width: 0 1px 1px 0;
+  border-radius: 0 0 4px 0;
 }
 
-/* Лазерный луч сканера */
 .laser-beam {
   position: absolute;
   top: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
+  left: 8%;
+  width: 84%;
+  height: 1px;
   background: linear-gradient(90deg, transparent, var(--dial-accent) 50%, transparent);
-  box-shadow: 0 0 16px var(--dial-accent);
-  animation: scanLaserFull 2.6s ease-in-out infinite alternate;
+  box-shadow: 0 0 8px var(--dial-glow);
+  opacity: 0.75;
+  animation: scanLaserFull 3.2s ease-in-out infinite alternate;
   transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Прицельные кольца HUD */
 .hud-circle {
   position: absolute;
   border-radius: 50%;
@@ -96,66 +114,69 @@
 }
 
 .ring-outer {
-  width: 100px;
-  height: 100px;
-  border: 1px dashed var(--dial-glow);
-  animation: rotateCW 12s linear infinite;
-  transition: border-color 0.3s ease;
+  width: 88px;
+  height: 88px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  animation: rotateCW 18s linear infinite;
 }
 
 .ring-inner {
-  width: 72px;
-  height: 72px;
-  border: 2px solid transparent;
+  width: 64px;
+  height: 64px;
+  border: 1px solid transparent;
   border-top-color: var(--dial-accent);
   border-bottom-color: var(--dial-accent);
-  animation: rotateCCW 3s var(--ease-smooth) infinite;
+  opacity: 0.65;
+  animation: rotateCCW 4s var(--ease-smooth) infinite;
   transition: border-color 0.3s ease;
 }
 
 .hud-chess-core {
-  font-size: 32px;
-  color: var(--dial-accent);
-  animation: pulseCore 2s ease-in-out infinite;
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.85);
   z-index: 2;
   transition: color 0.3s ease;
 }
 
-/* Индикация статуса загрузки */
 .scanner-status {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 
 .status-badge {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  background: var(--accent-gold-subtle);
-  border: 1px solid var(--border-gold);
-  color: var(--accent-gold);
+  font-weight: 500;
+  letter-spacing: 2px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  background: rgba(15, 20, 31, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--dial-accent);
   margin-bottom: 6px;
   text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .status-title {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.8px;
+  color: #f8fafc;
 }
 
 .status-sub {
   font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
   color: var(--text-muted);
 }
 
 .load-progress-box {
-  width: 200px;
+  width: 180px;
   margin-top: 14px;
   display: flex;
   flex-direction: column;
@@ -165,9 +186,8 @@
 
 .load-bar-track {
   width: 100%;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 2px;
+  height: 1.5px;
+  background: rgba(255, 255, 255, 0.12);
   overflow: hidden;
 }
 
@@ -183,23 +203,23 @@
   color: var(--text-dim);
   text-align: center;
   line-height: 1.4;
+  letter-spacing: 0.2px;
 }
 
-/* Уведомление о разблокировке легенды */
 #unlock-toast {
   position: absolute;
   top: 76px;
   left: 50%;
-  transform: translateX(-50%) translateY(-15px);
-  background: rgba(18, 24, 38, 0.92);
-  border: 1px solid var(--border-gold);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
-  color: #fff;
-  padding: 10px 18px;
-  border-radius: 30px;
+  transform: translateX(-50%) translateY(-12px);
+  background: rgba(10, 14, 22, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  color: #f8fafc;
+  padding: 8px 16px;
+  border-radius: 6px;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  font-weight: 500;
+  letter-spacing: 1px;
   z-index: 300;
   display: flex;
   align-items: center;
