@@ -605,3 +605,136 @@
   background: #facc15;
   box-shadow: 0 0 10px #facc15, 0 0 3px #fff;
 }
+
+/* Состояние полной готовности кнопки СКИЛЛА (2⚡ энергии) */
+.btn-spc.ready {
+  background: linear-gradient(180deg, #3d2c12 0%, #1c1306 100%) !important;
+  border-bottom: 2px solid #facc15 !important;
+  animation: skillReadyGlow 1.2s ease-in-out infinite alternate;
+}
+
+.btn-spc.ready .esport-btn-text {
+  color: #ffffff;
+  text-shadow: 0 0 12px #facc15, 0 2px 4px #000;
+}
+
+.btn-spc.ready .esport-light-bar {
+  background: #ffffff;
+  box-shadow: 0 0 18px #facc15, 0 0 6px #fff;
+}
+
+/* ==========================================================
+   КИНЕМАТОГРАФИЧНЫЙ SUPER CUT-IN (АРКАДНАЯ ЗАСТАВКА СКИЛЛА)
+   ========================================================== */
+.super-cutin-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(14, 19, 30, 0.7) 0%, rgba(0, 0, 0, 0.88) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: cutinOverlayFade 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.super-cutin-banner {
+  width: 115%;
+  padding: 18px 24px;
+  background: linear-gradient(90deg, transparent 0%, rgba(20, 26, 40, 0.95) 15%, rgba(32, 22, 10, 0.98) 50%, rgba(20, 26, 40, 0.95) 85%, transparent 100%);
+  border-top: 2px solid var(--accent-gold);
+  border-bottom: 2px solid var(--accent-gold);
+  box-shadow: 0 0 40px rgba(226, 184, 104, 0.45), inset 0 0 30px rgba(245, 197, 66, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  transform: skewX(-8deg);
+  animation: cutinBannerSlash 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cutin-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 25px var(--accent-gold), 0 0 8px #fff;
+  object-fit: cover;
+  transform: skewX(8deg);
+  background: #000;
+  flex-shrink: 0;
+}
+
+.cutin-text-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transform: skewX(8deg);
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.9);
+}
+
+.cutin-hero-name {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.cutin-skill-name {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #fef08a;
+  text-shadow: 0 0 20px rgba(250, 204, 21, 0.8), 0 0 4px #fff;
+  line-height: 1.15;
+}
+
+@keyframes cutinOverlayFade {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes cutinBannerSlash {
+  0% {
+    transform: skewX(-8deg) translateX(-100%) scaleY(0.4);
+    opacity: 0;
+  }
+  14% {
+    transform: skewX(-8deg) translateX(0) scaleY(1.08);
+    opacity: 1;
+  }
+  22% {
+    transform: skewX(-8deg) translateX(0) scaleY(1);
+  }
+  82% {
+    transform: skewX(-8deg) translateX(0) scaleY(1);
+    opacity: 1;
+  }
+  100% {
+    transform: skewX(-8deg) translateX(110%) scaleY(0.6);
+    opacity: 0;
+  }
+}
+
+/* Цвета рангов для бейджей игроков */
+.actor-side-badge.rank-legend,
+.actor-side-badge.rank-legends-1,
+.actor-side-badge.rank-legends-2 {
+  background: rgba(245, 197, 66, 0.2);
+  color: #facc15;
+  border: 1px solid rgba(245, 197, 66, 0.4);
+}
+
+.actor-side-badge.rank-secret,
+.actor-side-badge.rank-secrets {
+  background: rgba(192, 132, 252, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(192, 132, 252, 0.4);
+}
