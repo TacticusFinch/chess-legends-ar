@@ -16,6 +16,10 @@
   --text-dim: #64748b;
 
   --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Цветовые переменные лимба по умолчанию */
+  --dial-accent: #f5c542;
+  --dial-glow: rgba(245, 197, 66, 0.4);
 }
 
 body {
@@ -67,61 +71,57 @@ body {
   position: absolute;
   width: 24px;
   height: 24px;
-  border-color: var(--accent-gold);
+  border-color: var(--dial-accent);
   border-style: solid;
+  transition: border-color 0.3s ease;
 }
 .reticle-corner.top-left     { top: 12px; left: 12px; border-width: 2px 0 0 2px; border-radius: 6px 0 0 0; }
 .reticle-corner.top-right    { top: 12px; right: 12px; border-width: 2px 2px 0 0; border-radius: 0 6px 0 0; }
 .reticle-corner.bottom-left  { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; border-radius: 0 0 0 6px; }
 .reticle-corner.bottom-right { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; border-radius: 0 0 6px 0; }
 
-/* Обновленная анимация лазера сканера на всю высоту рамки */
 .laser-beam {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, transparent, var(--accent-gold) 50%, transparent);
-  box-shadow: 0 0 16px var(--accent-gold);
+  background: linear-gradient(90deg, transparent, var(--dial-accent) 50%, transparent);
+  box-shadow: 0 0 16px var(--dial-accent);
   animation: scanLaserFull 2.6s ease-in-out infinite alternate;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 @keyframes scanLaserFull {
-  0% {
-    top: 2%;
-    opacity: 0.2;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    top: 98%;
-    opacity: 0.2;
-  }
+  0% { top: 2%; opacity: 0.2; }
+  50% { opacity: 1; }
+  100% { top: 98%; opacity: 0.2; }
 }
 
 .hud-circle { position: absolute; border-radius: 50%; box-sizing: border-box; }
 .ring-outer {
   width: 100px;
   height: 100px;
-  border: 1px dashed rgba(226, 184, 104, 0.35);
+  border: 1px dashed var(--dial-glow);
   animation: rotateCW 12s linear infinite;
+  transition: border-color 0.3s ease;
 }
 .ring-inner {
   width: 72px;
   height: 72px;
   border: 2px solid transparent;
-  border-top-color: var(--accent-gold);
-  border-bottom-color: var(--accent-gold);
+  border-top-color: var(--dial-accent);
+  border-bottom-color: var(--dial-accent);
   animation: rotateCCW 3s var(--ease-smooth) infinite;
+  transition: border-color 0.3s ease;
 }
 
 .hud-chess-core {
   font-size: 32px;
-  color: var(--accent-gold);
+  color: var(--dial-accent);
   animation: pulseCore 2s ease-in-out infinite;
   z-index: 2;
+  transition: color 0.3s ease;
 }
 
 .scanner-status { display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -158,8 +158,8 @@ body {
 .load-bar-fill {
   width: 0%;
   height: 100%;
-  background: var(--accent-gold);
-  transition: width 0.3s ease;
+  background: var(--dial-accent);
+  transition: width 0.3s ease, background 0.3s ease;
 }
 .load-subtext {
   font-size: 10px;
@@ -199,33 +199,42 @@ body {
    ========================================================== */
 .top-hud {
   position: absolute;
-  top: 16px;
+  top: 18px;
   left: 16px;
   right: 16px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
   z-index: 120;
   pointer-events: none;
+  transition: all 0.6s var(--ease-smooth);
+}
+
+.top-hud.preloading {
+  justify-content: center;
+}
+.top-hud.preloading .hud-collection {
+  transform: scale(1.08);
+}
+.top-hud.ready {
+  justify-content: space-between;
 }
 
 .hud-btn {
   pointer-events: auto;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-main);
+  background: rgba(15, 20, 31, 0.85);
+  border: 1px solid var(--border-gold);
+  color: var(--accent-gold);
   border-radius: 30px;
-  padding: 8px 14px;
+  padding: 9px 18px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  text-decoration: none;
+  font-weight: 800;
+  letter-spacing: 1px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
   cursor: pointer;
   transition: all 0.2s var(--ease-smooth);
 }
@@ -233,18 +242,14 @@ body {
   border-color: rgba(255, 255, 255, 0.18);
   background: rgba(25, 33, 50, 0.85);
 }
-.hud-btn:active { transform: scale(0.96); }
+.hud-btn:active { transform: scale(0.95); }
 
-#bot-link-btn {
-  border-color: rgba(56, 189, 248, 0.25);
-  color: #e0f2fe;
-}
-#passport-btn {
-  border-color: var(--border-gold);
-  color: var(--accent-gold);
+.hud-sound {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
 }
 
-/* Премиальная плавающая панель карточки */
+/* Плавающая панель действий карточки */
 #interactive-dock {
   position: fixed;
   bottom: 24px;
@@ -295,10 +300,167 @@ body {
 }
 
 /* ==========================================================
-   4. МОДАЛЬНЫЕ ОКНА И КАРТОЧКИ (ПРЕМИАЛЬНЫЙ КАТАЛОГ)
+   4. ОПТИЧЕСКИЙ ЛИМБ КАМЕРЫ (TACTICAL CAMERA DIAL)
+   ========================================================== */
+.optical-dial-container {
+  position: fixed;
+  bottom: 18px;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  user-select: none;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+}
+
+/* Прицельная риска оптического визира по центру */
+.dial-reticle-pip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 6px;
+  pointer-events: none;
+}
+.dial-pip-line {
+  width: 2px;
+  height: 12px;
+  background: var(--dial-accent);
+  box-shadow: 0 0 10px var(--dial-accent), 0 0 2px #fff;
+  border-radius: 2px;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+.dial-pip-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px var(--dial-accent);
+  transition: box-shadow 0.3s ease;
+}
+
+/* Горизонтальный трек с маской виньетирования */
+.dial-track-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 540px;
+  display: flex;
+  justify-content: center;
+  pointer-events: auto;
+  mask-image: linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%);
+}
+
+.dial-scroll-track {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 8px 30px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  touch-action: pan-x;
+}
+.dial-scroll-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Элемент лимба */
+.dial-item {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  padding: 6px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  outline: none;
+  position: relative;
+}
+
+.dial-item::after {
+  content: '•';
+  position: absolute;
+  right: -13px;
+  color: rgba(255, 255, 255, 0.15);
+  font-size: 10px;
+  pointer-events: none;
+}
+.dial-item:last-child::after {
+  display: none;
+}
+
+.dial-item .dial-symbol {
+  font-size: 11px;
+  opacity: 0.5;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.dial-item:hover {
+  color: rgba(255, 255, 255, 0.85);
+  transform: translateY(-1px);
+}
+
+/* Активный пункт под визиром */
+.dial-item.active {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  text-shadow: 0 0 16px var(--dial-glow);
+  transform: scale(1.08);
+}
+.dial-item.active .dial-symbol {
+  opacity: 1;
+  transform: scale(1.2);
+  color: var(--dial-accent);
+}
+
+/* Цветовые спектры лимба при переключении рангов */
+body[data-active-rank="legends-1"] {
+  --dial-accent: #f5c542;
+  --dial-glow: rgba(245, 197, 66, 0.5);
+}
+body[data-active-rank="legends-2"] {
+  --dial-accent: #38bdf8;
+  --dial-glow: rgba(56, 189, 248, 0.5);
+}
+body[data-active-rank="secrets"] {
+  --dial-accent: #c084fc;
+  --dial-glow: rgba(192, 132, 252, 0.5);
+}
+
+/* При открытии дока поднимаем лимб выше */
+body.card-active .optical-dial-container {
+  bottom: 78px;
+  transform: scale(0.94);
+  opacity: 0.85;
+}
+
+@media (max-width: 480px) {
+  .optical-dial-container { bottom: 12px; }
+  .dial-scroll-track { gap: 16px; }
+  .dial-item { font-size: 11px; letter-spacing: 1.2px; padding: 4px 8px; }
+  .dial-item.active { font-size: 12px; }
+  body.card-active .optical-dial-container { bottom: 72px; transform: scale(0.9); }
+}
+
+/* ==========================================================
+   5. МОДАЛЬНЫЕ ОКНА И КАРТОЧКИ (ПРЕМИАЛЬНЫЙ КАТАЛОГ)
    ========================================================== */
 .modal-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: rgba(4, 6, 10, 0.82);
   display: flex;
@@ -461,7 +623,7 @@ body {
 .action-link-btn:active { transform: scale(0.98); opacity: 0.9; }
 .action-link-btn.secondary { background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-subtle); color: #fff; }
 
-/* Сетка коллекции (Паспорт) */
+/* Сетка паспорта (Коллекция) */
 .passport-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -527,7 +689,7 @@ body {
 .passport-lock-icon { font-size: 14px; opacity: 0.5; }
 
 /* ==========================================================
-   5. ДУЭЛЬ: ЛОББИ И БОЕВОЙ ТУРНИРНЫЙ HUD
+   6. ДУЭЛЬ: ЛОББИ И БОЕВОЙ ТУРНИРНЫЙ HUD
    ========================================================== */
 .duel-card {
   max-width: 320px !important;
@@ -611,13 +773,21 @@ body {
 
 .duel-actor-panel {
   pointer-events: auto;
-  background: rgba(18, 24, 38, 0.85);
-  border: 1px solid var(--border-subtle);
   border-radius: 16px;
   padding: 12px 14px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.duel-actor-panel.player-panel {
+  background: linear-gradient(135deg, rgba(16, 22, 34, 0.95) 0%, rgba(8, 12, 18, 0.98) 100%);
+  border: 1px solid rgba(226, 184, 104, 0.35);
+}
+
+.duel-actor-panel.enemy-panel {
+  background: linear-gradient(135deg, rgba(28, 16, 18, 0.95) 0%, rgba(14, 8, 10, 0.98) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
 .actor-card-row { display: flex; align-items: center; gap: 12px; }
@@ -645,26 +815,103 @@ body {
 .actor-side-badge.side-black { background: #21262d; color: #8b949e; }
 .actor-side-badge.side-white { background: #fff; color: #000; }
 .actor-name { font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; }
-.actor-points { font-family: monospace; font-size: 11px; color: var(--text-muted); font-weight: 600; }
 
-.meter-track { width: 100%; height: 4px; background: rgba(255, 255, 255, 0.08); border-radius: 2px; overflow: hidden; }
-.meter-fill { height: 100%; transition: width 0.4s var(--ease-smooth); }
-.meter-fill.enemy-fill  { background: #ef4444; }
-.meter-fill.player-fill { background: var(--accent-gold); }
-
-.tactical-stats-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
-.stat-pill {
-  font-family: monospace;
-  font-size: 8.5px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-muted);
+.hp-badge-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
-.stat-pill.atk-pill   { color: #f87171; }
-.stat-pill.def-pill   { color: #38bdf8; }
-.stat-pill.skill-pill { color: #fbbf24; }
+.hp-tag { font-size: 8px; font-weight: 800; letter-spacing: 0.5px; color: var(--text-dim); }
+.player-panel .hp-tag { color: var(--accent-gold); }
+.enemy-panel .hp-tag  { color: #f87171; }
+
+.actor-points {
+  font-family: monospace, -apple-system;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.2px;
+}
+
+.meter-track {
+  position: relative;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  margin: 6px 0 9px 0;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+}
+.meter-ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+  border-radius: 4px;
+  transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.35s;
+  z-index: 1;
+}
+.meter-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 4px;
+  z-index: 2;
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.meter-fill.player-fill {
+  background: linear-gradient(90deg, #d4a347, #fde047);
+  box-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
+}
+.meter-fill.enemy-fill {
+  background: linear-gradient(90deg, #991b1b, #ef4444);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+.tactical-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.stat-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 2px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.stat-chip-label {
+  font-size: 7.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #788599;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.stat-chip-value {
+  font-family: monospace, -apple-system;
+  font-size: 14.5px;
+  font-weight: 900;
+  line-height: 1;
+}
+.stat-chip.atk-chip { border-color: rgba(248, 113, 113, 0.28); }
+.stat-chip.atk-chip .stat-chip-value { color: #f87171; text-shadow: 0 0 8px rgba(248, 113, 113, 0.4); }
+.stat-chip.def-chip { border-color: rgba(56, 189, 248, 0.28); }
+.stat-chip.def-chip .stat-chip-value { color: #38bdf8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+.stat-chip.skill-chip { border-color: rgba(234, 179, 8, 0.28); }
+.stat-chip.skill-chip .stat-chip-value { color: #facc15; text-shadow: 0 0 8px rgba(250, 204, 21, 0.4); }
 
 .round-status-badge {
   font-size: 10.5px;
@@ -744,454 +991,52 @@ body {
   max-width: 280px;
 }
 
-.tactical-hint {
-  font-size: 9px;
-  color: var(--text-dim);
-  margin-top: 8px;
-  text-align: center;
-  line-height: 1.3;
-}
-
-/* Карточки действий игрока */
-.tactical-deck {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.2fr;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.tactical-card-btn {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  padding: 8px 10px;
+.skill-tooltip-bar {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  cursor: pointer;
-  color: #fff;
-  min-height: 64px;
-  box-sizing: border-box;
-  transition: all 0.2s var(--ease-smooth);
-}
-.tactical-card-btn:hover { background: rgba(255, 255, 255, 0.06); }
-.tactical-card-btn:active { transform: scale(0.96); }
-.tactical-card-btn.selected {
-  border-color: var(--accent-gold) !important;
-  background: var(--accent-gold-subtle) !important;
-}
-
-.action-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-.action-icon { font-size: 13px; }
-.action-dmg-badge { font-family: monospace; font-size: 8.5px; color: #f87171; font-weight: 700; }
-.action-energy-gain { font-family: monospace; font-size: 8.5px; color: #38bdf8; font-weight: 700; }
-.action-energy-badge {
-  font-family: monospace;
-  font-size: 8px;
-  padding: 2px 4px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-muted);
-}
-
-.action-name { font-size: 10px; font-weight: 700; text-transform: uppercase; margin-top: 2px; }
-.action-sub { font-size: 8px; color: var(--text-dim); text-transform: uppercase; }
-
-.tactical-card-btn.skill-card.ready {
-  border-color: var(--accent-gold) !important;
-  background: linear-gradient(135deg, rgba(226, 184, 104, 0.15) 0%, rgba(18, 24, 38, 0.9) 100%) !important;
-  box-shadow: 0 0 20px rgba(226, 184, 104, 0.2);
-  animation: pulseReady 1.2s infinite alternate;
-}
-.tactical-card-btn.skill-card.ready .action-energy-badge {
-  background: var(--accent-gold);
-  color: #000;
-  font-weight: 800;
-}
-.tactical-card-btn.skill-card.ready #skill-action-sub {
-  color: var(--accent-gold);
-  font-weight: 600;
-}
-
-/* ==========================================================
-   6. ПОДСВЕТКА ДОСКИ (LICHESS / CHESS.COM LUXE STYLE)
-   ========================================================== */
-.highlight-selected {
-  background-color: rgba(226, 184, 104, 0.4) !important;
-}
-
-.highlight-dest {
-  position: relative;
-  cursor: pointer;
-}
-.highlight-dest::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 24%;
-  height: 24%;
-  background: rgba(255, 255, 255, 0.35);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.highlight-dest-capture {
-  position: relative;
-  cursor: pointer;
-}
-.highlight-dest-capture::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 84%;
-  height: 84%;
-  border: 3px solid rgba(239, 68, 68, 0.6);
-  border-radius: 50%;
-  box-sizing: border-box;
-  pointer-events: none;
-}
-
-/* ==========================================================
-   7. БОЕВЫЕ FX И АНИМАЦИИ
-   ========================================================== */
-.shield-barrier-fx {
-  position: absolute;
-  inset: -3px;
-  border-radius: 12px;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.3) 0%, rgba(226, 184, 104, 0.4) 100%);
-  border: 1.5px solid #38bdf8;
-  display: none;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  z-index: 10;
-  animation: shieldPulse 0.8s infinite alternate;
-}
-
-/* ==========================================================
-   БОЕВЫЕ ЧИСЛА УРОНА (RPG FLOATING POPUP)
-   ========================================================== */
-.floating-dmg-num {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  font-family: 'JetBrains Mono', monospace, -apple-system, sans-serif;
-  font-size: 28px;
-  font-weight: 900;
-  color: #fff;
-  /* Четкая многослойная тень для идеальной видимости на любом фоне */
-  text-shadow: 
-    0 2px 0 #000,
-    0 -2px 0 #000,
-    2px 0 0 #000,
-    -2px 0 0 #000,
-    0 4px 15px rgba(239, 68, 68, 0.9);
-  pointer-events: none;
-  z-index: 1000;
-  white-space: nowrap;
-  animation: floatAndHang 1.8s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
-}
-
-/* Критический урон — крупнее, золотистый неоновый взрыв */
-.floating-dmg-num.crit {
-  font-size: 38px;
-  color: #fde047;
-  text-shadow: 
-    0 2px 0 #000,
-    0 -2px 0 #000,
-    2px 0 0 #000,
-    -2px 0 0 #000,
-    0 0 25px rgba(250, 204, 21, 1),
-    0 4px 20px rgba(0, 0, 0, 0.9);
-}
-
-/* Анимация: резкий выстрел вверх -> зависание на 1.2 секунды -> плавное растворение */
-@keyframes floatAndHang {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, 0) scale(0.4);
-  }
-  12% {
-    opacity: 1;
-    transform: translate(-50%, -35px) scale(1.3); /* Резкий вылет с отскоком */
-  }
-  20% {
-    transform: translate(-50%, -42px) scale(1.05);
-  }
-  /* Фаза долгого зависания в воздухе (с 20% до 75% времени, ~1 секунда) */
-  75% {
-    opacity: 1;
-    transform: translate(-50%, -50px) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -75px) scale(0.85); /* Плавное таяние ввысь */
-  }
-}
-
-.flash-fx-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1001;
-  opacity: 0;
-  animation: flashFade 0.4s ease-out forwards;
-}
-.flash-red  { background: radial-gradient(circle at center, transparent 30%, rgba(239, 68, 68, 0.35) 100%); }
-.flash-cyan { background: radial-gradient(circle at center, transparent 40%, rgba(56, 189, 248, 0.25) 100%); }
-.flash-gold { background: radial-gradient(circle at center, rgba(226, 184, 104, 0.2) 0%, rgba(226, 184, 104, 0.45) 100%); }
-
-.screen-shake-light { animation: shakeLight 0.25s ease-in-out; }
-.screen-shake-heavy { animation: shakeHeavy 0.35s ease-in-out; }
-
-/* Кинематографичный баннер ультимейта */
-.super-cutin-overlay {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, rgba(10, 14, 24, 0.88) 0%, rgba(3, 5, 8, 0.96) 100%);
+  gap: 3px;
+  background: linear-gradient(180deg, rgba(18, 24, 38, 0.95) 0%, rgba(10, 14, 22, 0.98) 100%);
+  border: 1px solid rgba(226, 184, 104, 0.35);
+  border-radius: 12px;
+  padding: 6px 14px;
+  margin-top: 8px;
+  width: calc(100% - 10px);
+  max-width: 320px;
+  box-sizing: border-box;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  z-index: 250;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  pointer-events: none;
-  animation: cutinFade 2.4s ease-in-out forwards;
 }
 
-.super-cutin-banner {
-  width: 120%;
-  height: 110px;
-  background: linear-gradient(90deg, transparent, rgba(226, 184, 104, 0.95) 25%, rgba(226, 184, 104, 0.95) 75%, transparent);
-  transform: rotate(-2.5deg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  box-shadow: 0 0 50px rgba(226, 184, 104, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  animation: cutinSlide 2.4s var(--ease-smooth) forwards;
-}
-
-.cutin-avatar {
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  border: 2px solid #fff;
-  object-fit: cover;
-  transform: rotate(2.5deg);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-}
-
-.cutin-text-group { 
-  display: flex; 
-  flex-direction: column; 
-  transform: rotate(2.5deg); 
-}
-.cutin-hero-name { 
-  font-size: 11px; 
-  font-weight: 700; 
-  color: #1e1b18; 
-  letter-spacing: 2.5px; 
-  text-transform: uppercase; 
-}
-.cutin-skill-name { 
-  font-size: 21px; 
-  font-weight: 900; 
-  color: #0b0f17; 
-  letter-spacing: 0.5px; 
-  text-transform: uppercase;
-}
-
-/* @keyframes */
-@keyframes scanLaser {
-  0%   { transform: translateY(10px); opacity: 0.3; }
-  50%  { opacity: 1; }
-  100% { transform: translateY(280px); opacity: 0.3; }
-}
-@keyframes rotateCW  { to { transform: rotate(360deg); } }
-@keyframes rotateCCW { to { transform: rotate(-360deg); } }
-@keyframes pulseCore {
-  0%, 100% { transform: scale(0.94); opacity: 0.8; }
-  50%      { transform: scale(1.06); opacity: 1; }
-}
-@keyframes dockRise {
-  from { transform: translate(-50%, 40px); opacity: 0; }
-  to   { transform: translate(-50%, 0); opacity: 1; }
-}
-@keyframes pulseWait {
-  0%, 100% { opacity: 0.4; transform: scale(0.9); }
-  50%      { opacity: 1; transform: scale(1.1); }
-}
-@keyframes pulseReady {
-  0%   { transform: scale(1); }
-  100% { transform: scale(1.02); }
-}
-@keyframes flashFade { 0% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes floatUpDmg {
-  0%   { opacity: 0; transform: translate(-50%, 15px) scale(0.8); }
-  20%  { opacity: 1; transform: translate(-50%, -10px) scale(1.15); }
-  70%  { opacity: 1; transform: translate(-50%, -25px) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -45px) scale(0.9); }
-}
-@keyframes shakeLight {
-  0%, 100% { transform: translate(0, 0); }
-  25% { transform: translate(-3px, 2px); }
-  50% { transform: translate(3px, -2px); }
-  75% { transform: translate(-2px, 1px); }
-}
-@keyframes shakeHeavy {
-  0%, 100% { transform: translate(0, 0); }
-  20% { transform: translate(-6px, 4px); }
-  40% { transform: translate(6px, -4px); }
-  60% { transform: translate(-4px, 3px); }
-  80% { transform: translate(4px, -2px); }
-}
-@keyframes cutinFade { 
-  0% { opacity: 0; } 
-  8% { opacity: 1; } 
-  85% { opacity: 1; } 
-  100% { opacity: 0; } 
-}
-
-@keyframes cutinSlide {
-  0%   { transform: translateX(60%) rotate(-2.5deg); }
-  18%  { transform: translateX(0%) rotate(-2.5deg); }
-  80%  { transform: translateX(-3%) rotate(-2.5deg); }
-  100% { transform: translateX(-60%) rotate(-2.5deg); }
-}
-
-@keyframes shieldPulse {
-  0%   { transform: scale(0.98); opacity: 0.8; }
-  100% { transform: scale(1.04); opacity: 1; }
-}
-
-/* --- ПАНЕЛИ БОЙЦОВ (ИГРОК И СОПЕРНИК) --- */
-.duel-actor-panel {
-  pointer-events: auto;
-  border-radius: 16px;
-  padding: 12px 14px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  position: relative;
-  overflow: hidden;
-}
-
-.duel-actor-panel.player-panel {
-  background: linear-gradient(135deg, rgba(16, 22, 34, 0.95) 0%, rgba(8, 12, 18, 0.98) 100%);
-  border: 1px solid rgba(226, 184, 104, 0.35);
-}
-
-.duel-actor-panel.enemy-panel {
-  background: linear-gradient(135deg, rgba(28, 16, 18, 0.95) 0%, rgba(14, 8, 10, 0.98) 100%);
-  border: 1px solid rgba(239, 68, 68, 0.35);
-}
-
-/* Бейджи HP */
-.hp-badge-wrap {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
-  background: rgba(0, 0, 0, 0.55);
-  padding: 2px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-.hp-tag {
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  color: var(--text-dim);
-}
-.player-panel .hp-tag { color: var(--accent-gold); }
-.enemy-panel .hp-tag  { color: #f87171; }
-
-.actor-points {
-  font-family: monospace, -apple-system;
-  font-size: 13px;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: -0.2px;
-}
-
-/* Полоски здоровья */
-.meter-track {
-  height: 6px;
-  background: rgba(0, 0, 0, 0.7);
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-  margin: 6px 0 9px 0;
-}
-.meter-fill {
-  height: 100%;
-  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.meter-fill.player-fill {
-  background: linear-gradient(90deg, #d4a347, #fde047);
-  box-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
-}
-.meter-fill.enemy-fill {
-  background: linear-gradient(90deg, #991b1b, #ef4444);
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
-}
-
-/* Сетка чипов характеристик (3 равные колонки) */
-.tactical-stats-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-
-.stat-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 5px 2px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
-.stat-chip-label {
-  font-size: 7.5px;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  color: #788599;
-  text-transform: uppercase;
-  margin-bottom: 2px;
-  max-width: 90%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.stat-chip-value {
-  font-family: monospace, -apple-system;
-  font-size: 14.5px;
+.tooltip-header { display: flex; align-items: center; gap: 6px; }
+.tooltip-badge {
+  font-family: 'JetBrains Mono', monospace, -apple-system;
+  font-size: 8.5px;
   font-weight: 900;
-  line-height: 1;
+  letter-spacing: 1.2px;
+  background: var(--accent-gold);
+  color: #000;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.tooltip-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fef08a;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.tooltip-desc {
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #f1f5f9;
+  text-align: center;
 }
 
-/* Колористика чипов */
-.stat-chip.atk-chip { border-color: rgba(248, 113, 113, 0.28); }
-.stat-chip.atk-chip .stat-chip-value { color: #f87171; text-shadow: 0 0 8px rgba(248, 113, 113, 0.4); }
-
-.stat-chip.def-chip { border-color: rgba(56, 189, 248, 0.28); }
-.stat-chip.def-chip .stat-chip-value { color: #38bdf8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
-
-.stat-chip.skill-chip { border-color: rgba(234, 179, 8, 0.28); }
-.stat-chip.skill-chip .stat-chip-value { color: #facc15; text-shadow: 0 0 8px rgba(250, 204, 21, 0.4); }
-
-
-/* ==========================================================
-   CYBER-TECH КНОПКИ ДЕЙСТВИЯ (ESPORTS HEX-EDGED)
-   ========================================================== */
+/* Кнопки действий игрока */
 .tactical-deck {
   display: grid;
   grid-template-columns: 1fr 1fr 1.25fr;
@@ -1213,60 +1058,22 @@ body {
   gap: 3px;
   padding: 0 10px;
   box-sizing: border-box;
-  /* Скошенные фаски по углам в стиле кибер-интерфейсов */
-  clip-path: polygon(
-    10px 0, 100% 0, 
-    100% calc(100% - 10px), calc(100% - 10px) 100%, 
-    0 100%, 0 10px
-  );
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
   transition: transform 0.08s ease, filter 0.2s ease;
   overflow: hidden;
 }
-
-/* Внутренняя металлическая рамка с фаской */
 .esport-btn::before {
   content: "";
   position: absolute;
   inset: 1px;
-  clip-path: polygon(
-    10px 0, 100% 0, 
-    100% calc(100% - 10px), calc(100% - 10px) 100%, 
-    0 100%, 0 10px
-  );
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.4) 100%);
   pointer-events: none;
 }
-
-/* Бегущий стеклянный блик (Sheen) */
-.esport-btn::after {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -60%;
-  width: 40%;
-  height: 200%;
-  background: linear-gradient(
-    90deg, 
-    transparent, 
-    rgba(255, 255, 255, 0.18), 
-    transparent
-  );
-  transform: rotate(25deg);
-  pointer-events: none;
-  transition: transform 0.6s ease;
-}
-
-.esport-btn:active::after {
-  transform: translateX(350%) rotate(25deg);
-}
-
-.esport-btn:active {
-  transform: translateY(3px) scale(0.96);
-}
+.esport-btn:active { transform: translateY(3px) scale(0.96); }
 
 .esport-btn-text {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 13px;
   font-weight: 900;
   letter-spacing: 3px;
@@ -1275,7 +1082,6 @@ body {
   text-shadow: 0 2px 8px rgba(0,0,0,0.8);
 }
 
-/* 1. АТАКА */
 .btn-atk {
   background: linear-gradient(180deg, #241416 0%, #110708 100%);
   border-bottom: 2px solid #ef4444;
@@ -1288,7 +1094,6 @@ body {
 }
 .btn-atk .esport-btn-text { color: #fca5a5; }
 
-/* 2. ЗАЩИТА */
 .btn-def {
   background: linear-gradient(180deg, #101c2a 0%, #070e17 100%);
   border-bottom: 2px solid #38bdf8;
@@ -1301,7 +1106,6 @@ body {
 }
 .btn-def .esport-btn-text { color: #bae6fd; }
 
-/* 3. СКИЛЛ (СВЕРХУДАР) */
 .btn-spc {
   background: linear-gradient(180deg, #261d10 0%, #110d06 100%);
   border-bottom: 2px solid rgba(234, 179, 8, 0.4);
@@ -1314,19 +1118,12 @@ body {
 }
 .btn-spc .esport-btn-text { color: #fef08a; }
 
-/* Диоды заряда */
-.esport-spc-leds {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 2px;
-  z-index: 2;
-}
+.esport-spc-leds { display: flex; gap: 6px; margin-bottom: 2px; z-index: 2; }
 .esport-spc-leds .led {
   width: 16px;
   height: 4px;
   border-radius: 1px;
   background: rgba(255, 255, 255, 0.15);
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.6);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .esport-spc-leds .led.on {
@@ -1334,181 +1131,23 @@ body {
   box-shadow: 0 0 10px #facc15, 0 0 3px #fff;
 }
 
-/* УЛЬТИМЕЙТ ГОТОВ (2/2) */
-.btn-spc.ready {
-  background: linear-gradient(180deg, #3d2c11 0%, #1f1406 100%);
-  border-bottom: 2px solid #facc15;
-  box-shadow: 0 0 24px rgba(250, 204, 21, 0.45);
-  animation: ultFlame 1.3s ease-in-out infinite alternate;
-}
-.btn-spc.ready .esport-btn-text {
-  color: #fff;
-  text-shadow: 0 0 12px #facc15;
-}
-
-@keyframes ultFlame {
-  0% { filter: brightness(1); box-shadow: 0 0 16px rgba(250, 204, 21, 0.3); }
-  100% { filter: brightness(1.25); box-shadow: 0 0 28px rgba(250, 204, 21, 0.6); }
-}
-
-.top-hud {
-  position: absolute;
-  top: 18px;
-  left: 16px;
-  right: 16px;
-  display: flex;
-  align-items: center;
-  z-index: 120;
-  pointer-events: none;
-  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Пока идет загрузка: по центру экрана */
-.top-hud.preloading {
-  justify-content: center;
-}
-.top-hud.preloading .hud-collection {
-  transform: scale(1.08);
-}
-
-/* Когда AR готов: разводим по углам */
-.top-hud.ready {
-  justify-content: space-between;
-}
-
-.hud-btn {
-  pointer-events: auto;
-  background: rgba(15, 20, 31, 0.85);
-  border: 1px solid rgba(226, 184, 104, 0.3);
-  color: var(--accent-gold);
-  border-radius: 30px;
-  padding: 9px 18px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.hud-btn:active { transform: scale(0.95); }
-
-.hud-sound {
-  border-color: rgba(255, 255, 255, 0.15);
-  color: #fff;
-}
-
 /* ==========================================================
-   КОМПАКТНЫЙ ЧИТАЕМЫЙ ЧИП СУПЕРНАВЫКА В ЦЕНТРЕ АРЕНЫ
+   7. FX И ЧИСЛА УРОНА
    ========================================================== */
-.skill-tooltip-bar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  background: linear-gradient(180deg, rgba(18, 24, 38, 0.95) 0%, rgba(10, 14, 22, 0.98) 100%);
-  border: 1px solid rgba(226, 184, 104, 0.35);
+.shield-barrier-fx {
+  position: absolute;
+  inset: -3px;
   border-radius: 12px;
-  padding: 6px 14px;
-  margin-top: 8px;
-  width: calc(100% - 10px);
-  max-width: 320px;
-  box-sizing: border-box;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-/* Верхняя строка: мини-тег [СКИЛЛ] + Имя способности */
-.tooltip-header {
-  display: flex;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.3) 0%, rgba(226, 184, 104, 0.4) 100%);
+  border: 1.5px solid #38bdf8;
+  display: none;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  font-size: 20px;
+  z-index: 10;
+  animation: shieldPulse 0.8s infinite alternate;
 }
 
-.tooltip-badge {
-  font-family: 'JetBrains Mono', monospace, -apple-system;
-  font-size: 8.5px;
-  font-weight: 900;
-  letter-spacing: 1.2px;
-  background: var(--accent-gold);
-  color: #000;
-  padding: 1px 5px;
-  border-radius: 4px;
-  line-height: 1.2;
-}
-
-.tooltip-name {
-  font-size: 11px;
-  font-weight: 800;
-  color: #fef08a;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  text-shadow: 0 0 10px rgba(254, 240, 138, 0.3);
-}
-
-/* Нижняя строка: суть эффекта (крупный, четкий, без обрезания) */
-.tooltip-desc {
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.35;
-  color: #f1f5f9;
-  text-align: center;
-  white-space: normal;      /* Разрешаем перенос строк */
-  overflow: visible;         /* Никаких скрытий */
-  text-overflow: clip;       /* Убираем многоточие */
-  max-width: 100%;
-}
-
-/* Двухслойный трек здоровья с эффектом тающего следа */
-.meter-track {
-  position: relative;
-  height: 8px;
-  background: rgba(0, 0, 0, 0.75);
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  overflow: hidden;
-  margin: 6px 0 9px 0;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
-}
-
-/* Бело-желтый след полученного урона */
-.meter-ghost {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
-  border-radius: 4px;
-  transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.35s; /* Задержка 0.35s перед таянием */
-  z-index: 1;
-}
-
-/* Основная цветная полоса здоровья */
-.meter-fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  border-radius: 4px;
-  z-index: 2;
-  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.meter-fill.player-fill {
-  background: linear-gradient(90deg, #d4a347, #fde047);
-  box-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
-}
-.meter-fill.enemy-fill {
-  background: linear-gradient(90deg, #991b1b, #ef4444);
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
-}
-
-/* ==========================================================
-   БОЕВЫЕ ЧИСЛА УРОНА (RPG FLOATING POPUP)
-   ========================================================== */
 .floating-dmg-num {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -1516,207 +1155,41 @@ body {
   font-size: 28px;
   font-weight: 900;
   color: #fff;
-  /* Четкая многослойная тень для идеальной видимости на любом фоне */
-  text-shadow: 
-    0 2px 0 #000,
-    0 -2px 0 #000,
-    2px 0 0 #000,
-    -2px 0 0 #000,
-    0 4px 15px rgba(239, 68, 68, 0.9);
+  text-shadow: 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 4px 15px rgba(239, 68, 68, 0.9);
   pointer-events: none;
   z-index: 1000;
   white-space: nowrap;
   animation: floatAndHang 1.8s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
 }
-
-/* Критический урон — крупнее, золотистый неоновый взрыв */
 .floating-dmg-num.crit {
   font-size: 38px;
   color: #fde047;
-  text-shadow: 
-    0 2px 0 #000,
-    0 -2px 0 #000,
-    2px 0 0 #000,
-    -2px 0 0 #000,
-    0 0 25px rgba(250, 204, 21, 1),
-    0 4px 20px rgba(0, 0, 0, 0.9);
+  text-shadow: 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 0 25px rgba(250, 204, 21, 1), 0 4px 20px rgba(0, 0, 0, 0.9);
 }
 
-/* Анимация: резкий выстрел вверх -> зависание на 1.2 секунды -> плавное растворение */
 @keyframes floatAndHang {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, 0) scale(0.4);
-  }
-  12% {
-    opacity: 1;
-    transform: translate(-50%, -35px) scale(1.3); /* Резкий вылет с отскоком */
-  }
-  20% {
-    transform: translate(-50%, -42px) scale(1.05);
-  }
-  /* Фаза долгого зависания в воздухе (с 20% до 75% времени, ~1 секунда) */
-  75% {
-    opacity: 1;
-    transform: translate(-50%, -50px) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -75px) scale(0.85); /* Плавное таяние ввысь */
-  }
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.4); }
+  12% { opacity: 1; transform: translate(-50%, -35px) scale(1.3); }
+  20% { transform: translate(-50%, -42px) scale(1.05); }
+  75% { opacity: 1; transform: translate(-50%, -50px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -75px) scale(0.85); }
 }
 
-/* ==============================================================
-   КОНЦЕПТ: ОПТИЧЕСКИЙ ЛИМБ КАМЕРЫ
-   ============================================================== */
-:root {
-  --dial-accent: #f5c542;
-  --dial-glow: rgba(245, 197, 66, 0.4);
+@keyframes rotateCW  { to { transform: rotate(360deg); } }
+@keyframes rotateCCW { to { transform: rotate(-360deg); } }
+@keyframes pulseCore {
+  0%, 100% { transform: scale(0.94); opacity: 0.8; }
+  50%      { transform: scale(1.06); opacity: 1; }
 }
-
-.optical-dial-container {
-  position: fixed;
-  bottom: 18px;
-  left: 0;
-  right: 0;
-  z-index: 900;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: none;
-  user-select: none;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+@keyframes dockRise {
+  from { transform: translate(-50%, 40px); opacity: 0; }
+  to   { transform: translate(-50%, 0); opacity: 1; }
 }
-
-/* Центральный визир */
-.dial-reticle-pip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  margin-bottom: 6px;
-  pointer-events: none;
+@keyframes pulseWait {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50%      { opacity: 1; transform: scale(1.1); }
 }
-.dial-pip-line {
-  width: 2px;
-  height: 12px;
-  background: var(--dial-accent);
-  box-shadow: 0 0 10px var(--dial-accent), 0 0 2px #fff;
-  border-radius: 2px;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-}
-.dial-pip-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 6px var(--dial-accent);
-}
-
-/* Трек с виньеткой */
-.dial-track-wrapper {
-  position: relative;
-  width: 100%;
-  max-width: 540px;
-  display: flex;
-  justify-content: center;
-  pointer-events: auto;
-  mask-image: linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%);
-}
-
-.dial-scroll-track {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  padding: 8px 30px;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  touch-action: pan-x;
-}
-.dial-scroll-track::-webkit-scrollbar {
-  display: none;
-}
-
-/* Элемент лимба */
-.dial-item {
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.35);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1.6px;
-  text-transform: uppercase;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
-  padding: 6px 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  outline: none;
-  position: relative;
-}
-
-.dial-item::after {
-  content: '•';
-  position: absolute;
-  right: -13px;
-  color: rgba(255, 255, 255, 0.15);
-  font-size: 10px;
-  pointer-events: none;
-}
-.dial-item:last-child::after {
-  display: none;
-}
-
-.dial-item .dial-symbol {
-  font-size: 11px;
-  opacity: 0.5;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-
-.dial-item:hover {
-  color: rgba(255, 255, 255, 0.85);
-  transform: translateY(-1px);
-}
-
-/* Активный пункт под визиром */
-.dial-item.active {
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 800;
-  text-shadow: 0 0 16px var(--dial-glow);
-  transform: scale(1.08);
-}
-.dial-item.active .dial-symbol {
-  opacity: 1;
-  transform: scale(1.2);
-}
-
-/* Спектры лазера под ранги */
-body[data-active-rank="legends"]      { --dial-accent: #f5c542; --dial-glow: rgba(245, 197, 66, 0.5); }
-body[data-active-rank="grandmasters"] { --dial-accent: #38bdf8; --dial-glow: rgba(56, 189, 248, 0.5); }
-body[data-active-rank="maestro"]      { --dial-accent: #f97316; --dial-glow: rgba(249, 115, 22, 0.5); }
-body[data-active-rank="secrets"]      { --dial-accent: #c084fc; --dial-glow: rgba(192, 132, 252, 0.5); }
-body[data-active-rank="all"]          { --dial-accent: #e2e8f0; --dial-glow: rgba(226, 232, 240, 0.4); }
-
-.laser-beam {
-  background: linear-gradient(90deg, transparent, var(--dial-accent), transparent) !important;
-  box-shadow: 0 0 14px var(--dial-accent) !important;
-}
-.ar-reticle .reticle-corner {
-  border-color: var(--dial-accent) !important;
-}
-.hud-circle.ring-outer {
-  border-color: var(--dial-glow) !important;
-}
-
-body.card-active .optical-dial-container {
-  bottom: 78px;
-  transform: scale(0.94);
-  opacity: 0.85;
+@keyframes shieldPulse {
+  0%   { transform: scale(0.98); opacity: 0.8; }
+  100% { transform: scale(1.04); opacity: 1; }
 }
