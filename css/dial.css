@@ -27,7 +27,7 @@
   height: 10px;
   background: var(--dial-accent);
   box-shadow: 0 0 6px var(--dial-glow);
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  transition: background-color 0.4s ease, box-shadow 0.4s ease;
 }
 
 .dial-pip-dot {
@@ -35,7 +35,7 @@
   height: 3px;
   transform: rotate(45deg);
   background: var(--dial-accent);
-  transition: background-color 0.3s ease;
+  transition: background-color 0.4s ease;
 }
 
 .dial-track-wrapper {
@@ -47,8 +47,8 @@
   pointer-events: auto;
   background-image: repeating-linear-gradient(
     to right,
-    rgba(255, 255, 255, 0.14) 0px,
-    rgba(255, 255, 255, 0.14) 1px,
+    rgba(242, 239, 233, 0.14) 0px,
+    rgba(242, 239, 233, 0.14) 1px,
     transparent 1px,
     transparent 12px
   );
@@ -79,7 +79,7 @@
 .dial-item {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.38);
+  color: rgba(242, 239, 233, 0.42);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 2px;
@@ -104,7 +104,7 @@
   transform: translateY(-50%);
   width: 1px;
   height: 8px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(242, 239, 233, 0.12);
   pointer-events: none;
 }
 
@@ -115,19 +115,19 @@
 .dial-item .dial-symbol {
   font-size: 9px;
   opacity: 0.45;
-  transition: opacity 0.25s ease, color 0.25s ease;
+  transition: opacity 0.25s ease, color 0.4s ease;
 }
 
 .dial-item:hover {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(242, 239, 233, 0.85);
 }
 
 .dial-item.active {
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 2.2px;
-  text-shadow: 0 0 12px var(--dial-glow);
+  text-shadow: 0 0 10px var(--dial-glow);
 }
 
 .dial-item.active .dial-symbol {
@@ -142,15 +142,15 @@
   letter-spacing: 0.4px;
   padding: 0;
   background: transparent;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(242, 239, 233, 0.35);
   border: none;
-  transition: color 0.25s var(--ease-smooth);
+  transition: color 0.4s var(--ease-smooth);
   display: inline-block;
   transform: translateY(-3px);
 }
 
 .dial-item:hover .dial-count-badge {
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(242, 239, 233, 0.75);
 }
 
 .dial-item.active .dial-count-badge {

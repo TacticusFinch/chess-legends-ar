@@ -1,7 +1,7 @@
 #scanner-hint {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at center, transparent 35%, rgba(4, 6, 9, 0.65) 100%);
+  background: radial-gradient(circle at center, transparent 40%, rgba(12, 13, 16, 0.58) 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -22,26 +22,25 @@
   width: 68vw;
   max-width: 280px;
   aspect-ratio: 1 / 1.54;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  border: 1px solid rgba(242, 239, 233, 0.06);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 28px;
   overflow: hidden;
-  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.25);
 }
 
 .ar-reticle::before,
 .ar-reticle::after {
   content: '';
   position: absolute;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(242, 239, 233, 0.16);
   pointer-events: none;
 }
 
 .ar-reticle::before {
-  width: 12px;
+  width: 110px;
   height: 1px;
   top: 50%;
   left: 50%;
@@ -50,7 +49,7 @@
 
 .ar-reticle::after {
   width: 1px;
-  height: 12px;
+  height: 110px;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -58,53 +57,44 @@
 
 .reticle-corner {
   position: absolute;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-color: var(--dial-accent);
   border-style: solid;
-  opacity: 0.9;
-  transition: border-color 0.3s ease;
+  opacity: 0.85;
+  transition: border-color 0.4s ease;
 }
 
 .reticle-corner.top-left {
-  top: 10px;
-  left: 10px;
+  top: 12px;
+  left: 12px;
   border-width: 1px 0 0 1px;
-  border-radius: 4px 0 0 0;
+  border-radius: 2px 0 0 0;
 }
 
 .reticle-corner.top-right {
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 12px;
   border-width: 1px 1px 0 0;
-  border-radius: 0 4px 0 0;
+  border-radius: 0 2px 0 0;
 }
 
 .reticle-corner.bottom-left {
-  bottom: 10px;
-  left: 10px;
+  bottom: 12px;
+  left: 12px;
   border-width: 0 0 1px 1px;
-  border-radius: 0 0 0 4px;
+  border-radius: 0 0 0 2px;
 }
 
 .reticle-corner.bottom-right {
-  bottom: 10px;
-  right: 10px;
+  bottom: 12px;
+  right: 12px;
   border-width: 0 1px 1px 0;
-  border-radius: 0 0 4px 0;
+  border-radius: 0 0 2px 0;
 }
 
 .laser-beam {
-  position: absolute;
-  top: 0;
-  left: 8%;
-  width: 84%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--dial-accent) 50%, transparent);
-  box-shadow: 0 0 8px var(--dial-glow);
-  opacity: 0.75;
-  animation: scanLaserFull 3.2s ease-in-out infinite alternate;
-  transition: background 0.3s ease, box-shadow 0.3s ease;
+  display: none;
 }
 
 .hud-circle {
@@ -114,45 +104,24 @@
 }
 
 .ring-outer {
-  width: 88px;
-  height: 88px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  animation: rotateCW 18s linear infinite;
+  width: 92px;
+  height: 92px;
+  border: 1px solid rgba(242, 239, 233, 0.12);
 }
 
 .ring-inner {
-  width: 64px;
-  height: 64px;
-  border: 1px solid transparent;
-  border-top-color: var(--dial-accent);
-  border-bottom-color: var(--dial-accent);
+  width: 58px;
+  height: 58px;
+  border: 1px dashed var(--dial-accent);
   opacity: 0.65;
-  animation: rotateCCW 4s var(--ease-smooth) infinite;
-  transition: border-color 0.3s ease;
-}
-
-.ring-outer {
-  width: 76px;
-  height: 76px;
-  border: 1px dashed rgba(255, 255, 255, 0.16);
-  animation: rotateCW 24s linear infinite;
-}
-
-.ring-inner {
-  width: 48px;
-  height: 48px;
-  border: 1px solid transparent;
-  border-top-color: var(--dial-accent);
-  border-bottom-color: var(--dial-accent);
-  opacity: 0.75;
-  animation: rotateCCW 6s var(--ease-smooth) infinite;
-  transition: border-color 0.3s ease;
+  animation: rotateCW 36s linear infinite;
+  transition: border-color 0.4s ease;
 }
 
 .hud-chess-core {
   position: relative;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   font-size: 0;
   color: transparent;
   display: flex;
@@ -163,12 +132,13 @@
 
 .hud-chess-core::before {
   content: '';
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
   border: 1px solid var(--dial-accent);
-  transform: rotate(45deg);
-  opacity: 0.85;
-  transition: border-color 0.3s ease, transform 0.4s var(--ease-smooth);
+  opacity: 0.9;
+  animation: pulseCore 3s ease-in-out infinite;
+  transition: border-color 0.4s ease;
 }
 
 .hud-chess-core::after {
@@ -177,11 +147,8 @@
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 0 6px var(--dial-accent);
-  transition: box-shadow 0.3s ease;
+  background: var(--text-main);
 }
-
 
 .scanner-status {
   display: flex;
@@ -197,26 +164,27 @@
   letter-spacing: 2px;
   padding: 3px 10px;
   border-radius: 4px;
-  background: rgba(15, 20, 31, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(16, 17, 21, 0.72);
+  border: 1px solid var(--border-subtle);
   color: var(--dial-accent);
   margin-bottom: 6px;
   text-transform: uppercase;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  transition: color 0.4s ease;
 }
 
 .status-title {
   font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.8px;
-  color: #f8fafc;
+  letter-spacing: 0.6px;
+  color: var(--text-main);
 }
 
 .status-sub {
   font-size: 11px;
   font-weight: 400;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   color: var(--text-muted);
 }
 
@@ -232,7 +200,7 @@
 .load-bar-track {
   width: 100%;
   height: 1.5px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(242, 239, 233, 0.12);
   overflow: hidden;
 }
 
@@ -240,7 +208,7 @@
   width: 0%;
   height: 100%;
   background: var(--dial-accent);
-  transition: width 0.3s ease, background 0.3s ease;
+  transition: width 0.3s ease, background 0.4s ease;
 }
 
 .load-subtext {
@@ -248,7 +216,6 @@
   color: var(--text-dim);
   text-align: center;
   line-height: 1.4;
-  letter-spacing: 0.2px;
 }
 
 #unlock-toast {
@@ -256,15 +223,15 @@
   top: 76px;
   left: 50%;
   transform: translateX(-50%) translateY(-12px);
-  background: rgba(10, 14, 22, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(16, 17, 21, 0.88);
+  border: 1px solid var(--border-gold);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-  color: #f8fafc;
+  color: var(--text-main);
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   z-index: 300;
   display: flex;
   align-items: center;

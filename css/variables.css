@@ -1,40 +1,40 @@
 :root {
-  --accent-gold: #dfc084;
-  --accent-gold-subtle: rgba(223, 192, 132, 0.12);
-  --accent-cyan: #7dd3fc;
-  --accent-red: #f87171;
-  --accent-purple: #d8b4fe;
+  --accent-gold: #d4b475;
+  --accent-gold-subtle: rgba(212, 180, 117, 0.12);
+  --accent-cyan: #8fb8a8;
+  --accent-red: #d97777;
+  --accent-purple: #b89ec9;
   
-  --bg-dark-core: #05070b;
-  --bg-surface: rgba(12, 16, 24, 0.72);
-  --bg-surface-elevated: rgba(18, 24, 36, 0.88);
+  --bg-dark-core: #0c0d10;
+  --bg-surface: rgba(16, 17, 21, 0.76);
+  --bg-surface-elevated: rgba(24, 26, 32, 0.9);
   
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-gold: rgba(223, 192, 132, 0.28);
+  --border-subtle: rgba(242, 239, 233, 0.09);
+  --border-gold: rgba(212, 180, 117, 0.28);
 
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
+  --text-main: #f2efe9;
+  --text-muted: #9e9b93;
+  --text-dim: #68655e;
 
   --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
 
-  --dial-accent: #e5c175;
-  --dial-glow: rgba(229, 193, 117, 0.35);
+  --dial-accent: #d4b475;
+  --dial-glow: rgba(212, 180, 117, 0.28);
 }
 
 body[data-active-rank="legends-1"] {
-  --dial-accent: #e5c175;
-  --dial-glow: rgba(229, 193, 117, 0.35);
+  --dial-accent: #d4b475;
+  --dial-glow: rgba(212, 180, 117, 0.28);
 }
 
 body[data-active-rank="legends-2"] {
-  --dial-accent: #7dd3fc;
-  --dial-glow: rgba(125, 211, 252, 0.35);
+  --dial-accent: #8fb8a8;
+  --dial-glow: rgba(143, 184, 168, 0.28);
 }
 
 body[data-active-rank="secrets"] {
-  --dial-accent: #d8b4fe;
-  --dial-glow: rgba(216, 180, 254, 0.35);
+  --dial-accent: #b89ec9;
+  --dial-glow: rgba(184, 158, 201, 0.28);
 }
 
 *, *::before, *::after {

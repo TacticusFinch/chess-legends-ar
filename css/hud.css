@@ -24,8 +24,8 @@
 
 .hud-btn {
   pointer-events: auto;
-  background: rgba(10, 14, 22, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(16, 17, 21, 0.78);
+  border: 1px solid rgba(242, 239, 233, 0.12);
   color: var(--text-main);
   border-radius: 6px;
   padding: 7px 14px;
@@ -39,7 +39,7 @@
   text-transform: uppercase;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   cursor: pointer;
   transition: all 0.25s var(--ease-smooth);
 }
@@ -56,12 +56,12 @@
   border-radius: 50%;
   background: var(--dial-accent);
   box-shadow: 0 0 8px var(--dial-accent);
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  transition: background-color 0.4s ease, box-shadow 0.4s ease;
 }
 
 .hud-btn:hover {
-  border-color: rgba(255, 255, 255, 0.3);
-  background: rgba(18, 24, 38, 0.85);
+  border-color: rgba(242, 239, 233, 0.28);
+  background: rgba(24, 26, 32, 0.88);
 }
 
 .hud-btn:active {
@@ -69,8 +69,8 @@
 }
 
 .hud-sound {
-  border-color: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(242, 239, 233, 0.12);
+  color: rgba(242, 239, 233, 0.85);
 }
 
 #interactive-dock {
@@ -83,12 +83,12 @@
   z-index: 150;
   display: none;
   padding: 4px;
-  border-radius: 10px;
-  background: rgba(10, 14, 22, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(16, 17, 21, 0.86);
+  border: 1px solid rgba(242, 239, 233, 0.12);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
   gap: 4px;
   animation: dockRise 0.4s var(--ease-smooth) forwards;
 }
@@ -97,10 +97,10 @@
   position: relative;
   flex: 1;
   padding: 9px 6px;
-  border-radius: 6px;
+  border-radius: 5px;
   background: transparent;
   border: 1px solid transparent;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(242, 239, 233, 0.88);
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.8px;
@@ -123,17 +123,17 @@
   top: 22%;
   height: 56%;
   width: 1px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(242, 239, 233, 0.09);
   pointer-events: none;
 }
 
 .dock-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: rgba(242, 239, 233, 0.06);
+  border-color: rgba(242, 239, 233, 0.12);
+  color: var(--text-main);
 }
 
 .dock-btn:active {
   transform: scale(0.97);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(242, 239, 233, 0.1);
 }
