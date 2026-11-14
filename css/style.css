@@ -30,13 +30,12 @@ body {
 }
 
 /* ==========================================================
-   2. СКАНЕР AR И ПРЕЛОАДЕР (ПРЕМИАЛЬНЫЙ СТИЛЬ ПРИКЛЮЧЕНИЙ)
+   2. СКАНЕР AR И ПРЕЛОАДЕР
    ========================================================== */
 #scanner-hint {
   position: absolute;
   inset: 0;
-  /* Глубокая кинематографичная виньетка с теплым золотистым отблеском в центре */
-  background: radial-gradient(circle at center, rgba(22, 18, 12, 0.35) 0%, rgba(5, 7, 11, 0.92) 100%);
+  background: radial-gradient(circle at center, rgba(8, 12, 19, 0.4) 0%, rgba(4, 6, 9, 0.8) 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -44,7 +43,7 @@ body {
   z-index: 100;
   text-align: center;
   padding: 24px;
-  transition: opacity 0.6s var(--ease-smooth);
+  transition: opacity 0.5s var(--ease-smooth);
   pointer-events: none;
 }
 #scanner-hint.hidden { opacity: 0; }
@@ -54,145 +53,96 @@ body {
   width: 70vw;
   max-width: 290px;
   aspect-ratio: 1 / 1.54;
-  /* Двойная рамка артефакта с внутренним свечением и тонкой картографической сеткой */
-  border: 1px solid rgba(226, 184, 104, 0.25);
-  box-shadow: 
-    0 20px 50px rgba(0, 0, 0, 0.7),
-    inset 0 0 35px rgba(226, 184, 104, 0.08);
-  background-image: 
-    linear-gradient(rgba(226, 184, 104, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(226, 184, 104, 0.04) 1px, transparent 1px);
-  background-size: 28px 28px;
-  background-position: center;
-  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 28px;
   overflow: hidden;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(2px);
 }
 
-/* Внутренняя тонкая золотая нить по периметру карточки */
-.ar-reticle::before {
-  content: '';
-  position: absolute;
-  inset: 8px;
-  border: 1px solid rgba(226, 184, 104, 0.14);
-  border-radius: 14px;
-  pointer-events: none;
-}
-
-/* Уголки в стиле латунных накладок на старинном фолианте или шкатулке */
 .reticle-corner {
   position: absolute;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-color: var(--accent-gold);
   border-style: solid;
-  filter: drop-shadow(0 0 6px rgba(226, 184, 104, 0.4));
 }
-.reticle-corner.top-left     { top: 12px; left: 12px; border-width: 2px 0 0 2px; border-radius: 4px 0 0 0; }
-.reticle-corner.top-right    { top: 12px; right: 12px; border-width: 2px 2px 0 0; border-radius: 0 4px 0 0; }
-.reticle-corner.bottom-left  { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; border-radius: 0 0 0 4px; }
-.reticle-corner.bottom-right { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; border-radius: 0 0 4px 0; }
+.reticle-corner.top-left     { top: 12px; left: 12px; border-width: 2px 0 0 2px; border-radius: 6px 0 0 0; }
+.reticle-corner.top-right    { top: 12px; right: 12px; border-width: 2px 2px 0 0; border-radius: 0 6px 0 0; }
+.reticle-corner.bottom-left  { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; border-radius: 0 0 0 6px; }
+.reticle-corner.bottom-right { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; border-radius: 0 0 6px 0; }
 
-/* Эффект золотого солнечного блика / луча поиска вместо холодного лазера */
+/* Обновленная анимация лазера сканера на всю высоту рамки */
 .laser-beam {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, transparent 5%, #fff6d6 50%, transparent 95%);
-  box-shadow: 
-    0 0 12px var(--accent-gold),
-    0 0 28px rgba(226, 184, 104, 0.6);
-  animation: scanLaserFull 3.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+  background: linear-gradient(90deg, transparent, var(--accent-gold) 50%, transparent);
+  box-shadow: 0 0 16px var(--accent-gold);
+  animation: scanLaserFull 2.6s ease-in-out infinite alternate;
 }
 
 @keyframes scanLaserFull {
   0% {
-    top: 4%;
-    opacity: 0.15;
+    top: 2%;
+    opacity: 0.2;
   }
   50% {
     opacity: 1;
   }
   100% {
-    top: 96%;
-    opacity: 0.15;
+    top: 98%;
+    opacity: 0.2;
   }
 }
 
-/* Механизм астролябии / компаса в центре */
 .hud-circle { position: absolute; border-radius: 50%; box-sizing: border-box; }
 .ring-outer {
-  width: 118px;
-  height: 118px;
-  border: 1px dashed rgba(226, 184, 104, 0.45);
-  box-shadow: inset 0 0 15px rgba(226, 184, 104, 0.08);
-  animation: rotateCW 18s linear infinite;
+  width: 100px;
+  height: 100px;
+  border: 1px dashed rgba(226, 184, 104, 0.35);
+  animation: rotateCW 12s linear infinite;
 }
 .ring-inner {
-  width: 84px;
-  height: 84px;
+  width: 72px;
+  height: 72px;
   border: 2px solid transparent;
   border-top-color: var(--accent-gold);
   border-bottom-color: var(--accent-gold);
-  border-left: 1px solid rgba(226, 184, 104, 0.25);
-  border-right: 1px solid rgba(226, 184, 104, 0.25);
-  animation: rotateCCW 4.5s var(--ease-smooth) infinite;
+  animation: rotateCCW 3s var(--ease-smooth) infinite;
 }
 
-/* Центральная шахматная фигура как золотой медальон */
 .hud-chess-core {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(226, 184, 104, 0.18) 0%, rgba(12, 16, 24, 0.6) 100%);
-  border: 1px solid rgba(226, 184, 104, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
+  font-size: 32px;
   color: var(--accent-gold);
-  text-shadow: 0 0 14px rgba(226, 184, 104, 0.7);
-  animation: pulseCore 2.5s ease-in-out infinite;
+  animation: pulseCore 2s ease-in-out infinite;
   z-index: 2;
 }
 
-.scanner-status { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.scanner-status { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .status-badge {
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 2.2px;
-  padding: 5px 14px;
+  letter-spacing: 1.5px;
+  padding: 4px 10px;
   border-radius: 20px;
-  background: linear-gradient(135deg, rgba(226, 184, 104, 0.18), rgba(226, 184, 104, 0.05));
-  border: 1px solid rgba(226, 184, 104, 0.45);
+  background: var(--accent-gold-subtle);
+  border: 1px solid var(--border-gold);
   color: var(--accent-gold);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   margin-bottom: 6px;
   text-transform: uppercase;
 }
-.status-title { 
-  font-size: 15px; 
-  font-weight: 600; 
-  letter-spacing: 0.8px; 
-  color: #fff; 
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
-}
-.status-sub { 
-  font-size: 11px; 
-  letter-spacing: 0.3px;
-  color: var(--text-muted); 
-}
+.status-title { font-size: 14px; font-weight: 600; letter-spacing: 0.5px; color: #fff; }
+.status-sub { font-size: 11px; color: var(--text-muted); }
 
-/* Шкала пробуждения магии / загрузки */
 .load-progress-box {
-  width: 210px;
-  margin-top: 16px;
+  width: 200px;
+  margin-top: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -200,46 +150,38 @@ body {
 }
 .load-bar-track {
   width: 100%;
-  height: 5px;
-  padding: 1px;
-  background: rgba(10, 14, 22, 0.8);
-  border: 1px solid rgba(226, 184, 104, 0.25);
-  border-radius: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
   overflow: hidden;
 }
 .load-bar-fill {
   width: 0%;
   height: 100%;
-  border-radius: 2px;
-  background: linear-gradient(90deg, #b8893c, var(--accent-gold), #fff2c2);
-  box-shadow: 0 0 10px rgba(226, 184, 104, 0.6);
-  transition: width 0.35s ease;
+  background: var(--accent-gold);
+  transition: width 0.3s ease;
 }
 .load-subtext {
   font-size: 10px;
-  letter-spacing: 0.3px;
   color: var(--text-dim);
   text-align: center;
   line-height: 1.4;
 }
 
-/* Премиальное уведомление об открытии легенды */
 #unlock-toast {
   position: absolute;
   top: 76px;
   left: 50%;
   transform: translateX(-50%) translateY(-15px);
-  background: linear-gradient(135deg, rgba(24, 20, 15, 0.94), rgba(14, 18, 28, 0.94));
-  border: 1px solid rgba(226, 184, 104, 0.55);
-  box-shadow: 
-    0 16px 36px rgba(0, 0, 0, 0.75),
-    inset 0 0 16px rgba(226, 184, 104, 0.12);
+  background: rgba(18, 24, 38, 0.92);
+  border: 1px solid var(--border-gold);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
   color: #fff;
-  padding: 11px 20px;
+  padding: 10px 18px;
   border-radius: 30px;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.5px;
   z-index: 300;
   display: flex;
   align-items: center;
