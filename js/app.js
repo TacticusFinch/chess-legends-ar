@@ -387,7 +387,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         badge.style.borderColor = "var(--accent-color, #f1c40f)";
         badge.style.color = "var(--accent-color, #f1c40f)";
       }
-      if (title) title.innerText = "НАВЕДИТЕ НА КАРТОЧКУ";
+      if (title) title.innerText = "ВЫБЕРИТЕ РАНГ И НАВЕДИТЕ НА КАРТОЧКУ";
     }, 250);
 
   } catch (err) {
