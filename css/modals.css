@@ -1,0 +1,331 @@
+/* ==========================================================
+   МОДАЛЬНЫЕ ОКНА, БИОГРАФИИ, КВЕСТЫ И ПАСПОРТ КОЛЛЕКЦИИ
+   ========================================================== */
+
+/* Базовый оверлей модальных окон */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 6, 10, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s var(--ease-smooth);
+  padding: 18px;
+  box-sizing: border-box;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Модальная карточка */
+.modal-card {
+  background: linear-gradient(165deg, rgba(20, 26, 40, 0.95) 0%, rgba(10, 14, 22, 0.98) 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 400px;
+  padding: 24px;
+  color: var(--text-main);
+  position: relative;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  max-height: 85vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-smooth);
+}
+
+.modal-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.modal-close:active {
+  transform: scale(0.95);
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: #fff;
+  margin-bottom: 4px;
+  padding-right: 65px;
+}
+
+.modal-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+
+/* Типографика биографий */
+.bio-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.8px;
+  margin: 16px 0 6px;
+}
+
+.bio-paragraph {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #cbd5e1;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.modal-quote {
+  font-style: italic;
+  color: #e2e8f0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  border-left: 2px solid var(--accent-gold);
+  padding: 10px 14px;
+  margin: 14px 0;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0 12px 12px 0;
+}
+
+/* Диаграммы и задачи */
+.diagram-container {
+  width: 100%;
+  margin: 14px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.diagram-img {
+  max-width: 240px;
+  width: 100%;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background-color: #0b0e14;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.difficulty-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--accent-gold);
+  margin-bottom: 10px;
+}
+
+.puzzle-option-btn {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: #fff;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.2s var(--ease-smooth);
+}
+
+.puzzle-option-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.puzzle-option-btn:active {
+  transform: scale(0.98);
+}
+
+/* Статистика и способности */
+.stat-row {
+  margin-bottom: 12px;
+}
+
+.stat-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: var(--text-muted);
+}
+
+.stat-track {
+  height: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.stat-fill {
+  height: 100%;
+  background: var(--accent-gold);
+  border-radius: 3px;
+}
+
+.skill-box {
+  margin-top: 16px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+}
+
+.external-promo-box {
+  margin-top: 16px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  text-align: center;
+}
+
+.action-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 12px 16px;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: #fff;
+  color: #000;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-smooth);
+}
+
+.action-link-btn:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.action-link-btn.secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: #fff;
+}
+
+/* Сетка паспорта (Коллекция карт) */
+.passport-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.passport-slot {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 6px 4px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  box-sizing: border-box;
+  transition: transform 0.2s var(--ease-smooth), border-color 0.2s ease;
+}
+
+.passport-slot.unlocked {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.passport-slot.unlocked:active {
+  transform: scale(0.95);
+}
+
+.passport-slot.locked {
+  filter: grayscale(1);
+  opacity: 0.35;
+}
+
+.passport-avatar-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.passport-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.passport-hero-name {
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.passport-badge-test {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 8px;
+  background: #10b981;
+  color: #fff;
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.passport-lock-icon {
+  font-size: 14px;
+  opacity: 0.5;
+}

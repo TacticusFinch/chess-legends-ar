@@ -1,0 +1,607 @@
+/* ==========================================================
+   СЕТЕВАЯ ДУЭЛЬ: ЛОББИ И БОЕВОЙ ТУРНИРНЫЙ HUD
+   ========================================================== */
+
+/* Лобби модальное окно */
+.duel-card {
+  max-width: 320px !important;
+  padding: 28px 20px !important;
+  text-align: center;
+}
+
+.duel-actions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.duel-primary-btn {
+  width: 100%;
+  padding: 13px;
+  background: #fff;
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-smooth);
+}
+
+.duel-primary-btn:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+.duel-secondary-btn {
+  width: 100%;
+  padding: 13px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-smooth);
+}
+
+.duel-secondary-btn:active {
+  transform: scale(0.97);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.duel-big-code {
+  font-family: ui-monospace, monospace;
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: 8px;
+  color: #fff;
+  padding: 12px 0;
+  margin: 6px 0 16px;
+  text-indent: 8px;
+}
+
+.duel-wait-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.wait-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  animation: pulseWait 1.4s infinite;
+}
+
+.duel-pin-input {
+  width: 150px;
+  padding: 10px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 10px;
+  text-align: center;
+  text-indent: 10px;
+  font-family: ui-monospace, monospace;
+  margin-bottom: 24px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.duel-pin-input:focus {
+  border-color: #fff;
+}
+
+/* Боевой оверлей турнира на весь экран */
+#net-battle-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 14px;
+  box-sizing: border-box;
+  background: radial-gradient(circle at center, rgba(14, 19, 30, 0.88) 0%, rgba(6, 8, 12, 0.98) 100%);
+}
+
+/* Панели игроков */
+.duel-actor-panel {
+  pointer-events: auto;
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.duel-actor-panel.player-panel {
+  background: linear-gradient(135deg, rgba(16, 22, 34, 0.95) 0%, rgba(8, 12, 18, 0.98) 100%);
+  border: 1px solid rgba(226, 184, 104, 0.35);
+}
+
+.duel-actor-panel.enemy-panel {
+  background: linear-gradient(135deg, rgba(28, 16, 18, 0.95) 0%, rgba(14, 8, 10, 0.98) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.actor-card-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.actor-details {
+  flex: 1;
+}
+
+.actor-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.enemy-avatar-frame {
+  border: 1.5px solid #ef4444;
+}
+
+.player-avatar-frame {
+  border: 1.5px solid var(--accent-gold);
+}
+
+.actor-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.actor-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.actor-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actor-side-badge {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.actor-side-badge.side-black {
+  background: #21262d;
+  color: #8b949e;
+}
+
+.actor-side-badge.side-white {
+  background: #fff;
+  color: #000;
+}
+
+.actor-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.hp-badge-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hp-tag {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+}
+
+.player-panel .hp-tag {
+  color: var(--accent-gold);
+}
+
+.enemy-panel .hp-tag {
+  color: #f87171;
+}
+
+.actor-points {
+  font-family: ui-monospace, monospace, -apple-system;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.2px;
+}
+
+/* HP Бар со сглаженным ghost-эффектом */
+.meter-track {
+  position: relative;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  margin: 6px 0 9px 0;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.meter-ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+  border-radius: 4px;
+  transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.35s;
+  z-index: 1;
+}
+
+.meter-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 4px;
+  z-index: 2;
+  transition: width 0.35s var(--ease-smooth);
+}
+
+.meter-fill.player-fill {
+  background: linear-gradient(90deg, #d4a347, #fde047);
+  box-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
+}
+
+.meter-fill.enemy-fill {
+  background: linear-gradient(90deg, #991b1b, #ef4444);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+/* Тактические чипы статов */
+.tactical-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.stat-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 2px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.stat-chip-label {
+  font-size: 7.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #788599;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.stat-chip-value {
+  font-family: ui-monospace, monospace, -apple-system;
+  font-size: 14.5px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.stat-chip.atk-chip {
+  border-color: rgba(248, 113, 113, 0.28);
+}
+.stat-chip.atk-chip .stat-chip-value {
+  color: #f87171;
+  text-shadow: 0 0 8px rgba(248, 113, 113, 0.4);
+}
+
+.stat-chip.def-chip {
+  border-color: rgba(56, 189, 248, 0.28);
+}
+.stat-chip.def-chip .stat-chip-value {
+  color: #38bdf8;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+}
+
+.stat-chip.skill-chip {
+  border-color: rgba(234, 179, 8, 0.28);
+}
+.stat-chip.skill-chip .stat-chip-value {
+  color: #facc15;
+  text-shadow: 0 0 8px rgba(250, 204, 21, 0.4);
+}
+
+/* Центральная арена */
+.duel-center-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  pointer-events: auto;
+}
+
+.eval-meter-container {
+  position: absolute;
+  left: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.eval-bar-track {
+  width: 4px;
+  height: 90px;
+  background: #181b24;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column-reverse;
+  overflow: hidden;
+}
+
+.eval-bar-fill {
+  width: 100%;
+  background: #fff;
+  transition: height 0.5s ease;
+}
+
+.eval-score-text {
+  font-family: ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.duel-center-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0 35px;
+  box-sizing: border-box;
+}
+
+.round-status-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--accent-gold);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding: 4px 12px;
+  background: var(--accent-gold-subtle);
+  border: 1px solid var(--border-gold);
+  border-radius: 20px;
+}
+
+.tactical-teletype {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  background: rgba(13, 17, 26, 0.85);
+  border: 1px solid var(--border-subtle);
+  padding: 6px 14px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  text-transform: uppercase;
+  text-align: center;
+  max-width: 280px;
+}
+
+/* Тултип описания способности */
+.skill-tooltip-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: linear-gradient(180deg, rgba(18, 24, 38, 0.95) 0%, rgba(10, 14, 22, 0.98) 100%);
+  border: 1px solid rgba(226, 184, 104, 0.35);
+  border-radius: 12px;
+  padding: 6px 14px;
+  margin-top: 8px;
+  width: calc(100% - 10px);
+  max-width: 320px;
+  box-sizing: border-box;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tooltip-badge {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  background: var(--accent-gold);
+  color: #000;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.tooltip-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fef08a;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.tooltip-desc {
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #f1f5f9;
+  text-align: center;
+}
+
+/* Киберспортивные боевые кнопки действий */
+.tactical-deck {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.25fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.esport-btn {
+  position: relative;
+  height: 60px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  background: linear-gradient(180deg, #182234 0%, #0c111a 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+  transition: transform 0.08s ease, filter 0.2s ease;
+  overflow: hidden;
+}
+
+.esport-btn::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.4) 100%);
+  pointer-events: none;
+}
+
+.esport-btn:active {
+  transform: translateY(3px) scale(0.96);
+}
+
+.esport-btn-text {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  z-index: 2;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+}
+
+.btn-atk {
+  background: linear-gradient(180deg, #241416 0%, #110708 100%);
+  border-bottom: 2px solid #ef4444;
+}
+
+.btn-atk .esport-light-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #ef4444;
+  box-shadow: 0 0 12px #ef4444;
+}
+
+.btn-atk .esport-btn-text {
+  color: #fca5a5;
+}
+
+.btn-def {
+  background: linear-gradient(180deg, #101c2a 0%, #070e17 100%);
+  border-bottom: 2px solid #38bdf8;
+}
+
+.btn-def .esport-light-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #38bdf8;
+  box-shadow: 0 0 12px #38bdf8;
+}
+
+.btn-def .esport-btn-text {
+  color: #bae6fd;
+}
+
+.btn-spc {
+  background: linear-gradient(180deg, #261d10 0%, #110d06 100%);
+  border-bottom: 2px solid rgba(234, 179, 8, 0.4);
+}
+
+.btn-spc .esport-light-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #eab308;
+  box-shadow: 0 0 10px #eab308;
+}
+
+.btn-spc .esport-btn-text {
+  color: #fef08a;
+}
+
+.esport-spc-leds {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 2px;
+  z-index: 2;
+}
+
+.esport-spc-leds .led {
+  width: 16px;
+  height: 4px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  transition: all 0.3s var(--ease-smooth);
+}
+
+.esport-spc-leds .led.on {
+  background: #facc15;
+  box-shadow: 0 0 10px #facc15, 0 0 3px #fff;
+}
