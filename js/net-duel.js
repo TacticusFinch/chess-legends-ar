@@ -87,7 +87,6 @@ const InteractiveBoardEngine = {
     if (secEl) secEl.textContent = seconds;
     if (barEl) {
       barEl.style.width = `${percent}%`;
-      // Когда времени мало (< 10 сек) — красивое предупреждение красным цветом
       if (seconds <= 10) {
         barEl.style.backgroundColor = "#ff4d6d";
         if (badgeEl) {
@@ -127,7 +126,6 @@ const InteractiveBoardEngine = {
       const skillTooltip = document.getElementById("battle-skill-tooltip");
       if (skillTooltip) skillTooltip.style.display = "flex";
 
-      // Ход считается неуспешным (атака без крита / со штрафом)
       NetDuel.resolveTacticalStrike(false);
     }, 700);
   },
@@ -199,7 +197,7 @@ const InteractiveBoardEngine = {
         const targetMove = self.currentPuzzle.move;
 
         self.active = false;
-        self.stopTimer(); // Останавливаем таймер при ходе
+        self.stopTimer();
         self.removeHighlights();
 
         const isCorrect = (source === targetMove.from && target === targetMove.to);
@@ -270,14 +268,13 @@ window.NetDuel = {
   mySide: "white",
   isWaitingOpponent: false,
 
-  // Статусы и тактические эффекты раундов:
   playerBuffs: {
-    invulnerable: false,   // Капабланка (100% блок следующей атаки)
-    guaranteedCrit: false, // Спасский (гарантированный крит следующей атаки)
-    tempoBoost: false,     // Фишер (+2⚡ за следующее действие)
-    openBreachTurns: 0,    // Алехин (+3 урона ко всем атакам)
-    energyLocked: false,   // Ботвинник (запрет получения энергии)
-    stunned: false         // Ласкер (дезориентация / запрет атаки)
+    invulnerable: false,
+    guaranteedCrit: false,
+    tempoBoost: false,
+    openBreachTurns: 0,
+    energyLocked: false,
+    stunned: false
   },
   enemyBuffs: {
     invulnerable: false,
@@ -334,32 +331,97 @@ window.NetDuel = {
     }, 1800);
   },
 
+  /**
+   * КИНЕМАТОГРАФИЧНЫЙ SUPER CUT-IN (АРКАДНЫЙ СУПЕР-ПРИЕМ В СТИЛЕ КИБЕРСПОРТИВНОГО ФАЙТИНГА)
+   */
   showSuperCutIn(hero, skillName) {
     const overlay = document.getElementById("net-battle-overlay");
     if (!overlay) return;
 
+    // Удаляем предыдущий оверлей, если он ещё активен
+    const oldCutin = overlay.querySelector(".super-cutin-overlay");
+    if (oldCutin) oldCutin.remove();
+
     const cutin = document.createElement("div");
     cutin.className = "super-cutin-overlay";
+
+    const heroImg = hero.img || "./assets/avatars/steinitz.png";
+    const heroName = hero.name || "ГРОССМЕЙСТЕР";
+    const heroRank = hero.rank || "ЛЕГЕНДА";
+    const heroSkill = skillName || hero.skillName || "КОРОННЫЙ ХОД";
+
     cutin.innerHTML = `
-      <div class="super-cutin-banner">
-        <img class="cutin-avatar" src="${hero.img}" alt="${hero.name}">
-        <div class="cutin-text-group">
-          <span class="cutin-hero-name">${hero.name}</span>
-          <span class="cutin-skill-name">«${skillName || "КОРОННЫЙ ХОД"}»</span>
+      <!-- Динамические боевые манга/аниме линии скорости -->
+      <div class="cutin-speedlines"></div>
+
+      <!-- Линзовые световые лезвия разреза -->
+      <div class="cutin-laser-beam beam-top"></div>
+      <div class="cutin-laser-beam beam-bottom"></div>
+
+      <!-- Расширяющееся кольцо ударной волны -->
+      <div class="cutin-shockwave"></div>
+
+      <!-- Главная диагональная гильотинная сцена с рассечением -->
+      <div class="cutin-stage">
+        <!-- Бегущая строка предупреждения об ультимейте -->
+        <div class="cutin-header-ticker">
+          <span class="ticker-badge">⚡ CRITICAL ART</span>
+          <span class="ticker-title">GRANDMASTER OVERDRIVE</span>
+          <span class="ticker-chess-glyph">♚ ✦ ♚</span>
+        </div>
+
+        <!-- Центральный портрет чемпиона с энергетической короной -->
+        <div class="cutin-hero-wrapper">
+          <div class="cutin-avatar-frame">
+            <img class="cutin-avatar" src="${heroImg}" alt="${heroName}">
+            <div class="cutin-eye-glint"></div>
+            <div class="cutin-aura-glow"></div>
+            <div class="cutin-frame-bracket bracket-tl"></div>
+            <div class="cutin-frame-bracket bracket-br"></div>
+          </div>
+
+          <div class="cutin-info-block">
+            <div class="cutin-rank-tag">
+              <span class="rank-dot">●</span>
+              <span>${heroRank.toUpperCase()}</span>
+            </div>
+            <div class="cutin-hero-name">${heroName}</div>
+            
+            <div class="cutin-skill-banner">
+              <span class="skill-quote-mark">«</span>
+              <span class="cutin-skill-name">${heroSkill.toUpperCase()}</span>
+              <span class="skill-quote-mark">»</span>
+            </div>
+
+            <div class="cutin-status-burst">
+              <span class="burst-chip chip-gold">MAX OVERCLOCK</span>
+              <span class="burst-chip chip-cyan">UNSTOPPABLE</span>
+            </div>
+          </div>
         </div>
       </div>
+
+      <!-- Взрывная световая вспышка удара -->
+      <div class="cutin-impact-flash"></div>
     `;
 
     overlay.appendChild(cutin);
+
+    // Первичный мощный кинематографичный удар с тактильным откликом
     this.screenShake(true);
-    this.vibrate([60, 40, 90]);
-    setTimeout(() => cutin.remove(), 2400);
+    this.vibrate([70, 30, 110, 40, 140]);
+
+    // Вторичный удар при завершающем слэше ультимейта
+    setTimeout(() => {
+      this.screenShake(true);
+      this.vibrate([90, 40, 120]);
+    }, 1800);
+
+    setTimeout(() => {
+      if (cutin.parentNode) cutin.remove();
+    }, 2400);
   },
 
-  /**
-   * Корректно определяет текущего чемпиона игрока из heroes-data.js
-   * Поддерживает как строковые ID ("steinitz", "carlsen"), так и числовые индексы (0..18)
-   */
   getHero() {
     let h = window.currentHeroData;
 
@@ -376,7 +438,6 @@ window.NetDuel = {
       }
     }
 
-    // Находим числовой индекс героя в HERO_STATS_DATA
     let numericId = 0;
     if (typeof HERO_STATS_DATA !== "undefined") {
       const foundKey = Object.keys(HERO_STATS_DATA).find(k => {
@@ -530,30 +591,23 @@ window.NetDuel = {
     }
   },
 
-  /**
-   * Запуск дуэли с ботом: выбирает случайного соперника из всех 19 карт heroes-data.js (0..18)
-   */
   startOfflineAiMatch() {
     this.isNet = false;
     this.mySide = "white";
 
-    // 1. Получаем список всех доступных числовых ID героев (0..18)
     const availableHeroIds = (typeof HERO_STATS_DATA !== "undefined")
       ? Object.keys(HERO_STATS_DATA).map(Number).filter(n => !isNaN(n))
       : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 
-    // 2. Исключаем текущего героя игрока (как по числу, так и по строковому id)
     const candidateIds = availableHeroIds.filter(id => {
       const heroObj = (typeof HEROES !== "undefined") ? HEROES[id] : null;
       return id !== this.myHero.numericId && id !== this.myHero.id && heroObj?.id !== this.myHero.id;
     });
 
-    // 3. Выбираем случайного соперника
     const randomEnemyId = candidateIds.length > 0
       ? candidateIds[Math.floor(Math.random() * candidateIds.length)]
       : (this.myHero.numericId === 0 ? 7 : 0);
 
-    // 4. Достаем данные выбранного героя из HEROES и HERO_STATS_DATA
     const baseHero = (typeof HEROES !== "undefined" && HEROES[randomEnemyId]) 
       ? HEROES[randomEnemyId] 
       : null;
@@ -566,7 +620,6 @@ window.NetDuel = {
       ? HERO_RANKS[statsData.rank]
       : { name: "ЛЕГЕНДА", color: "#e2b868" };
 
-    // 5. Инициализируем бота
     this.enemyHero = {
       id: randomEnemyId,
       numericId: randomEnemyId,
@@ -719,7 +772,6 @@ window.NetDuel = {
   chooseAction(type) {
     if (this.isWaitingOpponent) return;
 
-    // Проверка оглушения (Ласкер)
     if (type === "attack" && this.playerBuffs.stunned) {
       this.setLog("ВЫ ОШЕЛОМЛЕНЫ ПСИХОЛОГИЧЕСКИМ ГАМБИТОМ! Выберите защиту.");
       this.vibrate([40, 40]);
@@ -745,7 +797,6 @@ window.NetDuel = {
         this.setLog("ЗАЩИТА! ЖДЕМ ОППОНЕНТА...");
       } else {
         this.myShield = true;
-        // Учет блокировки энергии (Ботвинник) и ускорения темпа (Фишер)
         if (!this.playerBuffs.energyLocked) {
           const energyGain = this.playerBuffs.tempoBoost ? 2 : 1;
           this.myEnergy = Math.min(2, this.myEnergy + energyGain);
@@ -765,6 +816,7 @@ window.NetDuel = {
       if (this.myEnergy < 2) return this.setLog("НЕДОСТАТОЧНО ЭНЕРГИИ!");
       this.lockActions(true);
 
+      // Запуск эффектного супер-приема
       this.showSuperCutIn(this.myHero, this.myHero.skillName);
 
       if (typeof sfx !== "undefined" && sfx.playUltimate) sfx.playUltimate();
@@ -781,7 +833,6 @@ window.NetDuel = {
   resolveTacticalStrike(isCrit) {
     this.lockActions(true);
 
-    // Учет гарантированного крита (Спасский)
     if (this.playerBuffs.guaranteedCrit) {
       isCrit = true;
       this.playerBuffs.guaranteedCrit = false;
@@ -877,17 +928,12 @@ window.NetDuel = {
     }, 600);
   },
 
-  /**
-   * Логика раунда в дуэли против ИИ бота
-   * Включает все 19 уникальных навыков чемпионов из heroes-data.js
-   */
   runAiTurn(playerAct, isCrit) {
     const pCard = document.getElementById("player-card-anchor");
     const eCard = document.getElementById("enemy-card-anchor");
 
     const CRIT_BONUS = 5;
     
-    // Проверка оглушения бота (Ласкер)
     let oppAct = "defend";
     if (this.enemyBuffs.stunned) {
       oppAct = "defend";
@@ -897,7 +943,6 @@ window.NetDuel = {
       oppAct = this.enemyEnergy >= 2 ? "skill" : (Math.random() > 0.45 ? "attack" : "defend");
     }
 
-    // Снимаем оглушение игрока после совершения действия
     if (this.playerBuffs.stunned) {
       this.playerBuffs.stunned = false;
     }
@@ -908,7 +953,7 @@ window.NetDuel = {
     let ignorePlayerDef = false;
     let reflectDamageToEnemy = false;
 
-    // 1. ДЕЙСТВИЕ ИГРОКА (СБАЛАНСИРОВАННЫЕ УЛЬТИМЕЙТЫ 19 ЧЕМПИОНОВ)
+    // 1. ДЕЙСТВИЕ ИГРОКА
     if (playerAct === "skill") {
       pCard?.classList.add("anim-skill-blast");
       this.myEnergy = 0;
@@ -916,7 +961,6 @@ window.NetDuel = {
       const skill = this.myHero.skillId;
 
       switch (skill) {
-        // 0. Стейниц: 12 DMG сквозь щит + дебафф атаки врага (-3 ATK на 2 раунда)
         case "STEINITZ_EQUILIBRIUM":
           ignoreEnemyDef = true;
           pDmg = 12;
@@ -924,7 +968,6 @@ window.NetDuel = {
           this.setLog("ТЕОРИЯ РАВНОВЕСИЯ: 12 DMG СКВОЗЬ ЩИТ, АТАКА ВРАГА ПОДАВЛЕНА НА -3!");
           break;
 
-        // 1. Ласкер: «Психологический гамбит» — 12 DMG + Психологический шок (лишает соперника атаки в след. раунде)
         case "LASKER_GAMBIT":
           pDmg = 12;
           this.enemyBuffs.stunned = true;
@@ -932,7 +975,6 @@ window.NetDuel = {
           this.setLog("ПСИХОЛОГИЧЕСКИЙ ГАМБИТ: 12 DMG! ВРАГ ОШЕЛОМЛЕН И НЕ СМОЖЕТ АТАКОВАТЬ В СЛЕД. ХОДУ!");
           break;
 
-        // 2. Капабланка: «Шахматный автомат» — 12 DMG сквозь блок + Аура неуязвимости (100% блок на след. раунд)
         case "CAPABLANCA_INTUITION":
           ignoreEnemyDef = true;
           pDmg = 12;
@@ -940,7 +982,6 @@ window.NetDuel = {
           this.setLog("ШАХМАТНЫЙ АВТОМАТ: 12 DMG! КАПАБЛАНКА ВКЛЮЧАЕТ АБСОЛЮТНУЮ НЕУЯЗВИМОСТЬ НА СЛЕД. ХОД!");
           break;
 
-        // 3. Алехин: «Пушка Алехина» — Залп батареи: 5+5+6 DMG (16 DMG) + эффект Вскрытой линии (+3 ко всем атакам на 2 раунда)
         case "ALEKHINE_BLINDING_STRIKE":
           ignoreEnemyDef = true;
           pDmg = 16;
@@ -953,14 +994,12 @@ window.NetDuel = {
           this.setLog("ПУШКА АЛЕХИНА: ЗАЛП БАТАРЕИ 16 DMG! ВСКРЫТА ВЕРТИКАЛЬ (+3 DMG КО ВСЕМ СЛЕДУЮЩИМ АТАКАМ)!");
           break;
 
-        // 4. Эйве: 13 DMG + перманентная защита (+3 DEF)
         case "EUWE_LOGIC":
           pDmg = 13;
           this.myHero.def = Math.min(13, (this.myHero.def || 8) + 3);
           this.setLog("МАТЕМАТИЧЕСКИЙ РАСЧЕТ: 13 DMG И КРИСТАЛЬНАЯ ЗАЩИТА +3 DEF ДО КОНЦА ПАРТИИ!");
           break;
 
-        // 5. Ботвинник: 11 DMG + железный щит + блокировка энергии врага
         case "BOTVINNIK_ARCHITECT":
           pDmg = 11;
           this.myShield = true;
@@ -968,7 +1007,6 @@ window.NetDuel = {
           this.setLog("АРХИТЕКТОР МЫСЛИ: 11 DMG, ЩИТ И БЛОКИРОВКА НАКОПЛЕНИЯ ЭНЕРГИИ ВРАГА!");
           break;
 
-        // 6. Смыслов: 11 DMG + гармонизация HP (+6 HP, а при отставании +10 HP)
         case "SMYSLOV_SYMPHONY":
           pDmg = 11;
           const healSmyslov = (this.myHp < this.enemyHp) ? 10 : 6;
@@ -977,13 +1015,12 @@ window.NetDuel = {
           this.setLog(`МАГИСТР ГАРМОНИИ: 11 DMG И СИМФОНИЧЕСКОЕ ИСЦЕЛЕНИЕ (+${healSmyslov} HP)!`);
           break;
 
-        // 7. Таль: Жертвует 3 HP ради сокрушительного удара на 18 DMG + пробитие вражеского блока с критом
         case "TAL_STORM":
           this.myHp = Math.max(1, this.myHp - 3);
           pDmg = 18;
           if (oppAct === "defend") {
             this.enemyShield = false;
-            pDmg += 4; // Бонус за наказание пассивности
+            pDmg += 4;
             this.setLog("ЯРОСТЬ ШТОРМА: ЖЕРТВА 3 HP, РАЗБИТЫЙ БЛОК И КРИТ НА 22 DMG!");
           } else {
             this.setLog("ЯРОСТЬ ШТОРМА ТАЛЯ: ЖЕРТВА 3 HP РАДИ ВЗРЫВА НА 18 DMG!");
@@ -991,7 +1028,6 @@ window.NetDuel = {
           this.screenShake(true);
           break;
 
-        // 8. Петросян: 7 DMG, непробиваемый щит и лечение +8 HP
         case "PETROSYAN_FORTRESS":
           this.myShield = true;
           this.myHp = Math.min(50, this.myHp + 8);
@@ -1000,7 +1036,6 @@ window.NetDuel = {
           this.setLog("ЖЕЛЕЗНАЯ ПРОФИЛАКТИКА: ПОЗИЦИОННАЯ КРЕПОСТЬ, ЩИТ И +8 HP!");
           break;
 
-        // 9. Спасский: Жертва 2 HP ради темпа: 15 DMG, слом всех щитов и гарантированный крит на след. ход
         case "SPASSKY_GAMBIT":
           this.myHp = Math.max(1, this.myHp - 2);
           ignoreEnemyDef = true;
@@ -1010,7 +1045,6 @@ window.NetDuel = {
           this.setLog("КОРОЛЕВСКИЙ ГАМБИТ: ЖЕРТВА 2 HP, 15 DMG, СНЯТИЕ ЩИТА И ГАРАНТИРОВАННЫЙ КРИТ!");
           break;
 
-        // 10. Фишер: Партия века: 14 DMG сквозь любые блоки + ускорение темпа (+2⚡ при след. действии)
         case "FISCHER_TORNADO":
           ignoreEnemyDef = true;
           pDmg = 14;
@@ -1019,7 +1053,6 @@ window.NetDuel = {
           this.setLog("МЕНТАЛЬНЫЙ ТОРНАДО ФИШЕРА: 14 DMG СКВОЗЬ БЛОК + ЦЕЙТНОТНЫЙ БУСТ (+2⚡ В СЛЕД. ХОДУ)!");
           break;
 
-        // 11. Карпов: «Хватка анаконды» — 11 DMG + кража 1⚡ + удушение позиции (-2 DEF врага)
         case "KARPOV_ANACONDA":
           pDmg = 11;
           if (this.enemyEnergy > 0) {
@@ -1030,7 +1063,6 @@ window.NetDuel = {
           this.setLog("ХВАТКА АНАКОНДЫ: 11 DMG, КРАЖА 1⚡ И СНИЖЕНИЕ ЗАЩИТЫ ВРАГА (-2 DEF)!");
           break;
 
-        // 12. Ананд: «Молния Мадраса» — Два быстрых такта 7+7 DMG (14 DMG) сквозь щит + возврат 1⚡ темпа
         case "ANAND_LIGHTNING":
           ignoreEnemyDef = true;
           pDmg = 14;
@@ -1042,7 +1074,6 @@ window.NetDuel = {
           this.setLog("МОЛНИЯ МАДРАСА: ДВА БЛИЦ-ТАКТА 7+7 DMG И ВОЗВРАТ 1⚡ ТЕМПА!");
           break;
 
-        // 13. Дин Лижэнь: «Воля дракона» — 11 DMG + ярость от потери HP (до +6) + щит самосвязки
         case "DING_DRAGON":
           const dingLostHp = Math.max(0, 50 - this.myHp);
           const dragonBonus = Math.min(6, Math.round(dingLostHp * 0.25));
@@ -1052,7 +1083,6 @@ window.NetDuel = {
           this.setLog(`ВОЛЯ ДРАКОНА (46...Rg6!): 11+${dragonBonus} DMG И ЩИТ САМОСВЯЗКИ!`);
           break;
 
-        // 14. Гукеш: «Сакральный разум» — 12 DMG сквозь блок + кража 1⚡ энергии + снятие дебаффов
         case "GUKESH_MIND":
           ignoreEnemyDef = true;
           pDmg = 12;
@@ -1060,7 +1090,6 @@ window.NetDuel = {
             this.enemyEnergy--;
             this.myEnergy = Math.min(2, this.myEnergy + 1);
           }
-          // Восстановление базовых статов (снятие дебаффов)
           const gukeshBase = (typeof HERO_STATS_DATA !== "undefined" && HERO_STATS_DATA[this.myHero.numericId]) ? HERO_STATS_DATA[this.myHero.numericId] : null;
           if (gukeshBase) {
             this.myHero.atk = gukeshBase.atk;
@@ -1069,7 +1098,6 @@ window.NetDuel = {
           this.setLog("САКРАЛЬНЫЙ РАЗУМ: 12 DMG СКВОЗЬ БЛОК, КРАЖА 1⚡ И ПОЛНОЕ СНЯТИЕ ДЕБАФФОВ!");
           break;
 
-        // 15. Stockfish (Сингулярность): 16 DMG + исцеление +5 HP + анализ бреши (+2 DMG на 1 раунд)
         case "STOCKFISH_ENGINE":
           pDmg = 16;
           this.myHp = Math.min(50, this.myHp + 5);
@@ -1079,7 +1107,6 @@ window.NetDuel = {
           this.setLog("СУПЕРКОМПЬЮТЕР (NNUE): 16 DMG, +5 HP И АНАЛИЗ БРЕШИ ВРАГА (+3 DMG В СЛЕД. ХОДУ)!");
           break;
 
-        // 16. Рэй Энигма (Джокер): 11 DMG + зеркальное отражение атаки врага или кража 1⚡
         case "ENIGMA_CHAMELEON":
           pDmg = 11;
           if (oppAct === "attack") {
@@ -1096,7 +1123,6 @@ window.NetDuel = {
           }
           break;
 
-        // 17. Каспаров (Феномен): 16 DMG + возврат 1⚡ энергии + шок врага (-2 DEF)
         case "KASPAROV_ADVENTURE":
           pDmg = 16;
           this.myEnergy = 1;
@@ -1106,7 +1132,6 @@ window.NetDuel = {
           this.setLog("ДУХ ПРИКЛЮЧЕНИЙ: 16 DMG, ВОЗВРАТ 1⚡ И ПРОБИТИЕ ЗАЩИТЫ ВРАГА (-2 DEF)!");
           break;
 
-        // 18. Карлсен (Феномен): 13 DMG + 20% от потерянного HP врага + сброс 1⚡ врага
         case "CARLSEN_ENDGAME":
           const missingEnemyHp = Math.max(0, 50 - this.enemyHp);
           const bonusEndgame = Math.min(7, Math.round(missingEnemyHp * 0.22));
@@ -1128,7 +1153,7 @@ window.NetDuel = {
       this.myShield = true;
     }
 
-    // 2. ДЕЙСТВИЕ СОПЕРНИКА (ИИ БОТА)
+    // 2. ДЕЙСТВИЕ СОПЕРНИКА
     if (oppAct === "attack") {
       eCard?.classList.add("anim-lunge-down");
       eDmg = this.enemyHero.atk;
@@ -1139,7 +1164,6 @@ window.NetDuel = {
 
       const enemySkill = this.enemyHero.skillId;
       switch (enemySkill) {
-        // 0. Стейниц
         case "STEINITZ_EQUILIBRIUM":
           ignorePlayerDef = true;
           eDmg = 12;
@@ -1147,14 +1171,12 @@ window.NetDuel = {
           this.setLog(`БОТ (${this.enemyHero.name}): ТЕОРИЯ РАВНОВЕСИЯ (12 DMG, ВАША АТАКА -3)!`);
           break;
 
-        // 1. Ласкер
         case "LASKER_GAMBIT":
           eDmg = 12;
           this.playerBuffs.stunned = true;
           this.setLog(`БОТ (${this.enemyHero.name}): ПСИХОЛОГИЧЕСКИЙ ГАМБИТ! ВЫ ОШЕЛОМЛЕНЫ И НЕ СМОЖЕТЕ АТАКОВАТЬ В СЛЕД. РАУНДЕ!`);
           break;
 
-        // 2. Капабланка
         case "CAPABLANCA_INTUITION":
           ignorePlayerDef = true;
           eDmg = 12;
@@ -1162,7 +1184,6 @@ window.NetDuel = {
           this.setLog(`БОТ (${this.enemyHero.name}): ШАХМАТНЫЙ АВТОМАТ (12 DMG И НЕУЯЗВИМОСТЬ НА СЛЕД. ХОД)!`);
           break;
 
-        // 3. Алехин
         case "ALEKHINE_BLINDING_STRIKE":
           ignorePlayerDef = true;
           eDmg = 16;
@@ -1173,14 +1194,12 @@ window.NetDuel = {
           this.setLog(`БОТ (${this.enemyHero.name}): ПУШКА АЛЕХИНА (16 DMG И ВСКРЫТА ВЕРТИКАЛЬ)!`);
           break;
 
-        // 4. Эйве
         case "EUWE_LOGIC":
           eDmg = 13;
           this.enemyHero.def = Math.min(13, (this.enemyHero.def || 8) + 3);
           this.setLog(`БОТ (${this.enemyHero.name}): МАТЕМАТИЧЕСКИЙ РАСЧЕТ (13 DMG И ЗАЩИТА +3 DEF)!`);
           break;
 
-        // 5. Ботвинник
         case "BOTVINNIK_ARCHITECT":
           eDmg = 11;
           this.enemyShield = true;
@@ -1188,7 +1207,6 @@ window.NetDuel = {
           this.setLog(`БОТ (${this.enemyHero.name}): АРХИТЕКТОР МЫСЛИ (11 DMG, ЩИТ И БЛОКИРОВКА ВАШЕЙ ЭНЕРГИИ)!`);
           break;
 
-        // 6. Смыслов
         case "SMYSLOV_SYMPHONY":
           eDmg = 11;
           const botHeal = (this.enemyHp < this.myHp) ? 10 : 6;
@@ -1197,7 +1215,6 @@ window.NetDuel = {
           this.setLog(`БОТ (${this.enemyHero.name}): МАГИСТР ГАРМОНИИ (11 DMG И +${botHeal} HP)!`);
           break;
 
-        // 7. Таль
         case "TAL_STORM":
           this.enemyHp = Math.max(1, this.enemyHp - 3);
           eDmg = 18;
@@ -1210,7 +1227,6 @@ window.NetDuel = {
           }
           break;
 
-        // 8. Петросян
         case "PETROSYAN_FORTRESS":
           this.enemyShield = true;
           this.enemyHp = Math.min(50, this.enemyHp + 8);
@@ -1219,7 +1235,6 @@ window.NetDuel = {
           this.setLog(`БОТ (${this.enemyHero.name}): ЖЕЛЕЗНАЯ КРЕПОСТЬ (7 DMG, ЩИТ И +8 HP)!`);
           break;
 
-        // 9. Спасский
         case "SPASSKY_GAMBIT":
           this.enemyHp = Math.max(1, this.enemyHp - 2);
           ignorePlayerDef = true;
@@ -1229,7 +1244,6 @@ window.NetDuel = {
           this.setLog(`БОТ (${this.enemyHero.name}): КОРОЛЕВСКИЙ ГАМБИТ (15 DMG, СЛОМ ЩИТА И ЗАРЯЖЕННЫЙ КРИТ)!`);
           break;
 
-        // 10. Фишер
         case "FISCHER_TORNADO":
           ignorePlayerDef = true;
           eDmg = 14;
@@ -1237,7 +1251,6 @@ window.NetDuel = {
           this.setLog(`БОТ (${this.enemyHero.name}): МЕНТАЛЬНЫЙ ТОРНАДО (14 DMG СКВОЗЬ БЛОК И ЦЕЙТНОТНЫЙ БУСТ)!`);
           break;
 
-        // 11. Карпов
         case "KARPOV_ANACONDA":
           eDmg = 11;
           if (this.myEnergy > 0) {
@@ -1248,7 +1261,6 @@ window.NetDuel = {
           this.setLog(`БОТ (${this.enemyHero.name}): ХВАТКА АНАКОНДЫ (11 DMG, КРАЖА 1⚡ И -2 DEF ВАМ)!`);
           break;
 
-        // 12. Ананд (Бот)
         case "ANAND_LIGHTNING":
           ignorePlayerDef = true;
           eDmg = 14;
@@ -1258,7 +1270,6 @@ window.NetDuel = {
           this.setLog(`БОТ (${this.enemyHero.name}): МОЛНИЯ МАДРАСА (ДВА ТАКТА 7+7 DMG И +1⚡)!`);
           break;
 
-        // 13. Дин Лижэнь (Бот)
         case "DING_DRAGON":
           const enemyLostHp = Math.max(0, 50 - this.enemyHp);
           const enemyDragonBonus = Math.min(6, Math.round(enemyLostHp * 0.25));
@@ -1267,7 +1278,6 @@ window.NetDuel = {
           this.setLog(`БОТ (${this.enemyHero.name}): ВОЛЯ ДРАКОНА (11+${enemyDragonBonus} DMG И ЩИТ)!`);
           break;
 
-        // 14. Гукеш (Бот)
         case "GUKESH_MIND":
           ignorePlayerDef = true;
           eDmg = 12;
@@ -1283,7 +1293,6 @@ window.NetDuel = {
           this.setLog(`БОТ (${this.enemyHero.name}): САКРАЛЬНЫЙ РАЗУМ (12 DMG, КРАЖА 1⚡ И СНЯТИЕ ДЕБАФФОВ)!`);
           break;
 
-        // 15. Stockfish (Сингулярность - босс-челлендж)
         case "STOCKFISH_ENGINE":
           eDmg = 16;
           this.enemyHp = Math.min(50, this.enemyHp + 5);
@@ -1292,7 +1301,6 @@ window.NetDuel = {
           this.setLog(`БОТ (${this.enemyHero.name}): СУПЕРКОМПЬЮТЕР (16 DMG, +5 HP И АНАЛИЗ БРЕШИ)!`);
           break;
 
-        // 16. Рэй Энигма
         case "ENIGMA_CHAMELEON":
           eDmg = 11;
           if (this.myEnergy > 0) {
@@ -1304,7 +1312,6 @@ window.NetDuel = {
           }
           break;
 
-        // 17. Каспаров (Феномен)
         case "KASPAROV_ADVENTURE":
           eDmg = 16;
           this.enemyEnergy = 1;
@@ -1312,7 +1319,6 @@ window.NetDuel = {
           this.setLog(`БОТ (${this.enemyHero.name}): ДУХ ПРИКЛЮЧЕНИЙ (16 DMG, +1⚡ И ВАША ЗАЩИТА -2 DEF)!`);
           break;
 
-        // 18. Карлсен (Феномен)
         case "CARLSEN_ENDGAME":
           const missingMyHp = Math.max(0, 50 - this.myHp);
           const botBonus = Math.min(7, Math.round(missingMyHp * 0.22));
@@ -1383,7 +1389,6 @@ window.NetDuel = {
       this.enemyShield = false;
       this.updateHUD();
 
-      // ЧЕСТНЫЙ РАСЧЕТ ИСХОДА РАУНДА (БЕЗ ОШИБОК НИЧЬЕЙ)
       if (this.enemyHp <= 0 || this.myHp <= 0) {
         let outcome = 'lose';
         if (this.myHp <= 0 && this.enemyHp <= 0) outcome = 'draw';
