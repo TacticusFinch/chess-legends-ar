@@ -209,6 +209,8 @@ async function switchRank(newRankKey) {
       await arSystem.start();
     }
 
+    await new Promise(r => setTimeout(r, 200));
+
     bindVideosForCurrentRank();
     warmupRankVideos(currentRankConfig);
 
@@ -244,13 +246,18 @@ function warmupRankVideos(config) {
   config.targets.forEach(target => {
     const vid = document.getElementById(target.videoId);
     if (vid) {
-      vid.preload = "metadata";
+      vid.preload = "auto";
       vid.muted = true;
       vid.playsInline = true;
-      if (vid.readyState === 0) vid.load();
+
+      // Принудительно заставляем мобильный GPU инициализировать видеопамять:
+      if (vid.readyState < 2) {
+        vid.load();
+      }
     }
   });
 }
+
 
 
 // ==========================================
@@ -419,17 +426,22 @@ function bindVideosForCurrentRank() {
 
     if (index < targets.length) {
       const targetMeta = targets[index];
-      aVideo.setAttribute('src', `#${targetMeta.videoId}`);
+      const newSrc = `#${targetMeta.videoId}`;
+      
+      // Защита от сброса текстуры и зависания плеера:
+      if (aVideo.getAttribute('src') !== newSrc) {
+        aVideo.setAttribute('src', newSrc);
+      }
       targetEl.setAttribute('data-hero-id', targetMeta.id);
       targetEl.setAttribute('data-global-index', targetMeta.globalIndex);
       targetEl.style.display = '';
     } else {
-      // Таргет не используется в данном ранге
       targetEl.removeAttribute('data-hero-id');
       aVideo.removeAttribute('src');
     }
   });
 }
+
 
 function getHeroDataForTarget(index) {
   const targets = currentRankConfig.targets;
