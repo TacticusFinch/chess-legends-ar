@@ -806,7 +806,9 @@ function showChampionUI() {
   dock.style.display = "flex";
   dock.innerHTML = `
     <button class="dock-btn" onclick="openModal('bio')"><span>Биография</span></button>
-    <button class="dock-btn" onclick="openModal('test')"><span>Экзамен</span></button>
+    <button class="dock-btn" onclick="startTimeMachine()" style="border-color: rgba(245, 197, 66, 0.6); box-shadow: 0 0 16px rgba(245, 197, 66, 0.3);">
+      <span style="color: #f5c542; font-weight: 800;">Машина времени</span>
+    </button>
     <button class="dock-btn" onclick="if(typeof openAIChatModal==='function')openAIChatModal()" style="border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);">
       <span style="color: #38bdf8;">Диалог</span>
     </button>
@@ -815,6 +817,7 @@ function showChampionUI() {
     </button>
   `;
 }
+
 
 function stopAllTargetVideosImmediate() {
   ALL_TARGET_INDICES.forEach(index => {
