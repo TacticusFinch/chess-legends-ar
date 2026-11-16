@@ -1,0 +1,11 @@
+/* Модальное окно квеста «Машина времени» */
+.tm-quantum-card {
+  border: 1.5px solid var(--accent-gold, #f5c542);
+  box-shadow: 0 0 35px rgba(245, 197, 66, 0.4);
+  background: rgba(12, 17, 26, 0.97);
+  backdrop-filter: blur(20px);
+}
+.tm-modal-active {
+  z-index: 1300;
+  display: flex;
+}

@@ -808,6 +808,13 @@ function showChampionUI() {
   `;
 }
 
+// Замените или добавьте функцию startTimeMachine:
+function startTimeMachine() {
+  if (typeof TimeMachineQuest !== "undefined" && currentHeroId !== null) {
+    TimeMachineQuest.start(currentHeroId);
+  }
+}
+
 
 function stopAllTargetVideosImmediate() {
   ALL_TARGET_INDICES.forEach(index => {
