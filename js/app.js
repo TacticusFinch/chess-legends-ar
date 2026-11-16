@@ -140,7 +140,16 @@ let currentRankConfig = RANK_CONFIGS['legends-1'];
 
 let currentHeroId = null;
 let currentActiveTargetIndex = null;
-let isMuted = true;
+
+// Сохраняем состояние звука между переключениями рангов и сессиями
+let isMuted = localStorage.getItem('chess_sound_enabled') !== 'true';
+
+function syncSoundUI() {
+  if (!soundBtn) return;
+  soundBtn.innerHTML = !isMuted ? "<span>🔊</span> ЗВУК: ВКЛ" : "<span>🔇</span> ЗВУК: ВЫКЛ";
+  soundBtn.style.color = !isMuted ? "var(--accent-gold, #f1c40f)" : "";
+}
+
 
 let currentPuzzleIndex = 0;
 let testScore = 0;
@@ -201,7 +210,7 @@ async function switchRank(newRankKey) {
       }
 
       // Перепривязываем атрибут файла к сцене
-      const mindarConfig = `imageTargetSrc: ${currentRankConfig.file}; autoStart: false; maxTrack: 1; missTolerance: 1; uiLoading: no; uiScanning: no;`;
+      const mindarConfig = `imageTargetSrc: ${currentRankConfig.file}; autoStart: false; maxTrack: 1; missTolerance: 5; warmupTolerance: 2; uiLoading: no; uiScanning: no;`;
       sceneEl.setAttribute('mindar-image', mindarConfig);
 
       // Полная чистая инициализация контроллера под новый файл:
@@ -332,7 +341,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const readySub = document.getElementById('ready-status-sub');
 
   // 4. Динамически назначаем целевой .mind файл для выбранного ранга
-  const mindarConfig = `imageTargetSrc: ${currentRankConfig.file}; autoStart: true; maxTrack: 1; missTolerance: 1; uiLoading: no; uiScanning: no;`;
+  const mindarConfig = `imageTargetSrc: ${currentRankConfig.file}; autoStart: true; maxTrack: 1; missTolerance: 5; warmupTolerance: 2; uiLoading: no; uiScanning: no;`;
   sceneEl.setAttribute('mindar-image', mindarConfig);
 
   if (title) {
@@ -468,7 +477,17 @@ function handleFirstInteraction() {
   if (typeof sfx !== "undefined" && sfx.ctx && sfx.ctx.state === "suspended") {
     sfx.ctx.resume();
   }
+
+  // При первом касании экрана разблокируем звук на текущей карточке, если пользователь не ставил Mute
+  if (!isMuted && currentActiveTargetIndex !== null) {
+    const vid = getVideoElementForTarget(currentActiveTargetIndex);
+    if (vid) {
+      vid.muted = false;
+      vid.volume = 1.0;
+    }
+  }
 }
+
 
 document.addEventListener("touchstart", handleFirstInteraction, { once: true, passive: true });
 document.addEventListener("click", handleFirstInteraction, { once: true });
@@ -531,13 +550,32 @@ function playTargetVideo(targetIndex) {
     }
   }
 
+    // Если звук разрешен пользователем — не глушим видео!
   vid.muted = isMuted;
   vid.defaultMuted = isMuted;
+  vid.volume = 1.0;
   vid.playsInline = true;
 
   if (vid.readyState === 0) {
     vid.load();
   }
+
+  const playPromise = vid.play();
+  if (playPromise !== undefined) {
+    playPromise.catch((e) => {
+      // Браузер блокирует только Unmuted Autoplay до первого тапа по странице
+      console.warn("Браузер заблокировал звук автоплея, стартуем временно muted:", e);
+      vid.muted = true;
+      vid.play().then(() => {
+        safeTrigger();
+        // Как только видео закрутилось — если звук должен быть включен, возвращаем его
+        if (!isMuted && userHasInteracted) {
+          vid.muted = false;
+        }
+      }).catch(() => {});
+    });
+  }
+  
 
   if (vid._checkReadyInterval) {
     clearInterval(vid._checkReadyInterval);
@@ -577,15 +615,6 @@ function playTargetVideo(targetIndex) {
     }
   }, 50);
 
-  
-  const playPromise = vid.play();
-  if (playPromise !== undefined) {
-    playPromise.catch((e) => {
-      console.warn("Автоплей заблокирован браузером, принудительный mute:", e);
-      vid.muted = true;
-      vid.play().then(() => safeTrigger()).catch(() => {});
-    });
-  }
 }
 
 function stopTargetVideo(targetIndex) {
@@ -595,7 +624,6 @@ function stopTargetVideo(targetIndex) {
   const targetEl = document.getElementById(`target-${targetIndex}`);
 
   if (vid) {
-    vid.muted = true;
     vid.pause();
     vid.currentTime = 0;
     
@@ -613,6 +641,7 @@ function stopTargetVideo(targetIndex) {
     }
   }
 }
+
 
 // ==========================================
 // 6. СЛУШАТЕЛИ ТАРГЕТОВ
@@ -683,10 +712,16 @@ function applyHeroTheme(hero) {
 document.addEventListener("DOMContentLoaded", () => {
   const sBtn = document.getElementById("sound-toggle");
   if (sBtn) {
+    syncSoundUI();
     sBtn.addEventListener("click", () => {
-      const isEnabled = (typeof sfx !== "undefined" && sfx.toggle) ? sfx.toggle() : !isMuted;
-      isMuted = !isEnabled;
-      
+      isMuted = !isMuted;
+      localStorage.setItem('chess_sound_enabled', (!isMuted).toString());
+
+      if (typeof sfx !== "undefined" && sfx.toggle) {
+        sfx.toggle();
+      }
+
+      // Немедленно включаем/выключаем звук у текущего активного видео
       if (currentActiveTargetIndex !== null) {
         const vid = getVideoElementForTarget(currentActiveTargetIndex);
         if (vid) {
@@ -694,14 +729,15 @@ document.addEventListener("DOMContentLoaded", () => {
           vid.volume = 1.0;
         }
       }
-      
-      sBtn.innerHTML = isEnabled ? "<span>🔊</span> ЗВУК: ВКЛ" : "<span>🔇</span> ЗВУК: ВЫКЛ";
-      if (isEnabled && typeof sfx !== "undefined" && sfx.playMove) {
+
+      syncSoundUI();
+      if (!isMuted && typeof sfx !== "undefined" && sfx.playMove) {
         sfx.playMove();
       }
     });
   }
 });
+
 
 // ==========================================
 // 8. МОДАЛЬНЫЕ ОКНА И МЕНЮ
