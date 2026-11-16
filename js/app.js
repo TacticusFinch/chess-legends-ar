@@ -173,13 +173,11 @@ async function switchRank(newRankKey) {
   currentRankKey = newRankKey;
   currentRankConfig = RANK_CONFIGS[currentRankKey];
 
-  // 1. Обновляем тему и URL
   document.body.setAttribute('data-active-rank', currentRankKey);
   const url = new URL(window.location.href);
   url.searchParams.set('rank', currentRankKey);
   window.history.replaceState({}, '', url.toString());
 
-  // 2. Останавливаем видео предыдущего ранга
   stopAllVideosExcept(null);
 
   const badge = document.getElementById('loading-badge');
@@ -196,40 +194,24 @@ async function switchRank(newRankKey) {
   try {
     if (!arSystem) throw new Error("AR система не найдена");
 
-    // 3. Если контроллер уже работает, мягко подменяем target-данные
-    if (arSystem.controller && typeof arSystem.controller.changeData === 'function') {
-      // Прямой метод смены данных компилятора в памяти
-      const response = await fetch(currentRankConfig.file);
-      const buffer = await response.arrayBuffer();
-      await arSystem.controller.changeData(buffer);
+    // 1. Останавливаем видеопоток трекинга
+    if (arSystem.pause) arSystem.pause();
+
+    // 2. Назначаем новый файл СТРОГО с autoStart: false
+    const mindarConfig = `imageTargetSrc: ${currentRankConfig.file}; autoStart: false; maxTrack: 1; missTolerance: 4; uiLoading: no; uiScanning: no;`;
+    sceneEl.setAttribute('mindar-image', mindarConfig);
+
+    // 3. Выполняем ровно ОДИН вызов инициализации под новый ранг
+    if (typeof arSystem.setup === 'function') {
+      await arSystem.setup();
+      if (arSystem.unpause) arSystem.unpause();
     } else {
-      // Надежный метод перезапуска для MindAR A-Frame:
-      // Останавливаем только цикл обработки кадров, не ломая контроллер
-      if (arSystem.controller) {
-        arSystem.pause(); // Приостанавливаем цикл распознавания
-      }
-
-      // Перепривязываем атрибут файла к сцене
-      const mindarConfig = `imageTargetSrc: ${currentRankConfig.file}; autoStart: false; maxTrack: 1; missTolerance: 5; warmupTolerance: 2; uiLoading: no; uiScanning: no;`;
-      sceneEl.setAttribute('mindar-image', mindarConfig);
-
-      // Полная чистая инициализация контроллера под новый файл:
-      if (typeof arSystem.setup === 'function') {
-        await arSystem.setup();
-      } else {
-        // Если setup приватный, восстанавливаем через _startVideo / init:
-        await arSystem.init();
-      }
-
-      // Запускаем распознавание
-      await arSystem.unpause ? arSystem.unpause() : arSystem.start();
+      await arSystem.start();
     }
 
-    // 4. Перепривязываем видео и разогреваем их
     bindVideosForCurrentRank();
     warmupRankVideos(currentRankConfig);
 
-    // 5. Успешный статус
     if (badge) badge.innerText = `AR СКАНЕР (${currentRankConfig.name.toUpperCase()})`;
     if (title) title.innerText = "НАВЕДИТЕ НА КАРТОЧКУ";
     if (readySub) {
@@ -238,12 +220,8 @@ async function switchRank(newRankKey) {
       readySub.innerText = `${currentRankConfig.name} готовы: ${heroNamesList}.`;
     }
   } catch (err) {
-    console.warn("Мягкая смена не удалась, выполняем быстрый перезапуск сессии:", err);
-    // Безопасный фоллбек: если сборка MindAR не разрешает горячую замену в одном WebGL-контексте,
-    // делаем штатный переход (с уже закэшированным через sw.js файлом это займет всего ~1 секунду)
-    const fallbackUrl = new URL(window.location.href);
-    fallbackUrl.searchParams.set('rank', currentRankKey);
-    window.location.href = fallbackUrl.toString();
+    console.warn("Мягкая смена не удалась, выполняем переход:", err);
+    window.location.search = `?rank=${currentRankKey}`;
   } finally {
     isSwitchingRank = false;
   }
@@ -251,15 +229,15 @@ async function switchRank(newRankKey) {
 
 
 function preloadBackgroundRanks() {
-  const currentFile = currentRankConfig.file;
-  const filesToPreload = Object.values(RANK_CONFIGS)
-    .map(c => c.file)
-    .filter(file => file !== currentFile);
-
-  filesToPreload.forEach(filePath => {
-    fetch(filePath, { cache: 'force-cache', priority: 'low' }).catch(() => {});
+  const currentKey = currentRankKey;
+  Object.keys(RANK_CONFIGS).forEach(key => {
+    // Скачиваем в фон ТОЛЬКО другие ранги, текущий уже в памяти
+    if (key !== currentKey) {
+      fetch(RANK_CONFIGS[key].file, { cache: 'force-cache' }).catch(() => {});
+    }
   });
 }
+
 
 function warmupRankVideos(config) {
   if (!config || !config.targets) return;
@@ -341,7 +319,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const readySub = document.getElementById('ready-status-sub');
 
   // 4. Динамически назначаем целевой .mind файл для выбранного ранга
-  const mindarConfig = `imageTargetSrc: ${currentRankConfig.file}; autoStart: true; maxTrack: 1; missTolerance: 5; warmupTolerance: 2; uiLoading: no; uiScanning: no;`;
+  const mindarConfig = `imageTargetSrc: ${currentRankConfig.file}; autoStart: false; maxTrack: 1; missTolerance: 5; warmupTolerance: 2; uiLoading: no; uiScanning: no;`;
   sceneEl.setAttribute('mindar-image', mindarConfig);
 
   if (title) {
