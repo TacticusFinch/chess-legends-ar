@@ -2,6 +2,14 @@
  * Тактикус Финч — Модуль Дуэлей на WebSocket Amvera
  * Кинематографичные аркадные эффекты (Floating Dmg, Screen Shake, Super Cut-in, Haptics)
  * Синхронизировано с базой данных чемпионов heroes-data.js (19 легенд)
+ *
+ * ПАТЧ ДЛЯ КВЕСТА «МАШИНА ВРЕМЕНИ» (помечено [QUEST]):
+ *   1. В объект NetDuel добавлены questHook и lastOutcome.
+ *   2. endBattle() запоминает итог боя в lastOutcome.
+ *   3. closeVictoryModal() вызывает questHook(outcome) и обнуляет его.
+ *   4. Новый метод startQuestDuel({enemyId, onEnd}) — запускает обычную
+ *      дуэль с заданным соперником и возвращает итог в квест.
+ * Механика боя, доска, таймер и эффекты не менялись.
  */
 const AMVERA_WS = "wss://chesslegendsai-tacticusfinch.mia0.amvera.tech";
 
@@ -267,6 +275,10 @@ window.NetDuel = {
   enemyHero: null,
   mySide: "white",
   isWaitingOpponent: false,
+
+  // [QUEST] мост в квест «Машина времени»
+  questHook: null,
+  lastOutcome: null,
 
   playerBuffs: {
     invulnerable: false,
@@ -639,6 +651,56 @@ window.NetDuel = {
     this.startBattle();
   },
 
+  /**
+   * [QUEST] ДУЭЛЬ ДЛЯ КВЕСТА «МАШИНА ВРЕМЕНИ»
+   * Запускает обычную дуэль с заданным соперником и возвращает итог
+   * в квест через onEnd('win' | 'lose' | 'draw').
+   * Используется так:
+   *   NetDuel.startQuestDuel({ enemyId: 7, onEnd: (outcome) => { ... } });
+   */
+  startQuestDuel(options) {
+    const opts = options || {};
+
+    this.myHero = this.myHero || this.getHero();
+    if (!this.myHero) return false;
+
+    const enemyId = Number(opts.enemyId);
+    if (isNaN(enemyId)) return false;
+
+    const baseHero = (typeof HEROES !== "undefined" && HEROES[enemyId]) ? HEROES[enemyId] : null;
+
+    const statsData = (typeof HERO_STATS_DATA !== "undefined" && HERO_STATS_DATA[enemyId])
+      ? HERO_STATS_DATA[enemyId]
+      : { atk: 8, def: 8, rank: "legend", skillName: "Коронный ход", skillId: "DEFAULT", tip: "" };
+
+    const rankInfo = (typeof HERO_RANKS !== "undefined" && HERO_RANKS[statsData.rank])
+      ? HERO_RANKS[statsData.rank]
+      : { name: "ЛЕГЕНДА", color: "#e2b868" };
+
+    this.enemyHero = {
+      id: enemyId,
+      numericId: enemyId,
+      name: baseHero?.name || `Хранитель времени #${enemyId}`,
+      atk: statsData.atk,
+      def: statsData.def,
+      rank: rankInfo.name,
+      rankKey: statsData.rank,
+      rankColor: rankInfo.color,
+      skillName: statsData.skillName,
+      skillId: statsData.skillId,
+      tip: statsData.tip,
+      img: baseHero?.avatar || `./assets/avatars/steinitz.png`
+    };
+
+    this.questHook = (typeof opts.onEnd === "function") ? opts.onEnd : null;
+    this.isNet = false;
+    this.mySide = "white";
+
+    this.hideLobbyModal();
+    this.startBattle();
+    return true;
+  },
+
   startBattle() {
     if (typeof stopAllTargetVideosImmediate === "function") {
       stopAllTargetVideosImmediate();
@@ -656,6 +718,7 @@ window.NetDuel = {
     this.myShield = false;
     this.enemyShield = false;
     this.isWaitingOpponent = false;
+    this.lastOutcome = null;
 
     this.playerBuffs = { invulnerable: false, guaranteedCrit: false, tempoBoost: false, openBreachTurns: 0, energyLocked: false, stunned: false };
     this.enemyBuffs = { invulnerable: false, guaranteedCrit: false, tempoBoost: false, openBreachTurns: 0, energyLocked: false, stunned: false };
@@ -1407,6 +1470,9 @@ window.NetDuel = {
     const isDraw = (outcome === 'draw' || (this.myHp <= 0 && this.enemyHp <= 0));
     const isWin = (!isDraw && (outcome === 'win' || outcome === true || (this.myHp > 0 && this.enemyHp <= 0)));
 
+    // [QUEST] запоминаем итог для квеста «Машина времени»
+    this.lastOutcome = isWin ? 'win' : (isDraw ? 'draw' : 'lose');
+
     this.fx(isWin ? "gold" : (isDraw ? "cyan" : "red"));
 
     const victoryModal = document.getElementById("duel-victory-modal");
@@ -1461,6 +1527,12 @@ window.NetDuel = {
 
   closeVictoryModal() {
     InteractiveBoardEngine.stopTimer();
+
+    // [QUEST] снимаем колбэк до очистки, чтобы вызвать его последним
+    const questHook = this.questHook;
+    this.questHook = null;
+    const questOutcome = this.lastOutcome;
+
     document.getElementById("duel-victory-modal")?.classList.remove("active");
     const overlay = document.getElementById("net-battle-overlay");
     if (overlay) overlay.style.display = "none";
@@ -1472,6 +1544,15 @@ window.NetDuel = {
       stopAllTargetVideosImmediate();
     }
     this.lockActions(false);
+
+    // [QUEST] возвращаем итог в квест «Машина времени»
+    if (typeof questHook === "function") {
+      try {
+        questHook(questOutcome || "lose");
+      } catch (e) {
+        console.error("[quest] ошибка в обработчике дуэли:", e);
+      }
+    }
   },
 
   fx(color) {
