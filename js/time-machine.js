@@ -59,6 +59,8 @@
     busy: false,
     inBattle: false,
     timers: [],
+    rift: null,
+    telTimer: null,
     shuffled: {}
   };
 
@@ -66,21 +68,161 @@
   var STAGE_ORDER = ['greet', 'jump', 'quiz', 'duels', 'final', 'victory'];
 
   /* ---------------- утилиты ---------------- */
-  // Звук в sound.js по умолчанию выключен (enabled = false) и включается
-  // только через init(). Без этого вызова квест молчит.
+  /* ---------------- звук ----------------
+     Свой набор: мягкие синусоиды и шумовые свипы вместо резких
+     пилообразных сигналов. Мастер-громкость 0.45, всё с плавной
+     атакой и затуханием — без щелчков.
+     sound.js по умолчанию выключен (enabled = false), поэтому
+     вызываем sfx.init() перед каждым звуком.
+  ---------------------------------------- */
+  var SoundKit = (function () {
+    var ctx = null;
+    var master = null;
+
+    function init() {
+      if (!ctx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = 0.45;
+        master.connect(ctx.destination);
+      }
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    }
+
+    function noise(dur) {
+      var len = Math.floor(ctx.sampleRate * dur);
+      var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      var data = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      return buf;
+    }
+
+    // мягкий тон с огибающей
+    function tone(o) {
+      var c = init();
+      if (!c) return;
+      var t0 = c.currentTime + (o.delay || 0);
+      var dur = o.dur || 0.4;
+      var osc = c.createOscillator();
+      var g = c.createGain();
+
+      osc.type = o.type || 'sine';
+      osc.frequency.setValueAtTime(o.freq, t0);
+      if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, t0 + dur);
+
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(o.gain || 0.15, t0 + (o.attack || 0.03));
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+      osc.connect(g);
+      g.connect(master);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.05);
+    }
+
+    // шумовой свип — «переход сквозь время»
+    function sweep(o) {
+      var c = init();
+      if (!c) return;
+      var t0 = c.currentTime + (o.delay || 0);
+      var dur = o.dur || 0.7;
+
+      var src = c.createBufferSource();
+      src.buffer = noise(dur);
+
+      var bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.Q.value = o.q || 1.1;
+      bp.frequency.setValueAtTime(o.from || 300, t0);
+      bp.frequency.exponentialRampToValueAtTime(o.to || 2400, t0 + dur);
+
+      var g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(o.gain || 0.12, t0 + dur * 0.35);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+      src.connect(bp);
+      bp.connect(g);
+      g.connect(master);
+      src.start(t0);
+      src.stop(t0 + dur);
+    }
+
+    return {
+      init: init,
+
+      // открытие квеста: низкий гул + восходящий свип + мягкий колокол
+      warp: function () {
+        init();
+        tone({ freq: 68, to: 132, dur: 1.2, gain: 0.2 });
+        sweep({ from: 220, to: 2600, dur: 0.95, gain: 0.09 });
+        tone({ freq: 523.25, dur: 1.0, gain: 0.05, delay: 0.6 });
+      },
+
+      // шаг в переходе: короткий мягкий тик
+      step: function () {
+        init();
+        tone({ freq: 880, to: 640, dur: 0.14, gain: 0.06 });
+        sweep({ from: 1800, to: 900, dur: 0.12, gain: 0.025 });
+      },
+
+      // верный ответ: тёплый аккорд
+      correct: function () {
+        init();
+        [523.25, 659.25, 783.99].forEach(function (f, i) {
+          tone({ freq: f, dur: 0.55, gain: 0.09, delay: i * 0.07 });
+        });
+      },
+
+      // ошибка: глухой низкий удар, без резкости
+      wrong: function () {
+        init();
+        tone({ freq: 150, to: 72, dur: 0.38, gain: 0.18 });
+        sweep({ from: 520, to: 130, dur: 0.32, gain: 0.04 });
+      },
+
+      // финал: тёплая фанфара
+      fanfare: function () {
+        init();
+        [392, 523.25, 659.25, 783.99].forEach(function (f, i) {
+          tone({ freq: f, dur: 0.95, gain: 0.08, delay: i * 0.13 });
+        });
+      }
+    };
+  })();
+
   function unlockAudio() {
     try {
-      if (typeof sfx === 'undefined' || !sfx) return;
-      if (typeof sfx.init === 'function') sfx.init();
-      if (sfx.ctx && sfx.ctx.state === 'suspended') sfx.ctx.resume();
+      if (typeof sfx !== 'undefined' && sfx && typeof sfx.init === 'function') sfx.init();
+      SoundKit.init();
     } catch (e) {}
   }
 
+  // Имена совпадают с sound.js, чтобы квест звучал одинаково в обоих вариантах
+  var SOUND_MAP = {
+    playUltimate: 'warp',
+    playMove: 'step',
+    playCorrect: 'correct',
+    playWrong: 'wrong',
+    playFanfare: 'fanfare',
+    playShield: 'correct',
+    playAttackHit: 'wrong',
+    playDamageTaken: 'wrong',
+    playBattleStart: 'warp'
+  };
+
   function play(name) {
     try {
-      if (typeof sfx === 'undefined' || !sfx) return;
       unlockAudio();
-      if (typeof sfx[name] === 'function') sfx[name]();
+      var key = SOUND_MAP[name] || name;
+      if (typeof SoundKit[key] === 'function') {
+        SoundKit[key]();
+        return;
+      }
+      if (typeof sfx !== 'undefined' && sfx && typeof sfx[name] === 'function') sfx[name]();
     } catch (e) {}
   }
 
@@ -285,31 +427,17 @@
     overlay.setAttribute('aria-hidden', 'true');
     overlay.innerHTML = [
       '<div class="tm-quantum-card" role="dialog" aria-modal="true" aria-label="Квест Машина времени">',
-      '  <div class="tm-frame" aria-hidden="true">',
-      '    <span class="tm-corner tl"></span>',
-      '    <span class="tm-corner tr"></span>',
-      '    <span class="tm-corner bl"></span>',
-      '    <span class="tm-corner br"></span>',
-      '  </div>',
-      '  <div class="tm-screen">',
-      '    <div class="tm-status" aria-hidden="true">',
-      '      <span class="tm-led"></span>',
-      '      <span class="tm-led"></span>',
-      '      <span class="tm-led is-off"></span>',
-      '      <span class="tm-status-label">quest os · online</span>',
-      '    </div>',
-      '    <header class="tm-head">',
-      '      <div class="tm-head-info">',
-      '        <div class="tm-epoch" id="tm-epoch">—</div>',
-      '        <div class="tm-lives-row">',
-      '          <span class="tm-lives-label">жизни</span>',
-      '          <div class="tm-lives" id="tm-lives"></div>',
-      '        </div>',
+      '  <header class="tm-head">',
+      '    <div class="tm-head-info">',
+      '      <div class="tm-epoch" id="tm-epoch">—</div>',
+      '      <div class="tm-lives-row">',
+      '        <span class="tm-lives-label">жизни</span>',
+      '        <div class="tm-lives" id="tm-lives"></div>',
       '      </div>',
-      '      <button class="tm-close" type="button" id="tm-close" aria-label="Закрыть квест">✕</button>',
-      '    </header>',
-      '    <div class="tm-body" id="tm-body"></div>',
-      '  </div>',
+      '    </div>',
+      '    <button class="tm-close" type="button" id="tm-close" aria-label="Закрыть квест">✕</button>',
+      '  </header>',
+      '  <div class="tm-body" id="tm-body"></div>',
       '</div>'
     ].join('\n');
 
@@ -339,6 +467,8 @@
   /* ---------------- общее ---------------- */
   function setStage(stage) {
     state.stage = stage;
+    // при смене экрана гасим анимацию разлома, чтобы не жёг батарею
+    stopRift();
   }
 
   function renderLives(shake) {
@@ -386,57 +516,104 @@
     ].join('\n');
   }
 
-  /* ---------------- ХАБ ---------------- */
-  // Пять глав по орбите вокруг портрета чемпиона.
-  function routeHub(currentKey) {
-    var C = 150;
-    var R = 118;
-    var curIdx = STAGE_ORDER.indexOf(currentKey);
-    var spokes = [];
-    var dots = [];
-    var nodes = [];
-
-    CONFIG.route.forEach(function (item, i) {
-      var angle = (-90 + i * 72) * Math.PI / 180;
-      var x = C + R * Math.cos(angle);
-      var y = C + R * Math.sin(angle);
-      var idx = STAGE_ORDER.indexOf(item.key);
-      var cls = idx < curIdx ? 'is-done' : (idx === curIdx ? 'is-current' : '');
-
-      spokes.push('<line class="spoke ' + cls + '" x1="' + C + '" y1="' + C + '" x2="' + x.toFixed(1) + '" y2="' + y.toFixed(1) + '"/>');
-      dots.push('<circle class="dot ' + cls + '" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2"/>');
-      nodes.push(
-        '<button class="tm-node ' + cls + '" type="button" tabindex="-1" aria-label="' +
-        esc(item.num + '. ' + item.title) + '" style="left:' +
-        (x / 300 * 100).toFixed(2) + '%;top:' + (y / 300 * 100).toFixed(2) + '%">' +
-        item.num + '</button>'
-      );
-    });
-
-    var hero = state.hero || {};
-    var core = hero.avatar
-      ? '<img src="' + esc(hero.avatar) + '" alt="' + esc(state.quest.name) + '" onerror="this.style.display=\'none\'">'
-      : '<span>' + esc(state.quest.piece) + '</span>';
-
-    var current = routeItem(currentKey) || CONFIG.route[0];
-
+  /* ---------------- КВАНТОВЫЙ РАЗЛОМ + ТЕЛЕМЕТРИЯ ---------------- */
+  function renderRift() {
     return [
-      '<div class="tm-hub">',
-      '  <svg class="tm-hub-svg" viewBox="0 0 300 300" aria-hidden="true">',
-      '    <circle class="ring" cx="150" cy="150" r="118"/>',
-      '    <circle class="ring" cx="150" cy="150" r="86"/>',
-      '    <circle class="ring-dashed" cx="150" cy="150" r="52"/>',
-      spokes.join(''),
-      dots.join(''),
-      '  </svg>',
-      '  <div class="tm-hub-core">' + core + '</div>',
-      nodes.join(''),
-      '</div>',
-      '<div class="tm-hub-caption">',
-      '  <div class="tm-hub-caption-title">' + esc(current.num + '. ' + current.title) + '</div>',
-      '  <div class="tm-hub-caption-note">' + esc(current.note) + '</div>',
+      '<div class="tm-rift">',
+      '  <canvas class="tm-rift-canvas" id="tm-rift-canvas"></canvas>',
+      '  <div class="tm-telemetry" aria-hidden="true">',
+      '    <span class="tm-tel tm-tel-s1" data-slot="1"></span>',
+      '    <span class="tm-tel tm-tel-s2" data-slot="2"></span>',
+      '    <span class="tm-tel tm-tel-s3" data-slot="3"></span>',
+      '    <span class="tm-tel tm-tel-s4" data-slot="4"></span>',
+      '    <span class="tm-tel tm-tel-s5" data-slot="5"></span>',
+      '    <span class="tm-tel tm-tel-s6" data-slot="6"></span>',
+      '  </div>',
       '</div>'
     ].join('\n');
+  }
+
+  function stopRift() {
+    if (state.rift) {
+      state.rift.destroy();
+      state.rift = null;
+    }
+    if (state.telTimer) {
+      clearInterval(state.telTimer);
+      state.telTimer = null;
+    }
+  }
+
+  /* поток вычислений вокруг разлома */
+  var TEL_MOVES = ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5', 'a6', 'Ba4', 'Nf6', 'O-O', 'Be7', 'Re1', 'b5', 'd4', 'c5', 'c3', 'Nf6'];
+
+  /* Телеметрия: строки плавно появляются, держатся и растворяются.
+     Одновременно на экране не больше трёх — чтобы не рябило. */
+  function startTelemetry() {
+    var slots = dom.body.querySelectorAll('[data-slot]');
+    if (!slots.length) return;
+
+    var HOLD_MIN = 1500;
+    var HOLD_MAX = 2400;
+    var FADE = 600;
+
+    function readout() {
+      var kind = Math.floor(Math.random() * 5);
+
+      if (kind === 0) return 'ΔT ' + (Math.random() * 0.009).toFixed(4);
+      if (kind === 1) return 'PHASE ' + String(Math.floor(Math.random() * 99)).padStart(2, '0');
+      if (kind === 2) return 'ENT ' + Math.random().toFixed(3);
+      if (kind === 3) return 'Q ' + String(Math.floor(Math.random() * 9999)).padStart(4, '0');
+
+      return TEL_MOVES[Math.floor(Math.random() * TEL_MOVES.length)] + ' ' +
+        TEL_MOVES[Math.floor(Math.random() * TEL_MOVES.length)];
+    }
+
+    function show(slot) {
+      slot.dataset.busy = '1';
+      slot.textContent = readout();
+      slot.classList.add('is-on');
+
+      var hold = HOLD_MIN + Math.random() * (HOLD_MAX - HOLD_MIN);
+
+      var hideId = setTimeout(function () {
+        slot.classList.remove('is-on');
+
+        var clearId = setTimeout(function () {
+          slot.textContent = '';
+          delete slot.dataset.busy;
+        }, FADE);
+
+        state.timers.push(clearId);
+      }, hold);
+
+      state.timers.push(hideId);
+    }
+
+    state.telTimer = setInterval(function () {
+      var free = [];
+
+      Array.prototype.forEach.call(slots, function (slot) {
+        if (!slot.dataset.busy) free.push(slot);
+      });
+
+      if (!free.length) return;
+
+      show(free[Math.floor(Math.random() * free.length)]);
+    }, 620);
+  }
+
+  function mountRift() {
+    stopRift();
+    var canvas = dom.body.querySelector('#tm-rift-canvas');
+    if (!canvas || typeof QuantumRift === 'undefined') return;
+
+    state.rift = new QuantumRift(canvas, {
+      color: '53, 214, 240',
+      color2: '168, 224, 95'
+    });
+    state.rift.start();
+    startTelemetry();
   }
 
   /* ---------------- I. ПРОЛОГ ---------------- */
@@ -462,7 +639,6 @@
       '      <div class="tm-rank-chip">' + esc(rankName) + '</div>',
       '    </div>',
       '  </div>',
-      routeHub('greet'),
       '  <div>',
       '    <div class="tm-greet-hello">' + esc(g.hello) + '</div>',
       '    <div class="tm-greet-lead">' + esc(g.lead) + '</div>',
@@ -518,16 +694,11 @@
     dom.body.innerHTML = [
       chapterHead('jump', quest.era),
       '<div class="tm-jump">',
-      '  <div class="jump-stage">',
-      '    <div class="jump-ring r1"></div>',
-      '    <div class="jump-ring r2"></div>',
-      '    <div class="jump-ring r3"></div>',
-      '    <div class="jump-core"></div>',
-      '  </div>',
       '  <div>',
       '    <div class="tm-title">Дверь открыта</div>',
       '    <div class="tm-sub">' + esc(quest.era) + '</div>',
       '  </div>',
+      renderRift(),
       '  <div class="jump-steps" id="tm-jump-steps">',
       steps.map(function (line, i) {
         return '<div class="jump-step" data-step="' + i + '"><span class="mark">›</span><span>' + esc(line) + '</span></div>';
@@ -536,6 +707,8 @@
       '  <button class="tm-btn" type="button" id="tm-jump-next" hidden>Дальше</button>',
       '</div>'
     ].join('\n');
+
+    mountRift();
 
     var nodes = dom.body.querySelectorAll('.jump-step');
     var next = dom.body.querySelector('#tm-jump-next');
@@ -1039,6 +1212,7 @@
   function close() {
     if (!dom) return;
     clearTimers();
+    stopRift();
     dom.overlay.classList.remove('tm-modal-active');
     dom.overlay.setAttribute('aria-hidden', 'true');
     state.stage = 'greet';
