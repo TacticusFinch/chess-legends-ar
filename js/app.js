@@ -103,7 +103,7 @@ const RANK_CONFIGS = {
       { id: 'steinitz',   globalIndex: 0,  videoId: 'vid-steinitz',   name: 'Вильгельм Стейниц' },
       { id: 'lasker',     globalIndex: 1,  videoId: 'vid-lasker',     name: 'Эммануил Ласкер' },
       { id: 'capablanca', globalIndex: 2,  videoId: 'vid-capablanca', name: 'Хосе Рауль Капабланка' },
-      { id: 'alekhine',   globalIndex: 3,  videoId: 'vid-alekhine',   name: 'Александр Алехин' },
+      { id: 'alekhine',   globalIndex: 3,  videoId: 'vid-alekhin',    name: 'Александр Алехин' },
       { id: 'euwe',       globalIndex: 4,  videoId: 'vid-euwe',       name: 'Макс Эйве' },
       { id: 'botvinnik',  globalIndex: 5,  videoId: 'vid-botvinnik',  name: 'Михаил Ботвинник' },
       { id: 'smyslov',    globalIndex: 6,  videoId: 'vid-smyslov',    name: 'Василий Смыслов' },
@@ -139,7 +139,23 @@ let currentRankKey = 'legends-1';
 let currentRankConfig = RANK_CONFIGS['legends-1'];
 
 let currentHeroId = null;
+
+// [FIX] Последняя считанная карточка. Живёт дольше currentHeroId:
+// квест длится несколько минут, и трекинг за это время неизбежно теряется.
+let lastScannedHeroId = null;
+
 let currentActiveTargetIndex = null;
+
+// [FIX] Универсальный доступ к герою: сначала активная мишень, потом последняя считанная.
+function getActiveHeroId() {
+  return currentHeroId !== null ? currentHeroId : lastScannedHeroId;
+}
+
+function getActiveHero() {
+  const id = getActiveHeroId();
+  if (id === null || typeof HEROES === 'undefined') return null;
+  return HEROES[id] || HEROES[String(id)] || null;
+}
 
 // Сохраняем состояние звука между переключениями рангов и сессиями
 let isMuted = localStorage.getItem('chess_sound_enabled') !== 'true';
@@ -147,7 +163,7 @@ let isMuted = localStorage.getItem('chess_sound_enabled') !== 'true';
 function syncSoundUI() {
   if (!soundBtn) return;
   soundBtn.innerHTML = !isMuted ? "<span>🔊</span> ЗВУК: ВКЛ" : "<span>🔇</span> ЗВУК: ВЫКЛ";
-  soundBtn.style.color = !isMuted ? "var(--accent-gold, #f1c40f)" : "";
+  soundBtn.style.color = !isMuted ? "var(--accent-gold, #d4b475)" : "";
 }
 
 
@@ -362,12 +378,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     setTimeout(() => {
       if (loadBox) loadBox.style.display = "none";
       if (readySub) {
-  	readySub.style.display = "block";
-  	const heroNamesList = currentRankConfig.targets.map(t => t.name.split(' ').pop()).join(', ');
-  	readySub.innerText = `${currentRankConfig.name} готовы: ${heroNamesList}.`;
-	}
+        readySub.style.display = "block";
+        const heroNamesList = currentRankConfig.targets.map(t => t.name.split(' ').pop()).join(', ');
+        readySub.innerText = `${currentRankConfig.name} готовы: ${heroNamesList}.`;
+      }
 
-      
       const topHud = document.getElementById("top-hud");
       if (topHud) {
         topHud.classList.remove("preloading");
@@ -378,8 +393,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (badge) {
         badge.innerText = `AR СКАНЕР (${currentRankConfig.name.toUpperCase()})`;
-        badge.style.borderColor = "var(--accent-color, #f1c40f)";
-        badge.style.color = "var(--accent-color, #f1c40f)";
+        badge.style.borderColor = "var(--accent-color, #d4b475)";
+        badge.style.color = "var(--accent-color, #d4b475)";
       }
       if (title) title.innerText = "ВЫБЕРИТЕ РАНГ И НАВЕДИТЕ НА КАРТОЧКУ";
     }, 250);
@@ -388,19 +403,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Ошибка инициализации AR:", err);
     if (badge) {
       badge.innerText = "ОШИБКА";
-      badge.style.borderColor = "#ff4d6d";
-      badge.style.color = "#ff4d6d";
+      badge.style.borderColor = "#d97777";
+      badge.style.color = "#d97777";
     }
     if (title) title.innerText = "СБОЙ КАМЕРЫ";
     if (percentText) percentText.innerText = "Закройте другие вкладки и обновите страницу";
-    if (barFill) barFill.style.background = "#ff4d6d";
+    if (barFill) barFill.style.background = "#d97777";
   }
 
   sceneEl.addEventListener("arError", () => {
     if (badge) {
       badge.innerText = "ДОСТУП ЗАПРЕЩЕН";
-      badge.style.borderColor = "#ff4d6d";
-      badge.style.color = "#ff4d6d";
+      badge.style.borderColor = "#d97777";
+      badge.style.color = "#d97777";
     }
     if (title) title.innerText = "КАМЕРА ЗАНЯТА";
     if (percentText) percentText.innerText = "Закройте дубликаты вкладки и разрешите камеру";
@@ -427,7 +442,7 @@ function bindVideosForCurrentRank() {
     if (index < targets.length) {
       const targetMeta = targets[index];
       const newSrc = `#${targetMeta.videoId}`;
-      
+
       // Защита от сброса текстуры и зависания плеера:
       if (aVideo.getAttribute('src') !== newSrc) {
         aVideo.setAttribute('src', newSrc);
@@ -565,7 +580,7 @@ function playTargetVideo(targetIndex) {
       }).catch(() => {});
     });
   }
-  
+
 
   if (vid._checkReadyInterval) {
     clearInterval(vid._checkReadyInterval);
@@ -616,7 +631,7 @@ function stopTargetVideo(targetIndex) {
   if (vid) {
     vid.pause();
     vid.currentTime = 0;
-    
+
     if (vid._checkReadyInterval) {
       clearInterval(vid._checkReadyInterval);
       vid._checkReadyInterval = null;
@@ -646,9 +661,18 @@ ALL_TARGET_INDICES.forEach(index => {
 
     currentActiveTargetIndex = index;
     // Поддерживаем как строковый id, так и глобальный индекс
-    currentHeroId = (typeof HEROES !== "undefined" && HEROES[heroData.meta.id]) 
-      ? heroData.meta.id 
+    currentHeroId = (typeof HEROES !== "undefined" && HEROES[heroData.meta.id])
+      ? heroData.meta.id
       : heroData.meta.globalIndex;
+
+    // [FIX] Запоминаем карточку надолго: квест идёт минутами, трекинг теряется.
+    lastScannedHeroId = currentHeroId;
+
+    // [FIX] Сбрасываем кэш героя в NetDuel, иначе дуэль пойдёт за предыдущего чемпиона.
+    if (typeof NetDuel !== "undefined" && NetDuel) {
+      NetDuel.myHero = null;
+      NetDuel.enemyHero = null;
+    }
 
     if (typeof sfx !== "undefined" && sfx.playTargetFound) sfx.playTargetFound();
 
@@ -673,6 +697,8 @@ ALL_TARGET_INDICES.forEach(index => {
 
     if (visibleTargets.size === 0) {
       currentActiveTargetIndex = null;
+      // [FIX] currentHeroId обнуляем, но lastScannedHeroId сохраняем —
+      // док и квест продолжают работать с последней карточкой.
       currentHeroId = null;
       document.body.classList.remove("card-active");
 
@@ -734,8 +760,9 @@ document.addEventListener("DOMContentLoaded", () => {
 // ==========================================
 function openModal(type) {
   if (typeof sfx !== "undefined" && sfx.playMove) sfx.playMove();
-  if (currentHeroId === null || typeof HEROES === "undefined") return;
-  const hero = HEROES[currentHeroId];
+
+  // [FIX] Берём героя через getActiveHero(): работает и после потери трекинга.
+  const hero = getActiveHero();
   if (!hero) return;
 
   if (currentActiveTargetIndex !== null) {
@@ -796,23 +823,48 @@ function showChampionUI() {
   dock.style.display = "flex";
   dock.innerHTML = `
     <button class="dock-btn" onclick="openModal('bio')"><span>Биография</span></button>
-    <button class="dock-btn" onclick="startTimeMachine()" style="border-color: rgba(245, 197, 66, 0.6); box-shadow: 0 0 16px rgba(245, 197, 66, 0.3);">
-      <span style="color: #f5c542; font-weight: 800;">Машина времени</span>
+    <button class="dock-btn" onclick="startTimeMachine()" style="border-color: rgba(212, 180, 117, 0.6); box-shadow: 0 0 16px rgba(212, 180, 117, 0.3);">
+      <span style="color: #d4b475; font-weight: 800;">Машина времени</span>
     </button>
-    <button class="dock-btn" onclick="if(typeof openAIChatModal==='function')openAIChatModal()" style="border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);">
-      <span style="color: #38bdf8;">Диалог</span>
+    <button class="dock-btn" onclick="if(typeof openAIChatModal==='function')openAIChatModal()" style="border-color: rgba(143, 184, 168, 0.4); box-shadow: 0 0 15px rgba(143, 184, 168, 0.15);">
+      <span style="color: #8fb8a8;">Диалог</span>
     </button>
-    <button class="dock-btn" onclick="NetDuel.openLobby()" style="border-color: rgba(226, 184, 104, 0.4); box-shadow: 0 0 15px rgba(226, 184, 104, 0.15);">
+    <button class="dock-btn" onclick="NetDuel.openLobby()" style="border-color: rgba(212, 180, 117, 0.4); box-shadow: 0 0 15px rgba(212, 180, 117, 0.15);">
       <span style="color: var(--accent-gold);">Дуэль</span>
     </button>
   `;
 }
 
-// Замените или добавьте функцию startTimeMachine:
+// [FIX] Квест запускается по последней считанной карточке, а не только по активной мишени.
 function startTimeMachine() {
-  if (typeof TimeMachineQuest !== "undefined" && currentHeroId !== null) {
-    TimeMachineQuest.start(currentHeroId);
+  const heroId = getActiveHeroId();
+
+  if (heroId === null) {
+    showDuelNotice("Наведите камеру на карточку чемпиона");
+    return;
   }
+
+  if (typeof TimeMachineQuest === "undefined") {
+    console.warn("[app] TimeMachineQuest не загружен — проверьте js/time-machine.js");
+    return;
+  }
+
+  TimeMachineQuest.start(heroId);
+}
+
+// [FIX] Мягкое уведомление вместо alert(): используется и в net-duel.js.
+function showDuelNotice(text, ms = 2400) {
+  let node = document.getElementById("app-notice");
+  if (!node) {
+    node = document.createElement("div");
+    node.id = "app-notice";
+    node.className = "app-notice";
+    document.body.appendChild(node);
+  }
+  node.textContent = text;
+  node.classList.add("show");
+  clearTimeout(node._hideTimer);
+  node._hideTimer = setTimeout(() => node.classList.remove("show"), ms);
 }
 
 
@@ -855,7 +907,8 @@ function closeModal() {
 // 9. ВИКТОРИНЫ И ТЕСТЫ
 // ==========================================
 function renderPuzzleQuestion() {
-  const hero = HEROES[currentHeroId];
+  // [FIX] через getActiveHero(): не зависит от текущего трекинга
+  const hero = getActiveHero();
   if (!hero || !hero.puzzles || !hero.puzzles.length) return;
   const p = hero.puzzles[currentPuzzleIndex];
 
@@ -893,10 +946,11 @@ function renderPuzzleQuestion() {
 }
 
 function checkAnswer(index) {
-  const hero = HEROES[currentHeroId];
+  const hero = getActiveHero();
+  if (!hero) return;
   const p = hero.puzzles[currentPuzzleIndex];
   const opt = (p._shuffledOptions || p.options)[index];
-  
+
   const fb = document.getElementById("puzzle-feedback");
   const nextContainer = document.getElementById("puzzle-next-container");
   const optionsContainer = document.getElementById("puzzle-options");
@@ -914,16 +968,16 @@ function checkAnswer(index) {
     if (typeof sfx !== "undefined" && sfx.playCorrect) sfx.playCorrect();
     testScore++;
     if (navigator.vibrate) navigator.vibrate([70, 50, 70]);
-    fb.style.background = "rgba(46, 204, 113, 0.2)";
-    fb.style.color = "#2ecc71";
-    fb.style.border = "1px solid #2ecc71";
+    fb.style.background = "rgba(143, 184, 168, 0.18)";
+    fb.style.color = "#8fb8a8";
+    fb.style.border = "1px solid #8fb8a8";
     fb.innerHTML = `<b>ВЕРНО!</b> ${opt.comment || ''}`;
   } else {
     if (typeof sfx !== "undefined" && sfx.playWrong) sfx.playWrong();
     if (navigator.vibrate) navigator.vibrate(180);
-    fb.style.background = "rgba(231, 76, 60, 0.2)";
-    fb.style.color = "#e74c3c";
-    fb.style.border = "1px solid #e74c3c";
+    fb.style.background = "rgba(217, 119, 119, 0.18)";
+    fb.style.color = "#d97777";
+    fb.style.border = "1px solid #d97777";
     fb.innerHTML = `<b>НЕВЕРНО.</b> ${opt.comment || ''}`;
   }
 
@@ -932,7 +986,8 @@ function checkAnswer(index) {
 
 function nextPuzzle() {
   currentPuzzleIndex++;
-  const hero = HEROES[currentHeroId];
+  const hero = getActiveHero();
+  if (!hero) return;
   if (currentPuzzleIndex < hero.puzzles.length) {
     renderPuzzleQuestion();
   } else {
@@ -941,7 +996,8 @@ function nextPuzzle() {
 }
 
 function renderTestResult() {
-  const hero = HEROES[currentHeroId];
+  const hero = getActiveHero();
+  if (!hero) return;
   const passThreshold = Math.ceil(hero.puzzles.length * 0.8);
   const isPassed = testScore >= passThreshold;
 
@@ -950,8 +1006,10 @@ function renderTestResult() {
   if (isPassed) {
     if (typeof sfx !== "undefined" && sfx.playFanfare) sfx.playFanfare();
     if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 250]);
-    if (typeof registerCardDiscovery === "function") registerCardDiscovery(currentHeroId);
-    if (typeof registerTestPassed === "function") registerTestPassed(currentHeroId);
+
+    const heroId = getActiveHeroId();
+    if (typeof registerCardDiscovery === "function") registerCardDiscovery(heroId);
+    if (typeof registerTestPassed === "function") registerTestPassed(heroId);
 
     if (testScore === hero.puzzles.length) {
       evaluation = `🏆 <b>Абсолютный триумф!</b><br>${hero.name} признал ваше мастерство и добавлен в Паспорт!`;
@@ -963,12 +1021,12 @@ function renderTestResult() {
     evaluation = `❌ <b>Экзамен не сдан.</b><br>Для зачета нужно набрать минимум <b>${passThreshold} из ${hero.puzzles.length}</b>.<br>Изучите биографию и попробуйте снова!`;
   }
 
-  const resultColor = isPassed ? "var(--accent-color, #2ecc71)" : "#ff4d6d";
+  const resultColor = isPassed ? "var(--accent-color, #8fb8a8)" : "#d97777";
 
   modalContent.innerHTML = `
     <div class="modal-title">${isPassed ? 'Экзамен пройден!' : 'Экзамен не сдан'}</div>
     <div class="modal-subtitle">${hero.name}</div>
-    <div style="margin: 16px 0; padding: 18px; background: rgba(255, 255, 255, 0.04); border-radius: 12px; text-align: center; border: 1.5px solid ${resultColor}; box-shadow: 0 0 15px ${isPassed ? 'var(--accent-glow)' : 'rgba(255, 77, 109, 0.2)'};">
+    <div style="margin: 16px 0; padding: 18px; background: rgba(255, 255, 255, 0.04); border-radius: 12px; text-align: center; border: 1.5px solid ${resultColor}; box-shadow: 0 0 15px ${isPassed ? 'var(--accent-glow)' : 'rgba(217, 119, 119, 0.2)'};">
       <div style="font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 0.5px;">Ваш результат:</div>
       <div style="font-size: 34px; font-weight: 800; color: ${resultColor}; margin: 6px 0;">${testScore} из ${hero.puzzles.length}</div>
       <div style="font-size: 13px; color: #ddd; line-height: 1.45;">${evaluation}</div>

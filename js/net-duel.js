@@ -434,6 +434,62 @@ window.NetDuel = {
     }, 2400);
   },
 
+  /**
+   * [QUEST] Собирает боевой профиль героя по id карточки: 'euwe', 4, '4'.
+   * Работает и со строковыми, и с числовыми ключами, без побочных эффектов.
+   * Возвращает null, если герой не найден — без подстановки Стейница.
+   */
+  buildHeroFromId(heroId) {
+    if (heroId === null || heroId === undefined) return null;
+    if (typeof HEROES === "undefined") return null;
+
+    const base = HEROES[heroId] || HEROES[String(heroId)];
+    if (!base) return null;
+
+    // числовой индекс карточки: он нужен для HERO_STATS_DATA и HERO_RANKS
+    let numericId = null;
+    if (typeof HERO_STATS_DATA !== "undefined") {
+      const found = Object.keys(HERO_STATS_DATA).find(k => {
+        if (String(k) === String(heroId)) return true;
+        if (String(k) === String(base.id)) return true;
+        return typeof HEROES[k] !== "undefined" && HEROES[k].id === base.id;
+      });
+      if (found !== undefined) numericId = Number(found);
+    }
+    if (numericId === null && typeof heroId === "number") numericId = heroId;
+
+    const card = (numericId !== null && typeof HERO_STATS_DATA !== "undefined" && HERO_STATS_DATA[numericId])
+      ? HERO_STATS_DATA[numericId]
+      : {
+          atk: base.atk || 7,
+          def: base.def || 7,
+          rank: base.rankKey || "legend",
+          skillName: base.skillName || "Коронный ход",
+          skillId: base.skillId || "DEFAULT",
+          tip: "Накопите 2 единицы энергии для сокрушительного удара"
+        };
+
+    const rankKey = card.rank || base.rankKey || "legend";
+    const rankInfo = (typeof HERO_RANKS !== "undefined" && HERO_RANKS[rankKey])
+      ? HERO_RANKS[rankKey]
+      : { name: "ЛЕГЕНДА", color: "#e2b868" };
+
+    return {
+      id: base.id !== undefined ? base.id : heroId,
+      numericId: numericId,
+      name: base.name || "Гроссмейстер",
+      img: base.avatar || "./assets/avatars/steinitz.png",
+      atk: card.atk,
+      def: card.def,
+      rank: rankInfo.name,
+      rankKey: rankKey,
+      rankColor: rankInfo.color,
+      skillName: card.skillName,
+      skillId: card.skillId,
+      tip: card.tip || "Накопите 2 единицы энергии для сокрушительного удара"
+    };
+  },
+
   getHero() {
     let h = window.currentHeroData;
 
@@ -441,13 +497,15 @@ window.NetDuel = {
       h = { ...HEROES[currentHeroId], id: currentHeroId };
     }
 
+    // [QUEST] Раньше здесь молча подставлялся HEROES[0] (Стейниц) — из-за этого
+    // дуэль после сканирования другой карточки шла за первого чемпиона.
+    // Теперь герой не подменяется: если карточка не считана, возвращаем null.
     if (!h) {
-      if (typeof HEROES !== "undefined" && HEROES[0]) {
-        h = { ...HEROES[0], id: 0 };
-      } else {
-        alert("Сначала наведите камеру на карту чемпиона!");
-        return null;
+      console.warn('[NetDuel] герой не определён: карточка не считана или currentHeroId = null');
+      if (typeof showDuelNotice === "function") {
+        showDuelNotice("Сначала наведите камеру на карточку чемпиона");
       }
+      return null;
     }
 
     let numericId = 0;
@@ -661,8 +719,17 @@ window.NetDuel = {
   startQuestDuel(options) {
     const opts = options || {};
 
-    this.myHero = this.myHero || this.getHero();
-    if (!this.myHero) return false;
+    // [QUEST] Герой игрока берётся ИЗ КАРТОЧКИ КВЕСТА (opts.playerId), а не из
+    // закэшированного this.myHero и не из fallback-Стейница. Раньше при потере
+    // currentHeroId (targetLost, перезагрузка трекинга) бой шёл за Стейница.
+    this.myHero = this.buildHeroFromId(
+      opts.playerId !== undefined ? opts.playerId
+        : (typeof currentHeroId !== 'undefined' ? currentHeroId : null)
+    );
+    if (!this.myHero) {
+      console.warn('[quest] не удалось определить героя игрока по id:', opts.playerId);
+      return false;
+    }
 
     const enemyId = Number(opts.enemyId);
     if (isNaN(enemyId)) return false;

@@ -1,22 +1,20 @@
 /* ==========================================================
-   МАШИНА ВРЕМЕНИ — КВЕСТ ТУРНИРА (21–22 ноября)
+   МАШИНА ВРЕМЕНИ — КВЕСТ-ПУТЕШЕСТВИЕ (21–22 ноября)
    Классический скрипт, без import/export. Сам создаёт свой DOM.
 
-   Поток: приветствие → открытие двери → вопросы →
-          5 дуэлей → вызов Хранителю → сертификат.
+   Маршрут: I Пролог → II Дверь → III Испытания → IV Хранители → V Хранитель времени
 
    ДУЭЛИ: не своя механика, а настоящий NetDuel — тот же,
    что открывается по кнопке «Дуэль»: арена, карточки, HP,
    тактическая доска с задачей из duel-puzzles.js и таймером 30 с.
-   Квест только выбирает соперника и принимает итог.
+   Квест выбирает соперника и принимает итог.
 
-   Публичный API:
+   API:
      TimeMachineQuest.open(heroId)
      TimeMachineQuest.start(heroId)  — алиас
      TimeMachineQuest.close()
 
-   Требуется NetDuel.startQuestDuel({enemyId, onEnd}) — см. патч
-   для js/net-duel.js (добавляется 4 небольших фрагмента).
+   Требуется NetDuel.startQuestDuel({playerId, enemyId, onEnd}).
    ========================================================== */
 (function () {
   'use strict';
@@ -35,32 +33,23 @@
       paragraphs: [
         'Ты только что оживил карточку чемпиона: AR-сканер считал мишень, хронометр турнира зафиксировал разлом — и карточка стала дверью в прошлое.',
         'Поэтому турнир и называется «Машина времени». Дверь открывается в эпоху чемпиона, и ты входишь туда гостем: он сам рассказывает о своей жизни и садится с тобой за доску.',
-        'Внутри карточки: пять вопросов о жизни чемпиона, пять дуэлей с хранителями эпох и финальный вызов — Хранителю времени на Lichess. На всё даётся пять жизней: ошибка в факте или проигранная дуэль забирает одну.'
+        'Впереди пять глав: пролог, дорога, испытания памяти, пять хранителей эпох и последний рубеж — Хранитель времени на Lichess. На весь путь даётся пять жизней: ошибка в факте или проигранная дуэль забирает одну.'
       ],
-      question: 'Ты готов начать?'
+      question: 'Ты готов выйти в путь?'
     },
     jumpSteps: [
       'Калибровка хронометра турнира…',
       'Дверь открыта: {era}',
       'Чемпион {hero} выходит на связь…',
-      'Память архива закрыта — её придётся восстанавливать.'
+      'Архив закрыт на замок — ключи придётся собрать в пути.'
     ],
-    challenge: [
-      {
-        icon: '01',
-        title: '{quiz} вопросов о жизни чемпиона',
-        text: 'Факты из его биографии. Ошибка стоит одной жизни, а вопрос остаётся — его можно переиграть.'
-      },
-      {
-        icon: '02',
-        title: '{duels} дуэлей с хранителями эпох',
-        text: 'Каждая дуэль — как обычная: арена, карточки, тактическая доска и 30 секунд на ход. Решил задачу — нанёс урон, не решил — получил удар.'
-      },
-      {
-        icon: '03',
-        title: 'Вызов Хранителю времени',
-        text: 'Партия с ботом турнира на Lichess. Покажите ник и код судье: первые трое финалистов получают суперприз.'
-      }
+    // Маршрут: используется и в навигации, и в карте пути
+    route: [
+      { key: 'greet', num: 'I', title: 'Пролог', note: 'Разлом открыт. Чемпион ждёт гостя.' },
+      { key: 'jump', num: 'II', title: 'Дорога', note: 'Переход в эпоху чемпиона.' },
+      { key: 'quiz', num: 'III', title: 'Испытания', note: 'Пять фактов из жизни чемпиона.' },
+      { key: 'duels', num: 'IV', title: 'Хранители', note: 'Пять рубежей, пять дуэлей.' },
+      { key: 'final', num: 'V', title: 'Хранитель времени', note: 'Партия с ботом турнира.' }
     ]
   };
 
@@ -121,6 +110,13 @@
     return !!dom && dom.overlay.classList.contains('tm-modal-active');
   }
 
+  function routeItem(key) {
+    for (var i = 0; i < CONFIG.route.length; i++) {
+      if (CONFIG.route[i].key === key) return CONFIG.route[i];
+    }
+    return null;
+  }
+
   function storageKey() {
     return CONFIG.storagePrefix + (state.quest ? state.quest.id : 'unknown');
   }
@@ -161,7 +157,6 @@
   }
 
   /* ---------------- данные ---------------- */
-  // Пять соперников: чемпионы из базы, отсортированные по силе атаки.
   function buildDuels(hero) {
     var stats = (typeof HERO_STATS_DATA !== 'undefined' && HERO_STATS_DATA) ? HERO_STATS_DATA : null;
     var ranks = (typeof HERO_RANKS !== 'undefined' && HERO_RANKS) ? HERO_RANKS : null;
@@ -268,7 +263,7 @@
       piece: quest.piece || '♚',
       era: quest.era || hero.title || 'эпоха чемпиона',
       title: hero.title || '',
-      mission: quest.mission || 'Восстановить память чемпиона, пройти хранителей эпох и выстоять в партии с Хранителем времени.',
+      mission: quest.mission || 'Пройти пять глав пути, восстановить память чемпиона и выстоять в партии с Хранителем времени.',
       quiz: quiz,
       duels: (quest.duels && quest.duels.length) ? quest.duels : buildDuels(hero)
     };
@@ -292,18 +287,17 @@
       '        <div class="tm-lives" id="tm-lives"></div>',
       '      </div>',
       '    </div>',
+      '    <div class="tm-compass" aria-hidden="true"><i></i></div>',
       '    <button class="tm-close" type="button" id="tm-close" aria-label="Закрыть квест">✕</button>',
       '  </header>',
-      '  <nav class="tm-pips" aria-label="Этапы квеста">',
-      '    <span class="tm-pip" data-pip="greet">01 · Приветствие</span>',
-      '    <span class="tm-pip" data-pip="jump">02 · Дверь</span>',
-      '    <span class="tm-pip" data-pip="quiz">03 · Вопросы</span>',
-      '    <span class="tm-pip" data-pip="duels">04 · Дуэли</span>',
-      '    <span class="tm-pip" data-pip="final">05 · Хранитель</span>',
+      '  <nav class="tm-pips" aria-label="Главы пути">',
+      CONFIG.route.map(function (item) {
+        return '    <span class="tm-pip" data-pip="' + item.key + '">' + item.num + ' · ' + esc(item.title) + '</span>';
+      }).join(''),
       '  </nav>',
       '  <div class="tm-body" id="tm-body"></div>',
       '</div>'
-    ].join('');
+    ].join('\n');
 
     document.body.appendChild(overlay);
 
@@ -377,33 +371,88 @@
     return true;
   }
 
-  /* ---------------- 01. приветствие ---------------- */
+  /* заголовок главы */
+  function chapterHead(stageKey, noteOverride) {
+    var item = routeItem(stageKey);
+    if (!item) return '';
+    return [
+      '<div class="tm-chapter">',
+      '  <div class="tm-chapter-num">' + item.num + '</div>',
+      '  <div class="tm-chapter-body">',
+      '    <div class="tm-chapter-title">' + esc(item.title) + '</div>',
+      '    <div class="tm-chapter-note">' + esc(noteOverride || item.note) + '</div>',
+      '  </div>',
+      '</div>'
+    ].join('\n');
+  }
+
+  /* карта пути */
+  function routeMap(currentKey) {
+    var currentIdx = STAGE_ORDER.indexOf(currentKey);
+    return [
+      '<div class="tm-route">',
+      CONFIG.route.map(function (item) {
+        var idx = STAGE_ORDER.indexOf(item.key);
+        var cls = idx < currentIdx ? 'is-done' : (idx === currentIdx ? 'is-current' : '');
+        var status = idx < currentIdx ? 'пройдено' : (idx === currentIdx ? 'вы здесь' : 'впереди');
+        return [
+          '  <div class="tm-route-stop ' + cls + '">',
+          '    <div class="tm-route-node"></div>',
+          '    <div class="tm-route-body">',
+          '      <div class="tm-route-name">' + item.num + '. ' + esc(item.title) + '</div>',
+          '      <div class="tm-route-note">' + esc(item.note) + '</div>',
+          '      <div class="tm-route-status">' + status + '</div>',
+          '    </div>',
+          '  </div>'
+        ].join('\n');
+      }).join(''),
+      '</div>'
+    ].join('\n');
+  }
+
+  /* ---------------- I. ПРОЛОГ ---------------- */
   function renderGreeting() {
     setPips('greet');
     renderLives(false);
     var quest = state.quest;
+    var hero = state.hero || {};
     var g = CONFIG.greeting;
+    var rankName = (hero.rank && hero.rank.name) ? hero.rank.name : 'ЛЕГЕНДА';
+    var portrait = hero.avatar
+      ? '<img src="' + esc(hero.avatar) + '" alt="' + esc(quest.name) + '" onerror="this.style.display=\'none\'">'
+      : '<span>' + esc(quest.piece) + '</span>';
 
     dom.body.innerHTML = [
+      chapterHead('greet', 'Разлом открыт · ' + quest.era),
       '<div class="tm-greet">',
-      '  <div class="tm-greet-top">',
-      '    <div class="tm-portal">' + esc(quest.piece) + '</div>',
-      '    <div>',
-      '      <div class="tm-greet-hello">' + esc(g.hello) + '</div>',
-      '      <div class="tm-greet-lead">' + esc(g.lead) + '</div>',
+      '  <div class="tm-hero-banner">',
+      '    <div class="tm-hero-portrait">' + portrait + '</div>',
+      '    <div class="tm-hero-meta">',
+      '      <div class="tm-hero-name">' + esc(quest.name) + '</div>',
+      '      <div class="tm-rank-chip">' + esc(rankName) + '</div>',
+      '      <div class="tm-hero-era">' + esc(quest.era) + '</div>',
       '    </div>',
+      '  </div>',
+      '  <div class="tm-stats">',
+      '    <div class="tm-stat"><div class="tm-stat-label">Главы</div><div class="tm-stat-value">5 <small>этапов</small></div></div>',
+      '    <div class="tm-stat"><div class="tm-stat-label">Вопросы</div><div class="tm-stat-value">' + quest.quiz.length + ' <small>фактов</small></div></div>',
+      '    <div class="tm-stat"><div class="tm-stat-label">Жизни</div><div class="tm-stat-value">' + CONFIG.maxLives + ' <small>попыток</small></div></div>',
+      '  </div>',
+      '  <div>',
+      '    <div class="tm-greet-hello">' + esc(g.hello) + '</div>',
+      '    <div class="tm-greet-lead">' + esc(g.lead) + '</div>',
       '  </div>',
       '  <div class="tm-story">',
       g.paragraphs.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join(''),
       '  </div>',
       '  <div class="tm-rules">',
-      '    <div class="tm-rules-title">Карточка · ' + esc(quest.name) + '</div>',
-      esc(quest.mission),
+      '    <div class="tm-rules-title">Маршрут</div>',
+      routeMap('greet'),
       '  </div>',
       '  <div class="tm-greet-question">' + esc(g.question) + '</div>',
       '  <div class="tm-actions-row">',
       '    <button class="tm-btn tm-btn-ghost" type="button" id="tm-bio-btn">Биография</button>',
-      '    <button class="tm-btn" type="button" id="tm-ready-btn">Начать</button>',
+      '    <button class="tm-btn" type="button" id="tm-ready-btn">Выйти в путь</button>',
       '  </div>',
       '</div>'
     ].join('\n');
@@ -426,10 +475,10 @@
       '</div>',
       '<div class="tm-story">',
       bio.map(function (s) {
-        return '<p><strong style="color: var(--accent-gold); font-weight: 500;">' + esc(s.title) + '</strong><br>' + esc(s.text) + '</p>';
+        return '<p><strong style="color: var(--accent-gold); font-weight: 600;">' + esc(s.title) + '</strong><br>' + esc(s.text) + '</p>';
       }).join(''),
       '</div>',
-      '<button class="tm-btn" type="button" id="tm-bio-next">Готов</button>'
+      '<button class="tm-btn" type="button" id="tm-bio-next">В путь</button>'
     ].join('\n');
 
     dom.body.querySelector('#tm-bio-back').addEventListener('click', renderGreeting);
@@ -439,7 +488,7 @@
     });
   }
 
-  /* ---------------- 02. дверь ---------------- */
+  /* ---------------- II. ДОРОГА ---------------- */
   function renderJump() {
     setPips('jump');
     var quest = state.quest;
@@ -448,6 +497,7 @@
     });
 
     dom.body.innerHTML = [
+      chapterHead('jump', 'Переход · ' + quest.era),
       '<div class="tm-jump">',
       '  <div class="jump-stage">',
       '    <div class="jump-ring r1"></div>',
@@ -464,7 +514,7 @@
         return '<div class="jump-step" data-step="' + i + '"><span class="mark">›</span><span>' + esc(line) + '</span></div>';
       }).join(''),
       '  </div>',
-      '  <button class="tm-btn" type="button" id="tm-jump-next" hidden>К испытаниям</button>',
+      '  <button class="tm-btn" type="button" id="tm-jump-next" hidden>Дальше по пути</button>',
       '</div>'
     ].join('\n');
 
@@ -485,32 +535,38 @@
     next.addEventListener('click', renderChallenge);
   }
 
-  /* ---------------- брифинг ---------------- */
+  /* брифинг */
   function renderChallenge() {
     setPips('jump');
     var quizCount = state.quest.quiz.length;
     var duelCount = state.quest.duels.length;
 
-    var cards = CONFIG.challenge.map(function (c) {
-      return [
-        '<div class="challenge-item">',
-        '  <div class="challenge-icon">' + c.icon + '</div>',
-        '  <div>',
-        '    <div class="challenge-title">' + esc(c.title.replace('{quiz}', quizCount).replace('{duels}', duelCount)) + '</div>',
-        '    <div class="challenge-text">' + esc(c.text) + '</div>',
-        '  </div>',
-        '</div>'
-      ].join('\n');
-    }).join('');
+    var cards = [
+      { icon: '01', title: quizCount + ' вопросов о жизни чемпиона', text: 'Факты из его биографии. Ошибка стоит одной жизни, а вопрос остаётся — его можно переиграть.' },
+      { icon: '02', title: duelCount + ' дуэлей с хранителями эпох', text: 'Каждая дуэль — как обычная: арена, карточки, тактическая доска и 30 секунд на ход. Решил задачу — нанёс урон, не решил — получил удар.' },
+      { icon: '03', title: 'Вызов Хранителю времени', text: 'Партия с ботом турнира на Lichess. Покажите ник и код судье: первые трое финалистов получают суперприз.' }
+    ];
 
     dom.body.innerHTML = [
       '<div class="tm-stage-head">',
-      '  <span class="tm-badge tm-badge-gold">Твой вызов</span>',
+      '  <span class="tm-badge tm-badge-gold">Снаряжение</span>',
       '  <span class="tm-counter">' + CONFIG.maxLives + ' жизней</span>',
       '</div>',
-      '<div class="tm-title">Три ступени</div>',
-      '<div class="challenge-list">' + cards + '</div>',
-      '<button class="tm-btn" type="button" id="tm-challenge-next">К первому вопросу</button>'
+      '<div class="tm-title">Что взять в дорогу</div>',
+      '<div class="challenge-list">',
+      cards.map(function (c) {
+        return [
+          '  <div class="challenge-item">',
+          '    <div class="challenge-icon">' + c.icon + '</div>',
+          '    <div>',
+          '      <div class="challenge-title">' + esc(c.title) + '</div>',
+          '      <div class="challenge-text">' + esc(c.text) + '</div>',
+          '    </div>',
+          '  </div>'
+        ].join('\n');
+      }).join(''),
+      '</div>',
+      '<button class="tm-btn" type="button" id="tm-challenge-next">К испытаниям</button>'
     ].join('\n');
 
     dom.body.querySelector('#tm-challenge-next').addEventListener('click', function () {
@@ -520,15 +576,13 @@
     });
   }
 
-  /* ---------------- 03. вопросы ---------------- */
+  /* ---------------- III. ИСПЫТАНИЯ ---------------- */
   function renderQuiz() {
     setPips('quiz');
     var quiz = state.quest.quiz;
     var total = quiz.length;
     var idxAtRender = state.quizIdx;
     var item = quiz[state.quizIdx];
-
-    dom.pips.quiz.textContent = '03 · Вопросы ' + (state.quizIdx + 1) + '/' + total;
 
     if (!state.shuffled[state.quizIdx]) {
       state.shuffled[state.quizIdx] = item.options
@@ -538,17 +592,14 @@
     var options = state.shuffled[state.quizIdx];
 
     dom.body.innerHTML = [
-      '<div class="tm-stage-head">',
-      '  <span class="tm-badge">Память чемпиона</span>',
-      '  <span class="tm-counter">' + (state.quizIdx + 1) + ' / ' + total + '</span>',
-      '</div>',
+      chapterHead('quiz', 'Факт ' + (state.quizIdx + 1) + ' из ' + total),
       '<div class="tm-question">' + esc(item.q) + '</div>',
       '<div class="tm-options" id="tm-opts"></div>',
       '<div class="tm-feedback" id="tm-fb" hidden></div>',
       '<div class="tm-footer">',
       '  <div class="tm-warn">Ошибка −1 ♥</div>',
       '  <button class="tm-btn tm-btn-sm" type="button" id="tm-quiz-next" hidden>' +
-        (state.quizIdx < total - 1 ? 'Дальше' : 'К дуэлям') + '</button>',
+        (state.quizIdx < total - 1 ? 'Дальше' : 'К хранителям') + '</button>',
       '</div>'
     ].join('\n');
 
@@ -623,7 +674,7 @@
     });
   }
 
-  /* ---------------- 04. дуэли (настоящий NetDuel) ---------------- */
+  /* ---------------- IV. ХРАНИТЕЛИ ---------------- */
   function renderDuel() {
     setPips('duels');
     var duels = state.quest.duels;
@@ -631,7 +682,6 @@
     var duel = duels[state.duelIdx];
 
     state.busy = false;
-    dom.pips.duels.textContent = '04 · Дуэли ' + (state.duelIdx + 1) + '/' + total;
 
     var dots = duels.map(function (_, i) {
       var cls = i < state.duelIdx ? 'is-done' : (i === state.duelIdx ? 'is-current' : '');
@@ -640,12 +690,13 @@
 
     var avatar = duel.avatar
       ? '<img src="' + esc(duel.avatar) + '" alt="' + esc(duel.opponentName) + '" onerror="this.style.display=\'none\'">'
-      : esc(duel.opponentRank.charAt(0));
+      : esc(String(duel.opponentRank || '♚').charAt(0));
 
     dom.body.innerHTML = [
+      chapterHead('duels', 'Рубеж ' + (state.duelIdx + 1) + ' из ' + total),
       '<div class="tm-duel">',
       '  <div class="tm-stage-head">',
-      '    <span class="tm-badge tm-badge-red">Рубеж ' + (state.duelIdx + 1) + ' / ' + total + '</span>',
+      '    <span class="tm-badge tm-badge-red">Хранитель рубежа</span>',
       '    <span class="duel-dots">' + dots + '</span>',
       '  </div>',
       '  <div class="tm-opponent">',
@@ -658,7 +709,7 @@
       '    </div>',
       '  </div>',
       '  <div class="tm-rules">',
-      '    <div class="tm-rules-title">Формат дуэли</div>',
+      '    <div class="tm-rules-title">Как проходит бой</div>',
       '    Арена с карточками, 50 HP, заряд приёма. Атака, защита и коронный приём открывают тактическую доску:',
       '    задача из базы проекта и 30 секунд на ход. Решил — нанёс урон, не решил — удар получаешь ты.',
       '  </div>',
@@ -677,10 +728,8 @@
 
     if (typeof NetDuel === 'undefined' || typeof NetDuel.startQuestDuel !== 'function') {
       var log = dom.body.querySelector('#tm-duel-log');
-      if (log) {
-        log.textContent = 'NetDuel не найден: подключите js/net-duel.js и патч startQuestDuel.';
-      }
-      console.warn('[TimeMachineQuest] нужен NetDuel.startQuestDuel() — см. патч для net-duel.js');
+      if (log) log.textContent = 'NetDuel не найден: подключите js/net-duel.js и патч startQuestDuel.';
+      console.warn('[TimeMachineQuest] нужен NetDuel.startQuestDuel()');
       return;
     }
 
@@ -694,6 +743,8 @@
     hideQuestForBattle();
 
     var started = NetDuel.startQuestDuel({
+      // [FIX] Герой игрока — строго из карточки квеста, а не из кэша NetDuel
+      playerId: state.quest.id,
       enemyId: duel.enemyId,
       onEnd: function (outcome) {
         state.inBattle = false;
@@ -709,7 +760,7 @@
       restoreQuestAfterBattle();
       if (btn) btn.disabled = false;
       var log = dom.body.querySelector('#tm-duel-log');
-      if (log) log.textContent = 'Не удалось начать дуэль: сначала наведите камеру на карточку чемпиона.';
+      if (log) log.textContent = 'Не удалось начать дуэль: наведите камеру на карточку чемпиона.';
     }
   }
 
@@ -758,12 +809,12 @@
     }
   }
 
-  /* ---------------- 05. финал ---------------- */
+  /* ---------------- V. ХРАНИТЕЛЬ ВРЕМЕНИ ---------------- */
   function renderFinal() {
     setPips('final');
-    dom.pips.final.textContent = '05 · Хранитель';
 
     dom.body.innerHTML = [
+      chapterHead('final', 'Последний рубеж'),
       '<div class="tm-final">',
       '  <div class="tm-final-icon">ХРАНИТЕЛЬ</div>',
       '  <div>',
@@ -793,7 +844,7 @@
       '    <div class="tm-step-title">Шаг 3 · результат</div>',
       '    <input class="tm-input" type="text" id="tm-nick" placeholder="Ваш ник на Lichess" autocomplete="off">',
       '    <div class="tm-err" id="tm-nick-err" hidden>Введите ник (минимум 3 символа) — судьям нужно зафиксировать результат.</div>',
-      '    <button class="tm-btn" type="button" id="tm-verify">Подтвердить и получить сертификат</button>',
+      '    <button class="tm-btn" type="button" id="tm-verify">Подтвердить и получить грамоту</button>',
       '  </div>',
       '</div>'
     ].join('\n');
@@ -821,7 +872,7 @@
     });
   }
 
-  /* ---------------- 06. сертификат ---------------- */
+  /* ---------------- ГРАМОТА ---------------- */
   function renderVictory() {
     setPips('victory');
     play('playFanfare');
@@ -831,7 +882,7 @@
     var code = 'QT-' + rand(1000, 9999) + '-' + String(quest.id).toUpperCase().slice(0, 3);
 
     var certificate = [
-      'СЕРТИФИКАТ ФИНАЛИСТА ТУРНИРА «МАШИНА ВРЕМЕНИ»',
+      'ГРАМОТА ФИНАЛИСТА ТУРНИРА «МАШИНА ВРЕМЕНИ»',
       'Чемпион: ' + quest.name,
       'Игрок: ' + state.nick,
       'Партия с ботом: ' + CONFIG.botName + ', контроль ' + state.timeControl,
@@ -843,13 +894,13 @@
 
     dom.body.innerHTML = [
       '<div class="tm-victory">',
-      '  <div class="tm-crown">ФИНАЛ</div>',
+      '  <div class="tm-crown">ПУТЬ ПРОЙДЕН</div>',
       '  <div>',
       '    <div class="tm-title">' + esc(quest.name) + ' пройден</div>',
-      '    <div class="tm-sub">Память, пять рубежей и партия с Хранителем</div>',
+      '    <div class="tm-sub">Пять глав, пять рубежей и партия с Хранителем</div>',
       '  </div>',
       '  <div class="tm-seal">',
-      '    <div class="tm-seal-title">Сертификат финалиста · топ-3</div>',
+      '    <div class="tm-seal-title">Грамота финалиста · топ-3</div>',
       '    <div class="tm-seal-champ">' + esc(quest.name) + '</div>',
       '    <div class="tm-seal-line">Игрок: ' + esc(state.nick) + '<br>Контроль: ' + esc(state.timeControl) + '</div>',
       '    <div class="tm-seal-code">' + code + '</div>',
@@ -860,7 +911,7 @@
       '    <div class="tm-rules-title">Покажите этот экран судье</div>',
       '    Первые трое участников с верификационным кодом получают суперприз турнира.',
       '  </div>',
-      '  <button class="tm-btn tm-btn-ghost" type="button" id="tm-download">Скачать сертификат</button>',
+      '  <button class="tm-btn tm-btn-ghost" type="button" id="tm-download">Скачать грамоту</button>',
       '  <button class="tm-btn" type="button" id="tm-finish">Вернуться к карточке</button>',
       '</div>'
     ].join('\n');
@@ -870,7 +921,7 @@
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
-      a.download = 'certificate-' + quest.id + '.txt';
+      a.download = 'gramota-' + quest.id + '.txt';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -887,7 +938,7 @@
     });
   }
 
-  /* ---------------- выбывание ---------------- */
+  /* ---------------- ВЫБЫВАНИЕ ---------------- */
   function renderGameOver(reason) {
     state.stage = 'gameover';
     Object.keys(dom.pips).forEach(function (key) {
@@ -897,7 +948,7 @@
 
     dom.body.innerHTML = [
       '<div class="tm-gameover">',
-      '  <div class="tm-go-icon">СТОП</div>',
+      '  <div class="tm-go-icon">ПУТЬ ПРЕРВАН</div>',
       '  <div>',
       '    <div class="tm-title tm-title-red">Выбывание из конкурса</div>',
       '    <div class="tm-sub">Жизни закончились · 0 из ' + CONFIG.maxLives + '</div>',
@@ -936,7 +987,7 @@
     dom.body.querySelector('#tm-close-go').addEventListener('click', close);
   }
 
-  /* ---------------- публичный API ---------------- */
+  /* ---------------- API ---------------- */
   function open(heroId) {
     ensureDOM();
 
@@ -999,8 +1050,10 @@
 
   if (typeof window.startTimeMachine !== 'function') {
     window.startTimeMachine = function () {
-      if (typeof currentHeroId === 'undefined' || currentHeroId === null) return;
-      open(currentHeroId);
+      var id = (typeof getActiveHeroId === 'function') ? getActiveHeroId()
+        : (typeof currentHeroId !== 'undefined' ? currentHeroId : null);
+      if (id === null) return;
+      open(id);
     };
   }
 })();
