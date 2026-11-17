@@ -2,18 +2,22 @@
    МАШИНА ВРЕМЕНИ — КВЕСТ (21–22 ноября)
    Классический скрипт, без import/export. Сам создаёт свой DOM.
 
+   ВЕРСИЯ 3:
+   · 10 жизней
+   · глава-загадка убрана (модули quest-*.js больше не нужны)
+   · в окне «Дверь открыта» — квантовая голограмма фигуры
+     (js/quantum-figure.js, класс QuantumFigure)
+
    Структура: хаб из пяти глав вокруг портрета чемпиона.
    I Пролог → II Дверь → III Испытания → IV Хранители → V Хранитель времени
 
    ДУЭЛИ: настоящий NetDuel — тот же, что по кнопке «Дуэль».
-   Квест выбирает соперника и принимает итог.
+   Требуется NetDuel.startQuestDuel({playerId, enemyId, onEnd}).
 
    API:
      TimeMachineQuest.open(heroId)
      TimeMachineQuest.start(heroId)  — алиас
      TimeMachineQuest.close()
-
-   Требуется NetDuel.startQuestDuel({playerId, enemyId, onEnd}).
    ========================================================== */
 (function () {
   'use strict';
@@ -24,12 +28,12 @@
     botName: 'TimeKeeperBot',
     botUrl: 'https://lichess.org/@/TimeKeeperBot',
     judgeCode: '2026',
-    maxLives: 5,
+    maxLives: 10,
     storagePrefix: 'chrono_quest_',
     greeting: {
       hello: 'Приветствую тебя, странник!',
       lead: 'Турнир «Машина времени»',
-      text: 'Ты оживил карточку чемпиона — и она стала дверью в его эпоху. Впереди пять глав: память чемпиона, пять хранителей и партия с Хранителем времени. На весь путь пять жизней.',
+      text: 'Ты оживил карточку чемпиона — и она стала дверью в его эпоху. Впереди пять глав: память чемпиона, пять хранителей и партия с Хранителем времени. На весь путь десять жизней.',
       question: 'Готов выйти в путь?'
     },
     jumpSteps: [
@@ -45,6 +49,29 @@
       { key: 'duels', num: 'IV', title: 'Хранители', note: 'Пять рубежей' },
       { key: 'final', num: 'V', title: 'Хранитель', note: 'Партия на Lichess' }
     ]
+  };
+
+  /* какая фигура материализуется для каждой карточки */
+  var PIECE_BY_HERO = {
+    steinitz: 'rook',
+    lasker: 'queen',
+    capablanca: 'king',
+    alekhine: 'bishop',
+    euwe: 'pawn',
+    botvinnik: 'rook',
+    smyslov: 'queen',
+    tal: 'king',
+    petrosyan: 'bishop',
+    spassky: 'queen',
+    fischer: 'king',
+    karpov: 'rook',
+    anand: 'bishop',
+    liren: 'queen',
+    gukesh: 'king',
+    stockfish: 'rook',
+    enigma: 'bishop',
+    kasparov: 'queen',
+    carlsen: 'king'
   };
 
   var state = {
@@ -65,16 +92,8 @@
   };
 
   var dom = null;
-  var STAGE_ORDER = ['greet', 'jump', 'quiz', 'duels', 'final', 'victory'];
 
-  /* ---------------- утилиты ---------------- */
-  /* ---------------- звук ----------------
-     Свой набор: мягкие синусоиды и шумовые свипы вместо резких
-     пилообразных сигналов. Мастер-громкость 0.45, всё с плавной
-     атакой и затуханием — без щелчков.
-     sound.js по умолчанию выключен (enabled = false), поэтому
-     вызываем sfx.init() перед каждым звуком.
-  ---------------------------------------- */
+  /* ---------------- звук ---------------- */
   var SoundKit = (function () {
     var ctx = null;
     var master = null;
@@ -100,7 +119,6 @@
       return buf;
     }
 
-    // мягкий тон с огибающей
     function tone(o) {
       var c = init();
       if (!c) return;
@@ -123,7 +141,6 @@
       osc.stop(t0 + dur + 0.05);
     }
 
-    // шумовой свип — «переход сквозь время»
     function sweep(o) {
       var c = init();
       if (!c) return;
@@ -154,7 +171,6 @@
     return {
       init: init,
 
-      // открытие квеста: низкий гул + восходящий свип + мягкий колокол
       warp: function () {
         init();
         tone({ freq: 68, to: 132, dur: 1.2, gain: 0.2 });
@@ -162,14 +178,12 @@
         tone({ freq: 523.25, dur: 1.0, gain: 0.05, delay: 0.6 });
       },
 
-      // шаг в переходе: короткий мягкий тик
       step: function () {
         init();
         tone({ freq: 880, to: 640, dur: 0.14, gain: 0.06 });
         sweep({ from: 1800, to: 900, dur: 0.12, gain: 0.025 });
       },
 
-      // верный ответ: тёплый аккорд
       correct: function () {
         init();
         [523.25, 659.25, 783.99].forEach(function (f, i) {
@@ -177,14 +191,12 @@
         });
       },
 
-      // ошибка: глухой низкий удар, без резкости
       wrong: function () {
         init();
         tone({ freq: 150, to: 72, dur: 0.38, gain: 0.18 });
         sweep({ from: 520, to: 130, dur: 0.32, gain: 0.04 });
       },
 
-      // финал: тёплая фанфара
       fanfare: function () {
         init();
         [392, 523.25, 659.25, 783.99].forEach(function (f, i) {
@@ -201,7 +213,6 @@
     } catch (e) {}
   }
 
-  // Имена совпадают с sound.js, чтобы квест звучал одинаково в обоих вариантах
   var SOUND_MAP = {
     playUltimate: 'warp',
     playMove: 'step',
@@ -467,7 +478,6 @@
   /* ---------------- общее ---------------- */
   function setStage(stage) {
     state.stage = stage;
-    // при смене экрана гасим анимацию разлома, чтобы не жёг батарею
     stopRift();
   }
 
@@ -503,7 +513,6 @@
     return true;
   }
 
-  /* заголовок главы */
   function chapterHead(stageKey, noteOverride) {
     var item = routeItem(stageKey);
     if (!item) return '';
@@ -516,7 +525,7 @@
     ].join('\n');
   }
 
-  /* ---------------- КВАНТОВЫЙ РАЗЛОМ + ТЕЛЕМЕТРИЯ ---------------- */
+  /* ---------------- РАЗЛОМ + КВАНТОВАЯ ФИГУРА ---------------- */
   function renderRift() {
     return [
       '<div class="tm-rift">',
@@ -529,13 +538,15 @@
       '    <span class="tm-tel tm-tel-s5" data-slot="5"></span>',
       '    <span class="tm-tel tm-tel-s6" data-slot="6"></span>',
       '  </div>',
-      '</div>'
+      '</div>',
+      '<div class="tm-figure-cap" id="tm-figure-cap">материализация фигуры</div>'
     ].join('\n');
   }
 
   function stopRift() {
     if (state.rift) {
-      state.rift.destroy();
+      if (typeof state.rift.destroy === 'function') state.rift.destroy();
+      else if (typeof state.rift.stop === 'function') state.rift.stop();
       state.rift = null;
     }
     if (state.telTimer) {
@@ -544,11 +555,8 @@
     }
   }
 
-  /* поток вычислений вокруг разлома */
   var TEL_MOVES = ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5', 'a6', 'Ba4', 'Nf6', 'O-O', 'Be7', 'Re1', 'b5', 'd4', 'c5', 'c3', 'Nf6'];
 
-  /* Телеметрия: строки плавно появляются, держатся и растворяются.
-     Одновременно на экране не больше трёх — чтобы не рябило. */
   function startTelemetry() {
     var slots = dom.body.querySelectorAll('[data-slot]');
     if (!slots.length) return;
@@ -603,17 +611,66 @@
     }, 620);
   }
 
+  function figureKeyForQuest() {
+    var id = (state.quest && state.quest.id) ? String(state.quest.id) : '';
+    return PIECE_BY_HERO[id] || 'king';
+  }
+
   function mountRift() {
     stopRift();
-    var canvas = dom.body.querySelector('#tm-rift-canvas');
-    if (!canvas || typeof QuantumRift === 'undefined') return;
 
-    state.rift = new QuantumRift(canvas, {
-      color: '53, 214, 240',
-      color2: '168, 224, 95'
-    });
-    state.rift.start();
-    startTelemetry();
+    var canvas = dom.body.querySelector('#tm-rift-canvas');
+    if (!canvas) return;
+
+    var piece = figureKeyForQuest();
+    var cap = dom.body.querySelector('#tm-figure-cap');
+    var labels = (typeof QuantumFigure !== 'undefined' && QuantumFigure.PIECES) ? QuantumFigure.PIECES : null;
+
+    if (cap) {
+      cap.textContent = 'голограмма: ' + (labels ? (labels[piece] || piece) : piece);
+    }
+
+    /* основной путь: квантовая голограмма (рисует и разлом, и фигуру) */
+    if (typeof QuantumFigure !== 'undefined') {
+      state.rift = new QuantumFigure(canvas, { piece: piece });
+
+      var drag = false;
+      canvas.addEventListener('pointerdown', function (e) {
+        if (canvas.setPointerCapture) {
+          try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        }
+        drag = true;
+        state.rift.beginDrag(e.clientX);
+      });
+      canvas.addEventListener('pointermove', function (e) {
+        if (drag) state.rift.dragTo(e.clientX);
+      });
+      var endDrag = function () {
+        drag = false;
+        state.rift.endDrag();
+      };
+      canvas.addEventListener('pointerup', endDrag);
+      canvas.addEventListener('pointercancel', endDrag);
+      canvas.addEventListener('pointerleave', endDrag);
+
+      state.rift.start();
+      startTelemetry();
+      return;
+    }
+
+    /* запасной путь: старый плоский разлом */
+    if (typeof QuantumRift !== 'undefined') {
+      state.rift = new QuantumRift(canvas, {
+        color: '53, 214, 240',
+        color2: '168, 224, 95'
+      });
+      state.rift.start();
+      startTelemetry();
+      return;
+    }
+
+    if (cap) cap.textContent = 'графика не загружена';
+    console.warn('[TimeMachineQuest] нет ни QuantumFigure, ни QuantumRift — подключите js/quantum-figure.js');
   }
 
   /* ---------------- I. ПРОЛОГ ---------------- */
@@ -704,7 +761,10 @@
         return '<div class="jump-step" data-step="' + i + '"><span class="mark">›</span><span>' + esc(line) + '</span></div>';
       }).join(''),
       '  </div>',
-      '  <button class="tm-btn" type="button" id="tm-jump-next" hidden>Дальше</button>',
+      '  <div class="tm-figure-actions">',
+      '    <button class="tm-btn tm-btn-ghost" type="button" id="tm-rematerialize">Пересобрать</button>',
+      '    <button class="tm-btn" type="button" id="tm-jump-next" hidden>Дальше</button>',
+      '  </div>',
       '</div>'
     ].join('\n');
 
@@ -712,6 +772,7 @@
 
     var nodes = dom.body.querySelectorAll('.jump-step');
     var next = dom.body.querySelector('#tm-jump-next');
+    var again = dom.body.querySelector('#tm-rematerialize');
 
     Array.prototype.forEach.call(nodes, function (node, i) {
       after(320 + i * 780, function () {
@@ -723,6 +784,15 @@
     after(320 + nodes.length * 780, function () {
       next.hidden = false;
     });
+
+    if (again) {
+      again.addEventListener('click', function () {
+        if (state.rift && typeof state.rift.reassemble === 'function') {
+          state.rift.reassemble();
+          play('playMove');
+        }
+      });
+    }
 
     next.addEventListener('click', renderChallenge);
   }
@@ -929,7 +999,6 @@
     hideQuestForBattle();
 
     var started = NetDuel.startQuestDuel({
-      // герой игрока — строго из карточки квеста
       playerId: state.quest.id,
       enemyId: duel.enemyId,
       onEnd: function (outcome) {
@@ -945,8 +1014,8 @@
       state.busy = false;
       restoreQuestAfterBattle();
       if (btn) btn.disabled = false;
-      var log = dom.body.querySelector('#tm-duel-log');
-      if (log) log.textContent = 'Не удалось начать дуэль: наведите камеру на карточку чемпиона.';
+      var logEl = dom.body.querySelector('#tm-duel-log');
+      if (logEl) logEl.textContent = 'Не удалось начать дуэль: наведите камеру на карточку чемпиона.';
     }
   }
 
