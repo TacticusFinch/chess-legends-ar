@@ -11,13 +11,15 @@
 
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css">
+
+  <!--
+    Инлайн-стили лимба оставлены для обратной совместимости.
+    Они дублируют css/dial.css — после проверки блок можно удалить.
+  -->
   <style>
-    /* ==============================================================
-       ОПТИЧЕСКИЙ ЛИМБ КАМЕРЫ (TACTICAL CAMERA DIAL)
-       ============================================================== */
     :root {
-      --dial-accent: #f5c542;
-      --dial-glow: rgba(245, 197, 66, 0.4);
+      --dial-accent: #d4b475;
+      --dial-glow: rgba(212, 180, 117, 0.28);
     }
 
     .optical-dial-container {
@@ -34,7 +36,6 @@
       transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
     }
 
-    /* Прицельная риска оптического визира по центру */
     .dial-reticle-pip {
       display: flex;
       flex-direction: column;
@@ -44,26 +45,24 @@
       pointer-events: none;
     }
     .dial-pip-line {
-      width: 2px;
-      height: 12px;
+      width: 1px;
+      height: 10px;
       background: var(--dial-accent);
-      box-shadow: 0 0 10px var(--dial-accent), 0 0 2px #fff;
-      border-radius: 2px;
+      box-shadow: 0 0 8px var(--dial-accent);
+      border-radius: 1px;
       transition: background-color 0.3s ease, box-shadow 0.3s ease;
     }
     .dial-pip-dot {
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: #fff;
-      box-shadow: 0 0 6px var(--dial-accent);
+      width: 3px;
+      height: 3px;
+      transform: rotate(45deg);
+      background: var(--dial-accent);
     }
 
-    /* Горизонтальный барабан/трек с мягким виньетированием по краям */
     .dial-track-wrapper {
       position: relative;
       width: 100%;
-      max-width: 540px;
+      max-width: 500px;
       display: flex;
       justify-content: center;
       pointer-events: auto;
@@ -86,33 +85,35 @@
       display: none;
     }
 
-    /* Отдельный режим на лимбе */
     .dial-item {
       background: transparent;
       border: none;
-      color: rgba(255, 255, 255, 0.35);
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 1.6px;
+      color: rgba(242, 239, 233, 0.4);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 1.8px;
       text-transform: uppercase;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       padding: 6px 12px;
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       display: inline-flex;
-      align-items: center;
+      align-items: baseline;
       gap: 6px;
       outline: none;
       position: relative;
     }
 
     .dial-item::after {
-      content: '•';
+      content: '';
       position: absolute;
-      right: -13px;
-      color: rgba(255, 255, 255, 0.15);
-      font-size: 10px;
+      right: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1px;
+      height: 8px;
+      background: rgba(242, 239, 233, 0.12);
       pointer-events: none;
     }
     .dial-item:last-child::after {
@@ -120,47 +121,42 @@
     }
 
     .dial-item .dial-symbol {
-      font-size: 11px;
+      font-size: 10px;
       opacity: 0.5;
-      transition: opacity 0.25s ease, transform 0.25s ease;
+      transition: opacity 0.25s ease, color 0.25s ease;
     }
 
     .dial-item:hover {
-      color: rgba(255, 255, 255, 0.85);
-      transform: translateY(-1px);
+      color: rgba(242, 239, 233, 0.85);
     }
 
-    /* АКТИВНЫЙ РЕЖИМ ПОД ВИЗИРОМ */
     .dial-item.active {
-      color: #ffffff;
-      font-size: 13px;
-      font-weight: 800;
-      text-shadow: 0 0 16px var(--dial-glow);
-      transform: scale(1.08);
+      color: #f2efe9;
+      font-size: 12px;
+      font-weight: 600;
+      text-shadow: 0 0 12px var(--dial-glow);
     }
     .dial-item.active .dial-symbol {
       opacity: 1;
-      transform: scale(1.2);
+      color: var(--dial-accent);
     }
 
-    /* Цветовые спектры лазерной сетки и визира при выборе ранга */
     body[data-active-rank="legends-1"] {
-      --dial-accent: #f5c542;
-      --dial-glow: rgba(245, 197, 66, 0.5);
+      --dial-accent: #d4b475;
+      --dial-glow: rgba(212, 180, 117, 0.28);
     }
     body[data-active-rank="legends-2"] {
-      --dial-accent: #38bdf8;
-      --dial-glow: rgba(56, 189, 248, 0.5);
+      --dial-accent: #8fb8a8;
+      --dial-glow: rgba(143, 184, 168, 0.28);
     }
     body[data-active-rank="secrets"] {
-      --dial-accent: #c084fc;
-      --dial-glow: rgba(192, 132, 252, 0.5);
+      --dial-accent: #b89ec9;
+      --dial-glow: rgba(184, 158, 201, 0.28);
     }
 
-    /* Лазер сканера окрашивается в спектр выбранного ранга */
     .laser-beam {
       background: linear-gradient(90deg, transparent, var(--dial-accent), transparent) !important;
-      box-shadow: 0 0 14px var(--dial-accent) !important;
+      box-shadow: 0 0 10px var(--dial-accent) !important;
     }
     .ar-reticle .reticle-corner {
       border-color: var(--dial-accent) !important;
@@ -169,10 +165,9 @@
       border-color: var(--dial-glow) !important;
     }
 
-    /* Когда карточка ожила и открыт док действий — плавно поднимаем лимб выше */
     body.card-active .optical-dial-container {
       bottom: 78px;
-      transform: scale(0.94);
+      transform: scale(0.95);
       opacity: 0.85;
     }
 
@@ -184,16 +179,16 @@
         gap: 16px;
       }
       .dial-item {
-        font-size: 11px;
-        letter-spacing: 1.2px;
+        font-size: 10px;
+        letter-spacing: 1.4px;
         padding: 4px 8px;
       }
       .dial-item.active {
-        font-size: 12px;
+        font-size: 11px;
       }
       body.card-active .optical-dial-container {
         bottom: 72px;
-        transform: scale(0.9);
+        transform: scale(0.92);
       }
     }
   </style>
@@ -217,11 +212,11 @@
       <span style="color: var(--accent-gold);">✦</span>
       <span id="unlock-toast-text">НОВАЯ ЛЕГЕНДА В КОЛЛЕКЦИИ</span>
     </div>
-    
+
     <div class="scanner-status">
-      <div id="loading-badge" class="status-badge" style="border-color: #f1c40f; color: #f1c40f;">ЗАГРУЗКА БАЗЫ AR...</div>
+      <div id="loading-badge" class="status-badge" style="border-color: #d4b475; color: #d4b475;">ЗАГРУЗКА БАЗЫ AR...</div>
       <div id="loading-title" class="status-title">ИНИЦИАЛИЗАЦИЯ РАНГА</div>
-      
+
       <div id="load-progress-container" class="load-progress-box">
         <div class="load-bar-track">
           <div id="load-bar-fill" class="load-bar-fill" style="width: 15%;"></div>
@@ -247,19 +242,26 @@
     </button>
   </div>
 
-<!-- ОПТИЧЕСКИЙ ЛИМБ КАМЕРЫ (TACTICAL CAMERA DIAL) -->
+  <!-- ОПТИЧЕСКИЙ ЛИМБ КАМЕРЫ -->
   <div class="optical-dial-container" id="optical-dial-container">
+    <div class="dial-reticle-pip">
+      <div class="dial-pip-line"></div>
+      <div class="dial-pip-dot"></div>
+    </div>
     <div class="dial-track-wrapper">
       <div class="dial-scroll-track" id="dial-scroll-track">
         <button class="dial-item active" data-rank="legends-1">
+          <span class="dial-symbol">♜</span>
           <span class="dial-label">ЛЕГЕНДЫ I</span>
           <span class="dial-count-badge">8 КАРТ</span>
         </button>
         <button class="dial-item" data-rank="legends-2">
+          <span class="dial-symbol">♛</span>
           <span class="dial-label">ЛЕГЕНДЫ II</span>
           <span class="dial-count-badge">7 КАРТ</span>
         </button>
         <button class="dial-item" data-rank="secrets">
+          <span class="dial-symbol">♚</span>
           <span class="dial-label">СЕКРЕТНЫЕ</span>
           <span class="dial-count-badge">4 КАРТЫ</span>
         </button>
@@ -313,7 +315,6 @@
 
   <!-- БОЕВОЙ ТУРНИРНЫЙ HUD -->
   <div id="net-battle-overlay" style="display: none;">
-    <!-- Оппонент -->
     <div class="duel-actor-panel enemy-panel">
       <div class="actor-card-row">
         <div class="actor-avatar enemy-avatar-frame" id="enemy-card-anchor">
@@ -331,7 +332,7 @@
               <span id="enemy-hp-text" class="actor-points">50/50</span>
             </div>
           </div>
-          
+
           <div class="meter-track">
             <div id="enemy-hp-ghost" class="meter-ghost" style="width: 100%;"></div>
             <div id="enemy-hp-bar" class="meter-fill enemy-fill" style="width: 100%;"></div>
@@ -355,7 +356,6 @@
       </div>
     </div>
 
-    <!-- Центр арены -->
     <div class="duel-center-stage">
       <div class="eval-meter-container">
         <div class="eval-bar-track">
@@ -374,12 +374,12 @@
               <div id="tactical-task-title" style="font-size: 13px; font-weight: 800; color: var(--accent-gold); letter-spacing: 1px; text-transform: uppercase;">
                 Найдите лучший ход
               </div>
-              <div id="tactical-timer-badge" style="font-size: 12px; font-weight: 800; color: #f1c40f; background: rgba(241, 196, 15, 0.15); padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(241, 196, 15, 0.4); font-variant-numeric: tabular-nums;">
+              <div id="tactical-timer-badge" style="font-size: 12px; font-weight: 800; color: #d4b475; background: rgba(212, 180, 117, 0.14); padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(212, 180, 117, 0.35); font-variant-numeric: tabular-nums;">
                 ⏱ <span id="tactical-timer-sec">30</span>с
               </div>
             </div>
-            <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 12px;">
-              <div id="tactical-timer-bar" style="width: 100%; height: 100%; background: #f1c40f; transition: width 0.1s linear, background-color 0.3s ease;"></div>
+            <div style="width: 100%; height: 4px; background: rgba(242,239,233,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 12px;">
+              <div id="tactical-timer-bar" style="width: 100%; height: 100%; background: #d4b475; transition: width 0.1s linear, background-color 0.3s ease;"></div>
             </div>
             <div style="display: flex; justify-content: center;">
               <div id="strike-board" style="width: 270px;"></div>
@@ -397,7 +397,6 @@
       </div>
     </div>
 
-    <!-- Игрок -->
     <div class="duel-actor-panel player-panel">
       <div class="actor-card-row">
         <div class="actor-avatar player-avatar-frame" id="player-card-anchor">
@@ -415,7 +414,7 @@
               <span id="my-hp-text" class="actor-points">50/50</span>
             </div>
           </div>
-          
+
           <div class="meter-track">
             <div id="my-hp-ghost" class="meter-ghost" style="width: 100%;"></div>
             <div id="my-hp-bar" class="meter-fill player-fill" style="width: 100%;"></div>
@@ -461,15 +460,15 @@
     <div id="duel-victory-modal" class="modal-overlay" style="z-index: 1200;">
       <div class="modal-card duel-card victory-card" style="text-align: center;">
         <div id="victory-crown" style="font-size: 38px; color: var(--accent-gold); margin-bottom: 6px;">♚</div>
-        <div id="victory-title" class="modal-title" style="font-size: 22px; font-weight: 800; color: #f1c40f; padding: 0;">ШАХ И МАТ</div>
-        <div id="victory-subtitle" class="modal-subtitle" style="font-size: 11px; color: #94a3b8; margin-bottom: 16px;">ТРИУМФ В ДУЭЛИ</div>
+        <div id="victory-title" class="modal-title" style="font-size: 22px; font-weight: 800; color: #d4b475; padding: 0;">ШАХ И МАТ</div>
+        <div id="victory-subtitle" class="modal-subtitle" style="font-size: 11px; color: #9e9b93; margin-bottom: 16px;">ТРИУМФ В ДУЭЛИ</div>
 
         <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 20px;">
-          <div style="width: 76px; height: 76px; border-radius: 50%; border: 2px solid var(--accent-gold); overflow: hidden; box-shadow: 0 0 24px rgba(226,184,104,0.35);">
+          <div style="width: 76px; height: 76px; border-radius: 50%; border: 2px solid var(--accent-gold); overflow: hidden;">
             <img id="victory-avatar-img" src="" alt="Winner" style="width: 100%; height: 100%; object-fit: cover;">
           </div>
-          <div id="victory-winner-name" style="font-size: 15px; font-weight: 800; color: #fff; text-transform: uppercase;">ИМЯ ПОБЕДИТЕЛЯ</div>
-          <div id="victory-details-text" style="font-size: 12px; color: #8a99ad;">Партия завершена</div>
+          <div id="victory-winner-name" style="font-size: 15px; font-weight: 800; color: #f2efe9; text-transform: uppercase;">ИМЯ ПОБЕДИТЕЛЯ</div>
+          <div id="victory-details-text" style="font-size: 12px; color: #9e9b93;">Партия завершена</div>
         </div>
 
         <button class="duel-primary-btn" onclick="NetDuel.closeVictoryModal()" style="background: var(--accent-gold); color: #000; font-weight: 800;">
@@ -479,17 +478,14 @@
     </div>
   </div>
 
-  <!-- MindAR Сцена (mindar-image подставляется динамически в app.js) -->
+  <!-- AR-сцена MindAR -->
   <a-scene
     id="ar-scene"
     renderer="colorManagement: true; precision: medium; powerPreference: high-performance; antialias: false;"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false">
 
-    <!-- Каталог видео ассетов для всех карточек -->
-    <!-- timeout="10000" защищает от блокировки сцены отсутствующими видеофайлами -->
     <a-assets timeout="10000">
-      <!-- Легенды 1 (0..7) -->
       <video id="vid-steinitz" src="./assets/videos/steinitz.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-lasker" src="./assets/videos/lasker.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-capablanca" src="./assets/videos/capablanca.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
@@ -499,7 +495,6 @@
       <video id="vid-smyslov" src="./assets/videos/smyslov.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-tal" src="./assets/videos/tal.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
 
-      <!-- Легенды 2 (0..6) -->
       <video id="vid-petrosyan" src="./assets/videos/petrosyan.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-spassky" src="./assets/videos/spassky.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-fischer" src="./assets/videos/fischer.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
@@ -508,35 +503,37 @@
       <video id="vid-liren" src="./assets/videos/liren.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-gukesh" src="./assets/videos/gukesh.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
 
-      <!-- Секретные (0..3) -->
       <video id="vid-stockfish" src="./assets/videos/stockfish.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-enigma" src="./assets/videos/enigma.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-kasparov" src="./assets/videos/kasparov.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
       <video id="vid-carlsen" src="./assets/videos/carlsen.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
 
-      <!-- Школа / Бонус -->
       <video id="vid-school" src="./assets/videos/school.mp4" loop playsinline webkit-playsinline muted preload="none" crossorigin="anonymous"></video>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Мишени AR: максимум 8 таргетов (индексы 0..7) -->
-<a-entity id="target-0" mindar-image-target="targetIndex: 0"><a-video id="ar-video-0" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
-<a-entity id="target-1" mindar-image-target="targetIndex: 1"><a-video id="ar-video-1" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
-<a-entity id="target-2" mindar-image-target="targetIndex: 2"><a-video id="ar-video-2" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
-<a-entity id="target-3" mindar-image-target="targetIndex: 3"><a-video id="ar-video-3" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
-<a-entity id="target-4" mindar-image-target="targetIndex: 4"><a-video id="ar-video-4" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
-<a-entity id="target-5" mindar-image-target="targetIndex: 5"><a-video id="ar-video-5" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
-<a-entity id="target-6" mindar-image-target="targetIndex: 6"><a-video id="ar-video-6" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
-<a-entity id="target-7" mindar-image-target="targetIndex: 7"><a-video id="ar-video-7" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-0" mindar-image-target="targetIndex: 0"><a-video id="ar-video-0" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-1" mindar-image-target="targetIndex: 1"><a-video id="ar-video-1" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-2" mindar-image-target="targetIndex: 2"><a-video id="ar-video-2" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-3" mindar-image-target="targetIndex: 3"><a-video id="ar-video-3" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-4" mindar-image-target="targetIndex: 4"><a-video id="ar-video-4" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-5" mindar-image-target="targetIndex: 5"><a-video id="ar-video-5" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-6" mindar-image-target="targetIndex: 6"><a-video id="ar-video-6" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+    <a-entity id="target-7" mindar-image-target="targetIndex: 7"><a-video id="ar-video-7" width="1" height="1.54" position="0 0 0" visible="false" scale="0.0001 0.0001 0.0001" material="shader: flat; transparent: true; opacity: 0; depthWrite: false;" smooth-materialize></a-video></a-entity>
+  </a-scene>
 
-
-  <!-- Шахматная логика и доска -->
+  <!-- Библиотеки -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
 
-  <!-- Скрипты проекта -->
+  <!--
+    Скрипты проекта вынесены из <a-scene> наружу.
+    Порядок важен: heroes-data → duel-puzzles → sound → passport →
+    ai-chat → net-duel → time-machine → app → parallax.
+    time-machine.js — обычный (не module) скрипт, импортов не содержит.
+  -->
   <script src="js/heroes-data.js"></script>
   <script src="js/duel-puzzles.js"></script>
   <script src="js/sound.js"></script>
@@ -546,7 +543,6 @@
   <script src="js/time-machine.js"></script>
   <script src="js/app.js"></script>
   <script src="js/parallax.js"></script>
-</a-scene>
 
   <!-- Регистрация Service Worker для кэширования .mind файлов -->
   <script>
@@ -556,11 +552,5 @@
       });
     }
   </script>
-</body>
-</html>
-
-
-
-
 </body>
 </html>
