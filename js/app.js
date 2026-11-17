@@ -479,8 +479,9 @@ function handleFirstInteraction() {
   if (userHasInteracted) return;
   userHasInteracted = true;
 
-  if (typeof sfx !== "undefined" && sfx.ctx && sfx.ctx.state === "suspended") {
-    sfx.ctx.resume();
+  if (typeof sfx !== "undefined" && typeof sfx.init === "function") {
+    sfx.init();                       // ← этого не хватало
+    if (!isMuted) sfx.enabled = true; // ← и этого
   }
 
   // При первом касании экрана разблокируем звук на текущей карточке, если пользователь не ставил Mute
