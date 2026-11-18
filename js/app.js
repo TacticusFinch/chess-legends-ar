@@ -703,10 +703,10 @@ ALL_TARGET_INDICES.forEach(index => {
       currentHeroId = null;
       document.body.classList.remove("card-active");
 
-      // Скрываем нижний интерактивный док кнопок (Биография/Экзамен/Дуэль)
-      if (dock) {
-        dock.style.display = "none";
-        dock.innerHTML = "";
+      // [FIX] Док не скрываем: карточка уже считана, квест длится минутами.
+      if (lastScannedHeroId !== null) {
+      	if (dock) dock.style.display = "flex";
+      	if (typeof showChampionUI === "function") showChampionUI();
       }
       // Возвращаем прицел сканера
       if (hint) {

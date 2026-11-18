@@ -85,6 +85,122 @@
     ]
   };
 
+  /* ==========================================================
+     ХУДОЖЕСТВЕННЫЙ ПРОЛОГ
+     Раньше лежал отдельным файлом quest-prologue.js — теперь
+     внутри движка, чтобы не плодить файлы.
+
+     common.lead  — первая строка, одна на всех
+     hook         — драма чемпиона: в чём его ставка
+     scene        — погружение: место, год, звуки
+     stakes       — что случится, если путь не пройти
+
+     Правится здесь же, вёрстку трогать не нужно.
+     ========================================================== */
+  var PROLOGUE = {
+    common: {
+      lead: 'Ты оживил карточку чемпиона — и открыл дверь в его эпоху.',
+      tail: 'Пять этапов. Десять жизней. Одна корона, которую нужно вернуть.'
+    },
+    heroes: {
+      steinitz: {
+        hook: 'Над ним смеялись в лицо. Он утверждал, что атака без подготовки — самоубийство, что пешечная цепь важнее красивой жертвы и что король — сильная фигура, а не беспомощный старик, которого нужно прятать. Его называли безумцем ровно до того дня, когда он забрал корону.',
+        scene: 'Вена, 1886. Кофейня «Куропатка» пахнет молотым кофе и мокрым сукном. За окном гремит конка, газетчики кричат о матче, а на мраморной столешнице перед тобой стоят фигуры. Ты касаешься ладьи — и пальцы вспоминают вес, которого ты никогда не знал.',
+        stakes: 'Напротив садится Иоганн Цукерторт — человек, который играет красиво и не прощает ошибок. Проиграешь — и первый чемпион мира так и останется непонятым.'
+      },
+      lasker: {
+        hook: 'Доктор математики, который понял главное: за доской борются не фигуры, а люди. Он искал не лучший ход, а худший характер. Двадцать семь лет он держал корону, потому что умел видеть страх в глазах соперника.',
+        scene: 'Берлин, 1894. В кабинете пахнет табаком и остывшим кофе. На столе — недописанная статья по математике, а рядом доска с недоигранной партией. Ты смотришь в зеркало и видишь высокий лоб и внимательный, чуть насмешливый взгляд.',
+        stakes: 'Тебе нужно свергнуть Стейница — человека, который считает тебя выскочкой. Он будет играть правильно. Ты будешь играть против него самого.'
+      },
+      capablanca: {
+        hook: 'Он научился играть в четыре года, просто глядя на отца. В двадцать с лишним лет он не проигрывал восемь лет подряд — шестьдесят три партии против сильнейших, и ни одного поражения. Казалось, что за доской сидит машина, которой забыли сказать, что люди ошибаются.',
+        scene: 'Гавана, 1921. Воздух густой, как сироп, слышно море и гитару в соседнем дворе. На веранде — плетёные кресла, стакан воды и доска. Ты делаешь ход и понимаешь: ты видишь позицию целиком, будто сверху.',
+        stakes: 'Против тебя — Эмануил Ласкер, который держал корону двадцать семь лет. Он умеет ждать. Тебе придётся быть быстрее и чище, чем он.'
+      },
+      alekhine: {
+        hook: 'Он говорил: шахматы — это искусство, и принимал все обязанности, которые искусство налагает. Он ворвался в марафон из тридцати четырёх партий против непобедимого Капабланки и сломал его. А потом умер, так и не отдав корону.',
+        scene: 'Буэнос-Айрес, 1927. Зал раскалён, вентиляторы гоняют горячий воздух, зрители стоят в проходах. На сцене — две чашки, графин и доска. Ты садишься, и зал замолкает так, что слышно, как скрипит перо судьи.',
+        stakes: 'Тридцать четыре партии. Месяц без права на слабость. Капабланка не проигрывал восемь лет — кто-то должен это закончить.'
+      },
+      euwe: {
+        hook: 'Профессор математики, который стал чемпионом мира, не бросив преподавание. Пока другие готовили дебюты, он строил систему: каждый размен выверен, каждый риск просчитан. И однажды эта система обыграла великого Алехина.',
+        scene: 'Амстердам, 1935. Дождь стучит по стеклу, в аудитории пусто, на кафедре — мел и стопка тетрадей. Ты стираешь с доски формулу, садишься за шахматный столик и понимаешь: партия — тоже доказательство.',
+        stakes: 'Алехин играет ярко и не боится хаоса. Ты можешь противопоставить ему только одно — безупречную логику. Одна неточность, и теорема рухнет.'
+      },
+      botvinnik: {
+        hook: 'Инженер, который превратил подготовку к партии в лабораторию. Он заставлял секундантов дуть на него сигаретным дымом, чтобы привыкнуть к душным залам. Он проигрывал корону и возвращал её — дважды. Его называли патриархом.',
+        scene: 'Москва, 1948. За окном серое утро, в комнате — чертёжные листы, логарифмическая линейка и доска. Пахнет графитом и крепким чаем. Ты берёшь фигуру и чувствуешь: это не игра, это работа.',
+        stakes: 'Турнир за вакантную корону. Пять сильнейших, и никто не уступит. Здесь побеждает не вдохновение, а тот, кто лучше подготовился.'
+      },
+      smyslov: {
+        hook: 'Он играл так, что фигуры звучали. Современники говорили: его партии похожи на оркестр, где каждый инструмент знает свою партию. И этот человек с оперным баритоном всерьёз проходил прослушивание в Большой театр.',
+        scene: 'Москва, 1957. В квартире тихо, на пианино — раскрытые ноты, на столе — доска. Ты напеваешь вполголоса и вдруг слышишь, как позиция складывается в аккорд: центр, линии, гармония.',
+        stakes: 'Против тебя Ботвинник — железный, дисциплинированный, страшный в домашних заготовках. Гармония против силы. Что окажется прочнее?'
+      },
+      tal: {
+        hook: 'Ему было двадцать три, когда он сокрушил железного чемпиона. Он жертвовал фигуры не по расчёту, а по вдохновению, и соперники перестали верить своим вычислениям. «Затащите его в тёмный лес, где два плюс два равно пяти» — это его слова.',
+        scene: 'Рига, 1960. Дождь стучит по крыше, на кухне кто-то тихо напевает, на стене — афиша турнира. Ты садишься за доску, и в комнате будто становится жарче. Пальцы сами тянутся к фигуре: жертвовать.',
+        stakes: 'Ботвинник умеет гасить пожары. Тебе нужно разжечь такой, который он не потушит. Ошибёшься — сгорит твоя корона.'
+      },
+      petrosyan: {
+        hook: 'Его называли Железным Тиграном и упрекали в скучных партиях. Он отвечал: «Я предпочитаю выиграть скучную партию, чем эффектно проиграть весёлую». Он чувствовал опасность за шесть ходов до того, как она появлялась.',
+        scene: 'Москва, 1963. Тихий зал, толстый ковёр, приглушённый свет. Ты замечаешь, что слышишь слишком хорошо, — и выключаешь слуховой аппарат. Мир глохнет. Остаются только фигуры.',
+        stakes: 'Ботвинник будет давить. Твоя задача — не выиграть красиво, а не проиграть вообще. Крепость держится до последней пешки.'
+      },
+      spassky: {
+        hook: 'Он мог всё: атаковать в королевском гамбите и защищаться в затяжных позиционных боях. В Рейкьявике он встал и аплодировал своему сопернику после гениальной партии. Рыцарство не мешало ему быть безжалостным.',
+        scene: 'Москва, 1969. Сцена, тяжёлые шторы, свет лампы. Зал дышит в спину. Ты открываешь королевский гамбит — дебют, который считали музейным, — и слышишь, как кто-то в партере удивлённо выдыхает.',
+        stakes: 'Петросян не оставляет слабостей. Придётся создавать их самому — ценой пешек, темпа и риска.'
+      },
+      fischer: {
+        hook: 'Один человек против целой системы. Он выиграл два претендентских матча со счётом 6:0 — двенадцать партий подряд без единой ничьей. Он не верил в психологию, только в сильные ходы. И он приехал в Рейкьявик за короной.',
+        scene: 'Рейкьявик, 1972. Холодный свет, гулкий зал, часы с тяжёлым тиком. Ты садишься и впервые чувствуешь: на тебя смотрит весь мир, и половина этого мира желает тебе проиграть.',
+        stakes: 'Спасский — чемпион, который умеет всё. Но ты не приехал за вторым местом. Ничьи не считаются.'
+      },
+      karpov: {
+        hook: 'Его называли Анакондой. Он не атаковал — он сжимал. Отбирал поля, линии, воздух, пока соперник не начинал задыхаться в собственной позиции. Сто шестьдесят выигранных турниров. Ни одного лишнего жеста.',
+        scene: 'Москва, 1975. Кабинет, тяжёлые шторы, ровный свет. На столе — часы и стакан чая. Ты делаешь спокойный, скучный на вид ход и видишь, как у соперника дёргается плечо.',
+        stakes: 'Тебе досталась корона без матча — и весь мир считает её недоказанной. Её придётся защищать всю жизнь.'
+      },
+      anand: {
+        hook: 'Первый азиатский чемпион мира. Он выигрывал корону во всех форматах, какие придумывала ФИДЕ: в нокауте, в круговом турнире, в матчах. И всё это с репутацией самого быстрого человека за доской.',
+        scene: 'Мехико, 2007. Зал большой, воздуха не хватает, зрители обмахиваются программами. Ты делаешь ход быстрее, чем успеваешь подумать, — и понимаешь, что уже видишь продолжение.',
+        stakes: 'Крамник, Топалов, Гельфанд — каждый умеет то, чего не умеешь ты. Твоё оружие — скорость мысли.'
+      },
+      liren: {
+        hook: 'Он попал на Турнир претендентов в последний момент — вместо дисквалифицированного игрока. А потом сделал то, что не делал никто: в решающей партии тай-брейка отказался от ничьей и пошёл в добровольную связку ради победы.',
+        scene: 'Астана, 2023. Глубокий вечер, зал почти пуст, часы отсчитывают последние секунды. Ты видишь повторение ходов, которое даёт ничью и тишину. И отводишь руку в сторону.',
+        stakes: 'Сто классических партий без поражений — это твоя стена. Но стены не выигрывают короны. Нужен один ход, который войдёт в историю.'
+      },
+      gukesh: {
+        hook: 'Семнадцать лет. Самый молодой претендент на корону в истории. Пока сверстники сдавали экзамены, он выигрывал Турнир претендентов в Торонто. Возраст — просто число; за доской говорят фигуры.',
+        scene: 'Сингапур, 2024. Кондиционер гудит, экран с трансляцией светится в темноте зала. Ты садишься напротив действующего чемпиона и замечаешь, что руки не дрожат.',
+        stakes: 'Дин Лижэнь умеет выжидать. У тебя нет его опыта — но есть хладнокровие, которого не объяснить возрастом.'
+      },
+      stockfish: {
+        hook: 'Он не устаёт, не боится и не блефует. Он видит на сорок ходов вперёд и оценивает позицию числом. Для него человеческий страх — просто шум в дереве перебора вариантов.',
+        scene: 'Кремниевая долина, 2020. Серверная гудит вентиляторами, в воздухе пахнет пылью и озоном. На экране ползёт оценка: +M12. Ты понимаешь, что мат неизбежен, и всё равно ищешь ход.',
+        stakes: 'Твой соперник — человек, который считает себя сильнейшим. У него есть интуиция. У тебя — точность. Посмотрим, что сильнее.'
+      },
+      enigma: {
+        hook: 'Человек в маске. Он играет на площадях Мадрида против прохожих, выходит на сцену телешоу и садится за доску с чемпионом мира. Никто не знает его лица. Важна только мысль на шестидесяти четырёх клетках.',
+        scene: 'Мадрид, 2019. Полдень, площадь, туристы, звон велосипедов. На каменном парапете — доска, рядом шляпа для монет. Ты поднимаешь воротник и садишься напротив незнакомца.',
+        stakes: 'Ты играешь не за корону, а за тайну. Проиграешь — и маска останется маской навсегда.'
+      },
+      kasparov: {
+        hook: 'В двадцать два он стал самым молодым чемпионом мира в истории. Двадцать лет он был первым номером планеты. Он играл против людей и против машин — и однажды проиграл машине, чтобы научить людей бояться и мечтать одновременно.',
+        scene: 'Москва, 1985. Зал набит, ложи светятся, в прессе шуршат блокноты. Ты делаешь ход, который выглядит ошибкой, и слышишь, как зал ахает.',
+        stakes: 'Карпов не проигрывает позиционно. Тебе придётся взорвать позицию — иначе он просто задушит тебя.'
+      },
+      carlsen: {
+        hook: 'Он умеет выжимать победу из сухих, ничейных позиций. Он создаёт проблемы там, где их не должно быть, и заставляет соперника сомневаться в очевидном. Рейтинг 2882 — цифра, которая всё объясняет.',
+        scene: 'Дубай, 2021. Прохладный зал, огромный экран, тишина такая, что слышно, как щёлкнули часы. Ты делаешь простой ход и видишь, как соперник начинает думать над тем, над чем думать не должен.',
+        stakes: 'Непомнящий играет быстро и дерзко. Но у тебя есть то, чего нет у него: бесконечное терпение камня.'
+      }
+    }
+  };
+
   var state = {
     heroId: null,
     hero: null,
@@ -601,7 +717,32 @@
       clearMarks();
     });
 
+    /* [FIX] Доска получает явную высоту по ширине контейнера.
+       Раньше высоту задавал только aspect-ratio, и в мобильном Safari
+       внутри flex-колонки с overflow она схлопывалась в 0 — доска
+       «исчезала» именно в этапах II и III. */
+    var sizeTries = 0;
+
+    function syncSize() {
+      var w = host.clientWidth || grid.getBoundingClientRect().width;
+      if (!w) {
+        if (sizeTries++ < 40) requestAnimationFrame(syncSize);
+        return;
+      }
+      grid.style.height = Math.round(w) + 'px';
+    }
+
     paint();
+    syncSize();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      try {
+        var ro = new ResizeObserver(syncSize);
+        ro.observe(host);
+      } catch (e) {}
+    }
+    window.addEventListener('resize', syncSize);
+    setTimeout(syncSize, 60);
 
     return {
       el: grid,
@@ -612,31 +753,73 @@
         locked = false;
         clearMarks();
         paint();
+        syncSize();
       },
+      resize: syncSize,
       destroy: function () { host.innerHTML = ''; }
     };
   }
 
   /* ==========================================================
-     I. ПРИВЕТСТВИЕ — лаконичный экран
-     Один шрифт, без курсива, без перечня этапов:
-     эмблема → приветствие турнира → карточка чемпиона →
-     одна строка текста → две кнопки.
+     I. ПРИВЕТСТВИЕ — визитная карточка приключения
+     Художественный пролог берётся из js/quest-prologue.js:
+       lead   — завязка турнира
+       hook   — драма чемпиона
+       scene  — погружение в эпоху
+       stakes — ставка пути
      ========================================================== */
+  function prologueFor() {
+    var q = state.quest || {};
+    var hero = state.hero || {};
+
+    /* Тексты живут в PROLOGUE внутри этого файла. Если снаружи
+       положили window.QUEST_PROLOGUE (например, свой набор для
+       турнира) — он имеет приоритет, файл переписывать не нужно. */
+    var ext = window.QUEST_PROLOGUE || null;
+    var src = (ext && ext.heroes) || PROLOGUE.heroes;
+    var common = (ext && ext.common) || PROLOGUE.common;
+    var entry = src[hero.id] || src[q.id] || null;
+
+    return {
+      lead: common.lead || 'Ты оживил карточку чемпиона — и открыл дверь в его эпоху.',
+      hook: (entry && entry.hook) || (q.welcome && q.welcome[0]) || 'Карточка ожила, и время дрогнуло.',
+      scene: (entry && entry.scene) || (q.welcome && q.welcome[1]) || 'Воздух другой эпохи уже вокруг тебя.',
+      stakes: (entry && entry.stakes) || 'Пять этапов, десять жизней и один финальный поединок. Ошибка стоит жизни — но путь можно пройти заново.',
+      tail: common.tail || 'Пять этапов. Десять жизней. Одна корона.'
+    };
+  }
+
   function renderGreet() {
     state.screen = 'greet';
     var q = state.quest;
+    var p = prologueFor();
+    var hero = state.hero || {};
+    var accent = hero.color || '#d4b475';
+    var glyph = hero.glyph || (q.piece === 'queen' ? '♛' : '♚');
 
     setBody(
       '<div class="tmq-welcome">' +
-        '<div class="tmq-emblem" aria-hidden="true">♞</div>' +
         '<div class="tmq-kicker">Турнир · ' + esc(CONFIG.dates) + '</div>' +
-        '<h2 class="tmq-welcome-title">Добро пожаловать на турнир «Машина времени»</h2>' +
-        '<div class="tmq-champion">' +
-          '<span class="tmq-champion-name">' + esc(q.name) + '</span>' +
-          '<span class="tmq-champion-era">' + esc(q.era) + '</span>' +
+        '<h2 class="tmq-welcome-title">Добро пожаловать<br>на турнир «Машина времени»</h2>' +
+        '<div class="tmq-cover" style="--tmq-accent: ' + esc(accent) + ';">' +
+          '<div class="tmq-cover-glyph" aria-hidden="true">' + glyph + '</div>' +
+          '<div class="tmq-cover-meta">' +
+            '<span class="tmq-cover-era">' + esc(q.era) + '</span>' +
+            '<span class="tmq-cover-name">' + esc(q.name) + '</span>' +
+            '<span class="tmq-cover-title">' + esc(hero.title || 'Чемпион мира по шахматам') + '</span>' +
+          '</div>' +
         '</div>' +
-        '<p class="tmq-welcome-text">Карточка ожила. Машина времени настроена — остался один шаг.</p>' +
+        '<div class="tmq-story">' +
+          '<p class="is-lead">' + esc(p.lead) + '</p>' +
+          '<p>' + esc(p.hook) + '</p>' +
+          '<p>' + esc(p.scene) + '</p>' +
+          '<p>' + esc(p.stakes) + '</p>' +
+        '</div>' +
+        '<div class="tmq-stakes">' +
+          '<span><b>5</b> этапов</span>' +
+          '<span><b>' + CONFIG.maxLives + '</b> жизней</span>' +
+          '<span><b>' + q.duels.length + '</b> дуэлей</span>' +
+        '</div>' +
         '<button class="tmq-cta" type="button" id="tmq-jump">Прыжок во времени <span aria-hidden="true">→</span></button>' +
         '<button class="tmq-link" type="button" id="tmq-bio">Биография чемпиона</button>' +
       '</div>'
@@ -684,7 +867,7 @@
      названием эпохи, шкала перехода и вспышка на выходе.
      Всё рисуется 2,6 секунды, затем экран «Вы проснулись».
      ========================================================== */
-  var WarpFx = { raf: 0, alive: false };
+  var WarpFx = { raf: 0, alive: false, skipped: false };
 
   function stopWarpFx() {
     WarpFx.alive = false;
@@ -694,12 +877,31 @@
     }
   }
 
+  /* [FIX] Качество варпа подбирается под устройство.
+     Слабые телефоны получают меньше частиц, DPR 1 и потолок
+     разрешения canvas — иначе браузер подвисает на старте. */
+  function warpQuality() {
+    var dpr = window.devicePixelRatio || 1;
+    var cores = navigator.hardwareConcurrency || 4;
+    var small = Math.min(window.innerWidth, window.innerHeight) < 560;
+    var low = cores <= 4 || small || dpr >= 2.5;
+    return {
+      low: low,
+      count: low ? 38 : 84,
+      dpr: Math.min(low ? 1 : 1.5, dpr),
+      maxPx: low ? 460 : 820
+    };
+  }
+
   function startWarpStars(canvas) {
     stopWarpFx();
     if (!canvas || !canvas.getContext) return;
 
-    var ctx = canvas.getContext('2d');
-    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var q = warpQuality();
+    var ctx;
+    try { ctx = canvas.getContext('2d'); } catch (e) { return; }
+    if (!ctx) return;
+
     var w = 1;
     var h = 1;
 
@@ -707,19 +909,20 @@
       var rect = canvas.getBoundingClientRect();
       w = Math.max(1, rect.width);
       h = Math.max(1, rect.height);
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var scale = Math.min(1, q.maxPx / Math.max(w, h));
+      canvas.width = Math.round(w * scale * q.dpr);
+      canvas.height = Math.round(h * scale * q.dpr);
+      ctx.setTransform(scale * q.dpr, 0, 0, scale * q.dpr, 0, 0);
     }
     resize();
 
     var stars = [];
-    for (var i = 0; i < 160; i++) {
+    for (var i = 0; i < q.count; i++) {
       stars.push({
         a: Math.random() * Math.PI * 2,
         d: Math.random() * 0.5,
-        v: 0.55 + Math.random() * 1.5,
-        s: 0.6 + Math.random() * 1.5
+        v: 0.6 + Math.random() * 1.4,
+        s: 0.7 + Math.random() * 1.3
       });
     }
 
@@ -733,19 +936,20 @@
 
       var cx = w / 2;
       var cy = h / 2;
-      var maxD = Math.sqrt(w * w + h * h) * 0.62;
+      var maxD = Math.sqrt(w * w + h * h) * 0.6;
 
+      ctx.lineCap = 'round';
       for (var k = 0; k < stars.length; k++) {
         var st = stars[k];
-        var d = (st.d + t * st.v * 0.62) % 1;
+        var d = (st.d + t * st.v * 0.6) % 1;
+        if (d < 0.03) continue;
         var r = d * maxD;
-        var r0 = Math.max(0, d - 0.05) * maxD;
+        var r0 = Math.max(0, d - 0.045) * maxD;
         var ca = Math.cos(st.a);
         var sa = Math.sin(st.a);
-        var alpha = Math.min(1, d * 1.7);
 
-        ctx.strokeStyle = 'rgba(170,236,255,' + (alpha * 0.85).toFixed(3) + ')';
-        ctx.lineWidth = st.s * (0.5 + d * 1.7);
+        ctx.strokeStyle = 'rgba(170,236,255,' + (d * 0.8).toFixed(3) + ')';
+        ctx.lineWidth = st.s * (0.5 + d * 1.5);
         ctx.beginPath();
         ctx.moveTo(cx + ca * r0, cy + sa * r0);
         ctx.lineTo(cx + ca * r, cy + sa * r);
@@ -775,30 +979,45 @@
         '<div class="tmq-warp-progress"><i></i></div>' +
         '<div class="tmq-warp-status" id="tmq-warp-status">стабилизация канала</div>' +
       '</div>' +
+      '<div class="tmq-warp-skip">нажмите, чтобы пропустить</div>' +
       '<div class="tmq-warp-flash"></div>';
 
     dom.overlay.appendChild(warp);
     dom.overlay.classList.add('tmq-warping');
 
+    WarpFx.skipped = false;
     startWarpStars(warp.querySelector('#tmq-warp-stars'));
 
     var status = warp.querySelector('#tmq-warp-status');
 
-    after(700, function () { if (status) status.textContent = 'расчёт координат'; });
-    after(1400, function () { if (status) status.textContent = 'переход сквозь эпоху'; });
-    after(2050, function () {
-      if (status) status.textContent = 'прибытие';
-      warp.classList.add('is-flash');
-      if (navigator.vibrate) {
-        try { navigator.vibrate([18, 40, 26]); } catch (e) {}
-      }
-    });
-    after(2560, function () {
+    /* Выход из варпа в одном месте: и по таймеру, и по касанию.
+       Даже если canvas на слабом устройстве не отрисуется,
+       сцена гарантированно закончится за 2,2 секунды. */
+    function finishWarp() {
+      if (WarpFx.skipped) return;
+      WarpFx.skipped = true;
+      clearTimers();
       stopWarpFx();
       state.stage = Math.max(state.stage, 0);
       renderAwake();
       play('arrival');
+    }
+
+    warp.addEventListener('click', function (e) {
+      if (e && e.preventDefault) e.preventDefault();
+      finishWarp();
     });
+
+    after(560, function () { if (status) status.textContent = 'расчёт координат'; });
+    after(1120, function () { if (status) status.textContent = 'переход сквозь эпоху'; });
+    after(1680, function () {
+      if (status) status.textContent = 'прибытие';
+      warp.classList.add('is-flash');
+      if (navigator.vibrate) {
+        try { navigator.vibrate([16, 36, 22]); } catch (e) {}
+      }
+    });
+    after(2180, finishWarp);
   }
 
   /* ==========================================================
@@ -807,7 +1026,15 @@
   function renderAwake() {
     state.screen = 'awake';
     var q = state.quest;
-    var lines = q.awake || [];
+    var p = prologueFor();
+
+    /* Если для карточки нет готового «пробуждения» — собираем из пролога,
+       чтобы у всех 19 чемпионов была полноценная сцена, а не заглушка. */
+    var lines = (q.awake && q.awake.length) ? q.awake : [
+      p.scene,
+      'Ты делаешь вдох — и понимаешь, что дышишь чужими лёгкими. Это тело чемпиона, и оно помнит вес фигур лучше, чем ты помнишь собственное имя.',
+      'Впереди пять этапов. Первый — память: без неё сила не проснётся.'
+    ];
 
     setBody(
       '<div class="tmq-awake">' +
@@ -890,11 +1117,23 @@
         '</div>';
     }).join('');
 
+    /* Художественная рамка этапа: одна строка настроения перед правилами */
+    var opening = [
+      'Память — единственное, что нельзя отнять. Но её можно потерять.',
+      'Сила просыпается не в мышцах, а в точном расчёте.',
+      'Угроза всегда приходит раньше, чем её замечают.',
+      'Пять соперников. Пять эпох. Ни одного права на ошибку.',
+      'Часы уже идут.'
+    ][index] || '';
+
     setBody(
       chapter(route.num, route.title, 'перед стартом') +
       '<div class="tmq-title">' + esc(route.title) + '</div>' +
       '<div class="tmq-sub">' + esc(route.sub) + '</div>' +
-      '<div class="tmq-copy"><p class="is-lead">' + esc(route.text) + '</p></div>' +
+      '<div class="tmq-copy">' +
+        '<p class="is-lead">' + esc(opening) + '</p>' +
+        '<p>' + esc(route.text) + '</p>' +
+      '</div>' +
       '<div class="tmq-brief">' + rows + '</div>' +
       '<button class="tmq-cta" type="button" id="tmq-start">Начать этап <span aria-hidden="true">→</span></button>' +
       '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-back">К карте пути</button>'
@@ -1213,8 +1452,12 @@
       '</div>' +
       '<div class="tmq-copy"><p>«Ты прошёл память, атаку, защиту и пятерых хранителей эпох. Осталась партия. Садись — часы уже идут».</p></div>' +
       '<div class="tmq-step"><div class="tmq-step-title">Шаг 1 · профиль бота</div>' +
-        '<a class="tmq-btn tmq-btn-cyan" href="' + esc(CONFIG.botUrl) + '" target="_blank" rel="noopener">@' +
-        esc(CONFIG.botName) + ' на Lichess ↗</a></div>' +
+        '<button class="tmq-btn tmq-btn-cyan" type="button" id="tmq-bot-addr">@' +
+        esc(CONFIG.botName) + ' · lichess.org</button>' +
+        '<div class="tmq-bot-addr" id="tmq-bot-panel" hidden>' +
+          '<span class="tmq-bot-url">' + esc(String(CONFIG.botUrl).replace(/^https?:\/\//, '')) + '</span>' +
+          '<span class="tmq-bot-hint">Адрес показан только для чтения: откройте его на судейском устройстве или в отдельном окне. Из приложения переход не выполняется.</span>' +
+        '</div></div>' +
       '<div class="tmq-step"><div class="tmq-step-title">Шаг 2 · контроль времени</div>' +
         '<select class="tmq-select" id="tmq-tc">' +
           '<option value="5+3">5 + 3 · блиц</option>' +
@@ -1247,6 +1490,21 @@
 
     dom.body.querySelector('#tmq-verify').addEventListener('click', verify);
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') verify(); });
+
+    /* Адрес бота показывается внутри приложения, без перехода наружу */
+    var botBtn = dom.body.querySelector('#tmq-bot-addr');
+    var botPanel = dom.body.querySelector('#tmq-bot-panel');
+    if (botBtn && botPanel) {
+      botBtn.addEventListener('click', function () {
+        play('click');
+        botPanel.hidden = !botPanel.hidden;
+        if (!botPanel.hidden && navigator.clipboard && navigator.clipboard.writeText) {
+          try {
+            navigator.clipboard.writeText(CONFIG.botUrl).catch(function () {});
+          } catch (e) {}
+        }
+      });
+    }
   }
 
   function renderVictory() {
@@ -1281,20 +1539,40 @@
         '<div class="tmq-seal-sub">Финиш ' + time + ' · жизни ' + state.lives + '/' + CONFIG.maxLives +
           ' · ' + esc(CONFIG.dates) + '</div>' +
       '</div>' +
-      '<button class="tmq-btn tmq-btn-ghost" type="button" id="tmq-download">Скачать грамоту</button>' +
+      '<button class="tmq-btn tmq-btn-ghost" type="button" id="tmq-cert-toggle">Текст грамоты</button>' +
+      '<pre class="tmq-cert" id="tmq-cert" hidden>' + esc(certificate) + '</pre>' +
+      '<button class="tmq-btn tmq-btn-ghost" type="button" id="tmq-download">Скачать файлом</button>' +
       '<button class="tmq-cta" type="button" id="tmq-finish">К карточке <span aria-hidden="true">→</span></button>'
     );
 
+    /* Грамота всегда доступна текстом — выгрузка файла лишь дополнение */
+    var certToggle = dom.body.querySelector('#tmq-cert-toggle');
+    var certNode = dom.body.querySelector('#tmq-cert');
+    if (certToggle && certNode) {
+      certToggle.addEventListener('click', function () {
+        play('click');
+        certNode.hidden = !certNode.hidden;
+        certToggle.textContent = certNode.hidden ? 'Текст грамоты' : 'Скрыть текст';
+      });
+    }
+
     dom.body.querySelector('#tmq-download').addEventListener('click', function () {
-      var blob = new Blob([certificate], { type: 'text/plain;charset=utf-8' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = 'gramota-' + q.id + '.txt';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      try {
+        var blob = new Blob([certificate], { type: 'text/plain;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'gramota-' + q.id + '.txt';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      } catch (e) {
+        if (certNode) certNode.hidden = false;
+        if (certToggle) certToggle.textContent = 'Скрыть текст';
+        if (typeof showDuelNotice === 'function') showDuelNotice('Файл недоступен — текст грамоты открыт выше');
+      }
     });
 
     dom.body.querySelector('#tmq-finish').addEventListener('click', function () {
@@ -1480,6 +1758,7 @@
     close: close,
     createBoard: createBoard,
     config: CONFIG,
+    prologue: PROLOGUE,
     state: state
   };
 

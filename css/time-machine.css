@@ -188,73 +188,140 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 14px 2px 4px;
-}
-
-.tmq-emblem {
-  width: 62px;
-  height: 62px;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(212, 180, 117, 0.4);
-  border-radius: 16px;
-  background: radial-gradient(circle at 50% 30%, rgba(212, 180, 117, 0.16), transparent 70%);
-  color: var(--tmq-gold);
-  font-size: 30px;
-  line-height: 1;
-  box-shadow: 0 0 34px -12px rgba(212, 180, 117, 0.9);
+  padding: 6px 2px 4px;
 }
 
 .tmq-kicker {
-  margin-top: 16px;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
-  letter-spacing: 2.6px;
+  letter-spacing: 2.4px;
   text-transform: uppercase;
   color: var(--tmq-text-3);
 }
 
 .tmq-welcome-title {
-  margin: 10px 0 0;
-  font-size: clamp(22px, 5.8vw, 28px);
+  margin: 8px 0 0;
+  font-size: clamp(21px, 5.6vw, 26px);
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.22;
   letter-spacing: -0.02em;
-  color: #f6fafd;
+  color: #f7fbfe;
 }
 
-.tmq-champion {
+/* Карточка чемпиона — «обложка» приключения */
+.tmq-cover {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 14px;
   width: 100%;
-  margin-top: 18px;
-  padding: 13px 14px;
-  border: 1px solid var(--tmq-line-soft);
+  margin-top: 16px;
+  padding: 14px 15px;
+  overflow: hidden;
+  text-align: left;
+  border: 1px solid rgba(212, 180, 117, 0.28);
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 160% at 0% 0%, color-mix(in srgb, var(--tmq-accent, #d4b475) 18%, transparent), transparent 62%),
+    linear-gradient(150deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
+}
+
+.tmq-cover::after {
+  content: '';
+  position: absolute;
+  right: -14px;
+  bottom: -34px;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 180, 117, 0.18);
+  pointer-events: none;
+}
+
+.tmq-cover-glyph {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(212, 180, 117, 0.4);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(6, 10, 14, 0.55);
+  color: var(--tmq-gold);
+  font-size: 26px;
+  line-height: 1;
+  text-shadow: 0 0 18px rgba(212, 180, 117, 0.6);
 }
 
-.tmq-champion-name {
-  font-size: 16px;
+.tmq-cover-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+.tmq-cover-era {
+  font-size: 9.5px;
   font-weight: 700;
-  color: #f2f7fc;
-}
-
-.tmq-champion-era {
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 1.6px;
+  letter-spacing: 1.8px;
   text-transform: uppercase;
   color: var(--tmq-gold);
 }
 
-.tmq-welcome-text {
-  margin: 16px 0 0;
-  max-width: 34ch;
+.tmq-cover-name {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #f4f9fd;
+}
+
+.tmq-cover-title {
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--tmq-text-3);
+}
+
+/* Художественный текст пролога */
+.tmq-story {
+  display: grid;
+  gap: 11px;
+  width: 100%;
+  margin-top: 16px;
+  text-align: left;
+}
+
+.tmq-story p {
+  margin: 0;
   font-size: 13.5px;
-  line-height: 1.6;
+  line-height: 1.72;
   color: var(--tmq-text-2);
+}
+
+.tmq-story p.is-lead {
+  font-size: 15px;
+  line-height: 1.6;
+  font-weight: 600;
+  color: #eaf3fa;
+}
+
+.tmq-story p:first-of-type:not(.is-lead) { color: #cfdae6; }
+
+/* Ставка пути */
+.tmq-stakes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
+  margin-top: 16px;
+  padding-top: 12px;
+  width: 100%;
+  border-top: 1px solid var(--tmq-line-soft);
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--tmq-text-3);
+}
+
+.tmq-stakes b {
+  margin-right: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tmq-gold);
 }
 
 /* ---------- Кнопки ---------- */
@@ -445,7 +512,17 @@
 .tmq-feedback .tmq-actions { margin-top: 9px; }
 
 /* ---------- Доска (единый вид с дуэлью) ---------- */
-.tmq-board-host { width: 100%; max-width: 336px; margin: 0 auto; }
+.tmq-board-host {
+  position: relative;
+  width: 100%;
+  max-width: 336px;
+  min-height: 220px;
+  margin: 0 auto;
+}
+
+/* [FIX] Запасная высота: если aspect-ratio не сработал
+   (мобильный Safari + flex + overflow), доска всё равно видна. */
+.tmq-board { min-height: 220px; }
 
 .tmq-board {
   display: grid;
@@ -623,8 +700,7 @@
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: radial-gradient(circle, rgba(190, 246, 255, 0.55) 0%, rgba(53, 214, 240, 0.22) 32%, rgba(53, 214, 240, 0.04) 58%, transparent 72%);
-  filter: blur(6px);
-  animation: tmqWarpCore 2.6s cubic-bezier(0.4, 0, 0.7, 1) forwards;
+  animation: tmqWarpCore 2.2s cubic-bezier(0.4, 0, 0.7, 1) forwards;
 }
 @keyframes tmqWarpCore {
   0% { transform: translate(-50%, -50%) scale(0.25); opacity: 0; }
@@ -643,8 +719,8 @@
   height: 40vmax;
   margin: -20vmax 0 0 -20vmax;
   border-radius: 50%;
-  border: 1.5px solid rgba(125, 227, 255, 0.5);
-  box-shadow: 0 0 26px rgba(53, 214, 240, 0.35), inset 0 0 26px rgba(53, 214, 240, 0.18);
+  border: 1.5px solid rgba(125, 227, 255, 0.55);
+  box-shadow: 0 0 16px rgba(53, 214, 240, 0.35);
   transform: scale(0.06);
   opacity: 0;
   animation: tmqRingOut 1.5s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
@@ -666,9 +742,8 @@
   width: 140%;
   height: 2px;
   background: linear-gradient(90deg, transparent, rgba(190, 246, 255, 0.85) 45%, rgba(255, 255, 255, 0.95) 50%, rgba(190, 246, 255, 0.85) 55%, transparent);
-  filter: blur(1px);
   opacity: 0;
-  animation: tmqBeam 1.1s ease-out forwards;
+  animation: tmqBeam 0.95s ease-out forwards;
 }
 .tmq-warp-beams i:nth-child(1) { top: 26%; transform: rotate(-8deg); animation-delay: 0.15s; }
 .tmq-warp-beams i:nth-child(2) { top: 54%; transform: rotate(6deg); animation-delay: 0.55s; }
@@ -752,6 +827,21 @@
   text-transform: uppercase;
   color: rgba(200, 220, 236, 0.7);
   min-height: 14px;
+}
+
+/* Подсказка «можно пропустить» — снимает ощущение зависания */
+.tmq-warp-skip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 22px;
+  z-index: 7;
+  text-align: center;
+  font-size: 9.5px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: rgba(190, 214, 232, 0.45);
+  animation: tmqFadeUp 0.6s ease 1s both;
 }
 
 /* вспышка на выходе */
@@ -936,6 +1026,45 @@
 
 .tmq-go-reason { padding: 12px 14px; border-left: 2px solid var(--tmq-rd); background: rgba(224, 101, 95, 0.07); font-size: 13px; line-height: 1.6; color: #f2d4d1; }
 .tmq-go-note { padding: 12px 14px; border: 1px solid var(--tmq-line-soft); border-radius: 10px; font-size: 12.5px; line-height: 1.6; color: var(--tmq-text-3); }
+
+/* ---------- Адрес бота: только чтение, без перехода наружу ---------- */
+.tmq-bot-addr {
+  display: grid;
+  gap: 5px;
+  padding: 11px 12px;
+  border: 1px dashed rgba(53, 214, 240, 0.35);
+  border-radius: 10px;
+  background: rgba(53, 214, 240, 0.06);
+}
+.tmq-bot-addr[hidden] { display: none; }
+.tmq-bot-url {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #d9f2fb;
+  word-break: break-all;
+  user-select: all;
+  -webkit-user-select: all;
+}
+.tmq-bot-hint { font-size: 11.5px; line-height: 1.5; color: var(--tmq-text-3); }
+
+/* ---------- Текст грамоты (вместо обязательной выгрузки) ---------- */
+.tmq-cert {
+  margin: 0;
+  padding: 12px 13px;
+  border: 1px solid var(--tmq-line-soft);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #cfe0ec;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.tmq-cert[hidden] { display: none; }
 
 /* ---------- Мобильные ---------- */
 @media (max-width: 480px) {
