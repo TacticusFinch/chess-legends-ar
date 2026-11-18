@@ -1335,6 +1335,126 @@
   .tmq-cta { padding: 15px 16px; font-size: 9.5px; letter-spacing: 1.8px; }
 }
 
+/* ==========================================================
+   КВАНТОВАЯ 3D-СЦЕНА: canvas + бегущая телеметрия
+   ========================================================== */
+.tmq-q3d {
+  position: relative;
+  width: 100%;
+  height: clamp(200px, 46vw, 252px);
+  margin: 0 0 20px;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(53, 214, 240, 0.14);
+  background:
+    radial-gradient(120% 90% at 50% 120%, rgba(53, 214, 240, 0.14), transparent 62%),
+    radial-gradient(80% 70% at 50% -20%, rgba(184, 158, 201, 0.12), transparent 60%),
+    linear-gradient(180deg, #04070c 0%, #060b12 60%, #020407 100%);
+  box-shadow: inset 0 0 60px rgba(2, 6, 12, 0.9);
+}
+
+.tmq-q3d-canvas { display: block; width: 100%; height: 100%; }
+
+.tmq-tel {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  font-size: 8px;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: rgba(53, 214, 240, 0.92);
+  text-shadow: 0 0 10px rgba(53, 214, 240, 0.45);
+}
+
+.tmq-tel-line {
+  position: absolute;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+}
+
+.tmq-tel-line.is-on { opacity: 0.85; transform: translateY(0); }
+
+.tmq-tel-line.t1 { top: 11px; left: 13px; }
+.tmq-tel-line.t2 { top: 11px; right: 13px; color: rgba(168, 224, 95, 0.9); text-shadow: 0 0 10px rgba(168, 224, 95, 0.4); }
+.tmq-tel-line.t3 { top: 38%; left: 13px; }
+.tmq-tel-line.t4 { top: 38%; right: 13px; }
+.tmq-tel-line.t5 { bottom: 12px; left: 13px; }
+.tmq-tel-line.t6 { bottom: 12px; right: 13px; color: rgba(212, 180, 117, 0.9); text-shadow: 0 0 10px rgba(212, 180, 117, 0.4); }
+
+/* ---------- Варп на весь экран ---------- */
+.tmq-warpfull {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 50%, #0a1a2c 0%, #04070d 58%, #000 100%);
+}
+
+.tmq-overlay.tmq-warping .tmq-card { opacity: 0; pointer-events: none; }
+
+.tmq-warpfull .tmq-tunnel { width: 230vmax; height: 230vmax; }
+.tmq-warpfull .tmq-warp-core { width: 62vmax; height: 62vmax; }
+.tmq-warpfull .tmq-streaks { inset: -40%; }
+.tmq-warpfull .tmq-warp-target { font-size: clamp(30px, 8vw, 56px); }
+
+/* ---------- Поздравление ---------- */
+.tmq-done {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px 0 6px;
+}
+
+.tmq-done-badge {
+  width: 54px;
+  height: 54px;
+  margin-bottom: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 23px;
+  color: #06231a;
+  background: linear-gradient(135deg, #b7f4dd, #6fd6ad);
+  box-shadow: 0 0 32px -6px rgba(126, 224, 184, 0.85);
+}
+
+.tmq-done-text {
+  margin: 14px 0 0;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--text-2);
+}
+
+/* ---------- Ссылка на биографию ---------- */
+.tmq-bio-link {
+  align-self: flex-start;
+  margin-top: 14px;
+  padding: 6px 0;
+  border: 0;
+  border-bottom: 1px solid rgba(53, 214, 240, 0.25);
+  background: none;
+  color: var(--text-3);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.tmq-bio-link:hover { color: var(--cy); border-bottom-color: var(--cy); }
+
+@media (max-width: 480px) {
+  .tmq-q3d { height: 190px; margin-bottom: 16px; }
+  .tmq-tel { font-size: 7px; letter-spacing: 0.8px; }
+  .tmq-done-badge { width: 48px; height: 48px; font-size: 20px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tmq-fig, .tmq-orbit, .tmq-floor, .tmq-spark, .tmq-boss-orb { animation: none; }
   .tmq-fig::after { animation: none; }

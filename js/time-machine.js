@@ -258,24 +258,201 @@
     pawn: '<circle cx="60" cy="26" r="13"/><path d="M48 40h24l6 18H42z"/><path d="M38 62h44l7 20H31z"/><path d="M30 84h60l6 10H24z"/>'
   };
 
-  /* Квантовая сцена приветствия: горизонт событий, аккреционный диск,
-     орбиты и искры. Без шахматных фигур. */
-  function quantumScene() {
-    return '<div class="tmq-qscene" aria-hidden="true">' +
-      '<span class="tmq-qglow"></span>' +
-      '<span class="tmq-qdisk"></span>' +
-      '<span class="tmq-qring q1"></span>' +
-      '<span class="tmq-qring q2"></span>' +
-      '<span class="tmq-qring q3"></span>' +
-      '<span class="tmq-qcore"></span>' +
-      '<span class="tmq-qflare"></span>' +
-      '<span class="tmq-qspark s1"></span>' +
-      '<span class="tmq-qspark s2"></span>' +
-      '<span class="tmq-qspark s3"></span>' +
-      '<span class="tmq-qspark s4"></span>' +
-      '<span class="tmq-qspark s5"></span>' +
-      '<span class="tmq-qgrain"></span>' +
+  /* ==========================================================
+     КВАНТОВАЯ 3D-СЦЕНА (canvas, реальное время)
+     Сфера частиц с перспективой, три орбиты, сканирующая
+     полоса и бегущая телеметрия. Без библиотек.
+     ========================================================== */
+  var Quantum = { raf: 0, tel: 0, alive: false };
+  var TEL_MOVES = ['e4 e5', 'Nf3 Nc6', 'Bb5 a6', 'Ba4 Nf6', 'O-O Be7', 'Re1 b5', 'd4 c5', 'c3 Nf6'];
+
+  function quantumMarkup() {
+    var slots = '';
+    for (var i = 1; i <= 6; i++) slots += '<span class="tmq-tel-line t' + i + '"></span>';
+    return '<div class="tmq-q3d">' +
+      '<canvas class="tmq-q3d-canvas" id="tmq-qcanvas"></canvas>' +
+      '<div class="tmq-tel" aria-hidden="true">' + slots + '</div>' +
       '</div>';
+  }
+
+  function stopQuantum() {
+    Quantum.alive = false;
+    if (Quantum.raf) { cancelAnimationFrame(Quantum.raf); Quantum.raf = 0; }
+    if (Quantum.tel) { clearInterval(Quantum.tel); Quantum.tel = 0; }
+  }
+
+  function clearWarp() {
+    if (!dom) return;
+    var node = dom.overlay.querySelector('.tmq-warpfull');
+    if (node && node.parentNode) node.parentNode.removeChild(node);
+    dom.overlay.classList.remove('tmq-warping');
+  }
+
+  function startQuantum(canvas) {
+    stopQuantum();
+    if (!canvas || !canvas.getContext) return;
+
+    var ctx = canvas.getContext('2d');
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var w = 1;
+    var h = 1;
+
+    function resize() {
+      var rect = canvas.getBoundingClientRect();
+      w = Math.max(1, rect.width);
+      h = Math.max(1, rect.height);
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+
+    var pts = [];
+    var N = 260;
+    for (var i = 0; i < N; i++) {
+      var phi = Math.acos(1 - 2 * (i + 0.5) / N);
+      var theta = Math.PI * (1 + Math.sqrt(5)) * i;
+      pts.push({
+        x: Math.sin(phi) * Math.cos(theta),
+        y: Math.cos(phi),
+        z: Math.sin(phi) * Math.sin(theta),
+        s: 0.55 + Math.random() * 1.05
+      });
+    }
+
+    var orbits = [
+      { r: 1.02, tilt: 0.06, spin: 0.34, c: '53, 214, 240' },
+      { r: 1.2, tilt: 1.02, spin: -0.22, c: '212, 180, 117' },
+      { r: 0.86, tilt: -0.7, spin: 0.48, c: '184, 158, 201' }
+    ];
+
+    var t0 = performance.now();
+    Quantum.alive = true;
+
+    function frame(now) {
+      if (!Quantum.alive) return;
+      var t = (now - t0) / 1000;
+
+      ctx.clearRect(0, 0, w, h);
+
+      var cx = w / 2;
+      var cy = h / 2 + h * 0.05;
+      var R = Math.min(w * 0.4, h * 0.42);
+      var f = 3.1;
+      var ay = t * 0.32;
+      var ax = Math.sin(t * 0.2) * 0.36;
+
+      function project(x, y, z) {
+        var cyA = Math.cos(ay);
+        var syA = Math.sin(ay);
+        var x1 = x * cyA + z * syA;
+        var z1 = -x * syA + z * cyA;
+        var cxA = Math.cos(ax);
+        var sxA = Math.sin(ax);
+        var y1 = y * cxA - z1 * sxA;
+        var z2 = y * sxA + z1 * cxA;
+        var p = f / (f + z2);
+        return { x: cx + x1 * R * p, y: cy + y1 * R * p, z: z2 };
+      }
+
+      var halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.08);
+      halo.addColorStop(0, 'rgba(190,246,255,0.30)');
+      halo.addColorStop(0.3, 'rgba(53,214,240,0.14)');
+      halo.addColorStop(0.7, 'rgba(30,80,130,0.05)');
+      halo.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * 1.08, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (var oi = 0; oi < orbits.length; oi++) {
+        var o = orbits[oi];
+        var ct = Math.cos(o.tilt);
+        var st = Math.sin(o.tilt);
+        ctx.beginPath();
+        for (var k = 0; k <= 72; k++) {
+          var a = (k / 72) * Math.PI * 2 + t * o.spin;
+          var ox = Math.cos(a) * o.r;
+          var oz = Math.sin(a) * o.r;
+          var ry = -oz * st;
+          var rz = oz * ct;
+          var pr = project(ox, ry, rz);
+          if (k === 0) ctx.moveTo(pr.x, pr.y);
+          else ctx.lineTo(pr.x, pr.y);
+        }
+        ctx.strokeStyle = 'rgba(' + o.c + ',0.34)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      var arr = [];
+      for (var j = 0; j < pts.length; j++) {
+        var pt = pts[j];
+        var pj = project(pt.x, pt.y, pt.z);
+        pj.depth = (pj.z + 1.5) / 3;
+        pj.r = 0.6 + Math.max(0, 1 - pj.depth) * 2.1 * pt.s;
+        arr.push(pj);
+      }
+      arr.sort(function (m, n) { return m.z - n.z; });
+
+      for (var q = 0; q < arr.length; q++) {
+        var d = arr[q];
+        var alpha = 0.1 + Math.max(0, 1 - d.depth) * 0.9;
+        if (alpha <= 0.03) continue;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(150,236,255,' + alpha.toFixed(3) + ')';
+        ctx.fill();
+      }
+
+      var sy = ((t * 46) % (h + 80)) - 40;
+      var band = ctx.createLinearGradient(0, sy - 18, 0, sy + 18);
+      band.addColorStop(0, 'rgba(53,214,240,0)');
+      band.addColorStop(0.5, 'rgba(53,214,240,0.14)');
+      band.addColorStop(1, 'rgba(53,214,240,0)');
+      ctx.fillStyle = band;
+      ctx.fillRect(0, sy - 18, w, 36);
+
+      Quantum.raf = requestAnimationFrame(frame);
+    }
+
+    Quantum.raf = requestAnimationFrame(frame);
+
+    var host = canvas.parentNode;
+    var slots = host ? Array.prototype.slice.call(host.querySelectorAll('.tmq-tel-line')) : [];
+
+    function readout() {
+      var r = Math.random();
+      if (r < 0.26) return 'ΔT ' + (Math.random() * 0.01).toFixed(4);
+      if (r < 0.44) return 'PHASE ' + ('0' + Math.floor(Math.random() * 99)).slice(-2);
+      if (r < 0.62) return 'Q ' + ('000' + Math.floor(Math.random() * 9999)).slice(-4);
+      if (r < 0.74) return 'ENT ' + (Math.random() * 1.2).toFixed(3);
+      return TEL_MOVES[Math.floor(Math.random() * TEL_MOVES.length)];
+    }
+
+    function tick() {
+      if (!Quantum.alive || !slots.length) return;
+      var free = [];
+      for (var s = 0; s < slots.length; s++) {
+        if (!slots[s].dataset.busy) free.push(slots[s]);
+      }
+      if (!free.length) return;
+      var slot = free[Math.floor(Math.random() * free.length)];
+      slot.dataset.busy = '1';
+      slot.textContent = readout();
+      slot.classList.add('is-on');
+      setTimeout(function () {
+        slot.classList.remove('is-on');
+        setTimeout(function () {
+          slot.textContent = '';
+          delete slot.dataset.busy;
+        }, 560);
+      }, 1500 + Math.random() * 1200);
+    }
+
+    Quantum.tel = setInterval(tick, 460);
+    tick();
+    tick();
   }
 
   /* ==========================================================
@@ -460,6 +637,8 @@
   }
 
   function setBody(html) {
+    stopQuantum();
+    clearWarp();
     dom.body.innerHTML = html;
     dom.body.scrollTop = 0;
   }
@@ -471,33 +650,29 @@
     state.screen = 'greet';
     renderLives(false);
     var q = state.quest;
-    var rankName = (state.hero && state.hero.rank && state.hero.rank.name) ? state.hero.rank.name : 'ЛЕГЕНДА';
     var story = q.welcome || [];
 
     setBody(
-      quantumScene() +
+      quantumMarkup() +
       '<div class="tmq-welcome">' +
-        '<div class="tmq-kicker">Сигнал принят · ' + esc(q.era) + '</div>' +
-        '<h2 class="tmq-display">Добро пожаловать<br>на турнир <em>«Машина времени»</em></h2>' +
-        '<div class="tmq-chips">' +
-          '<span class="tmq-chip">' + esc(q.name) + '</span>' +
-          '<span class="tmq-chip">' + esc(rankName) + '</span>' +
-          '<span class="tmq-chip">Пять этапов</span>' +
-        '</div>' +
+        '<div class="tmq-kicker">' + esc(q.era) + '</div>' +
+        '<h2 class="tmq-display">Добро пожаловать<br><em>на турнир «Машина времени»</em></h2>' +
         '<div class="tmq-copy">' +
           story.map(function (t, i) {
             return '<p class="' + (i === 0 ? 'is-lead' : '') + '">' + esc(t) + '</p>';
           }).join('') +
         '</div>' +
         '<button class="tmq-cta" type="button" id="tmq-jump">Прыжок во времени<span aria-hidden="true">→</span></button>' +
-        '<div class="tmq-welcome-foot">' +
-          '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-bio">Биография чемпиона</button>' +
-          '<span class="tmq-fineprint">10 жизней · звук включён<br>путь можно продолжить позже</span>' +
-        '</div>' +
+        '<button class="tmq-bio-link" type="button" id="tmq-bio">Биография чемпиона</button>' +
       '</div>'
     );
 
-    dom.body.querySelector('#tmq-bio').addEventListener('click', renderBio);
+    startQuantum(document.getElementById('tmq-qcanvas'));
+
+    dom.body.querySelector('#tmq-bio').addEventListener('click', function () {
+      play('click');
+      renderBio();
+    });
     dom.body.querySelector('#tmq-jump').addEventListener('click', function () {
       play('warp');
       renderWarp();
@@ -513,24 +688,68 @@
 
     setBody(
       '<div class="tmq-awake">' +
-        '<div class="tmq-kicker">Точка прибытия · ' + esc(q.era) + '</div>' +
+        '<div class="tmq-kicker">' + esc(q.era) + '</div>' +
         '<h2 class="tmq-awake-title">Вы проснулись.</h2>' +
         '<div class="tmq-copy tmq-copy-quote">' +
           lines.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') +
         '</div>' +
-        '<div class="tmq-status">' +
-          '<div class="tmq-status-item"><span>Состояние</span><b>дезориентация</b></div>' +
-          '<div class="tmq-status-item"><span>Тело</span><b>' + esc(q.shortName) + '</b></div>' +
-          '<div class="tmq-status-item"><span>Цель</span><b>корона</b></div>' +
-        '</div>' +
-        '<button class="tmq-cta" type="button" id="tmq-map">Увидеть карту пути<span aria-hidden="true">→</span></button>' +
-        '<div class="tmq-fineprint">Этап I позади · впереди пять испытаний</div>' +
+        '<button class="tmq-cta" type="button" id="tmq-map">Карта пути<span aria-hidden="true">→</span></button>' +
       '</div>'
     );
 
     dom.body.querySelector('#tmq-map').addEventListener('click', function () {
       play('click');
       renderMap(false);
+    });
+  }
+
+  /* ==========================================================
+     ПОЗДРАВЛЕНИЕ после этапа и после поверженного соперника
+     ========================================================== */
+  var STAGE_LINES = [
+    'Память чемпиона восстановлена. Теперь вы знаете, откуда он пришёл.',
+    'Сила проснулась. Атака стала инструментом, а не загадкой.',
+    'Вы увидели угрозу раньше, чем она появилась.',
+    'Пять соперников позади. Путь героя пройден.'
+  ];
+
+  function renderCongrats(kind, opts) {
+    state.screen = 'congrats';
+    var o = opts || {};
+    var isStage = kind === 'stage';
+    var route = CONFIG.route[o.index || 0] || {};
+    var kicker;
+    var title;
+    var line;
+
+    if (isStage) {
+      kicker = 'Этап ' + (route.num || '') + ' из V';
+      title = esc(route.title || 'Этап') + '<br><em>пройден</em>';
+      line = o.line || 'Идём дальше.';
+    } else {
+      kicker = 'Дуэль ' + ((o.idx || 0) + 1) + ' из ' + (o.total || 5);
+      title = esc(o.name || 'Соперник') + '<br><em>повержен</em>';
+      line = 'Рубеж взят. Следующий соперник уже за доской.';
+    }
+
+    state.pending = o.next || null;
+
+    setBody(
+      '<div class="tmq-done">' +
+        '<div class="tmq-done-badge">✓</div>' +
+        '<div class="tmq-kicker">' + kicker + '</div>' +
+        '<h2 class="tmq-display">' + title + '</h2>' +
+        '<p class="tmq-done-text">' + line + '</p>' +
+        '<button class="tmq-cta" type="button" id="tmq-done-next">Дальше<span aria-hidden="true">→</span></button>' +
+      '</div>'
+    );
+
+    dom.body.querySelector('#tmq-done-next').addEventListener('click', function () {
+      play('click');
+      var fn = state.pending;
+      state.pending = null;
+      if (typeof fn === 'function') fn();
+      else renderMap(false);
     });
   }
 
@@ -563,18 +782,22 @@
     state.screen = 'warp';
     var q = state.quest;
 
-    setBody(
-      '<div class="tmq-warp">' +
-        '<div class="tmq-tunnel"></div>' +
-        '<div class="tmq-streaks"></div>' +
-        '<div class="tmq-warp-core"></div>' +
-        '<div class="tmq-warp-text">' +
-          '<div class="tmq-warp-label">ВАРП-ПРЫЖОК</div>' +
-          '<div class="tmq-warp-target">' + esc(q.era) + '</div>' +
-          '<div class="tmq-warp-sub">держитесь за партию...</div>' +
-        '</div>' +
-      '</div>'
-    );
+    stopQuantum();
+    setBody('');
+
+    var warp = document.createElement('div');
+    warp.className = 'tmq-warpfull';
+    warp.innerHTML =
+      '<div class="tmq-tunnel"></div>' +
+      '<div class="tmq-streaks"></div>' +
+      '<div class="tmq-warp-core"></div>' +
+      '<div class="tmq-warp-text">' +
+        '<div class="tmq-warp-label">ВАРП-ПРЫЖОК</div>' +
+        '<div class="tmq-warp-target">' + esc(q.era) + '</div>' +
+      '</div>';
+
+    dom.overlay.appendChild(warp);
+    dom.overlay.classList.add('tmq-warping');
 
     after(2600, function () {
       state.stage = 0;
@@ -609,7 +832,6 @@
           '<span class="tmq-route-status">' + label + '</span></div>' +
           '<div class="tmq-route-title">' + esc(item.title) + '</div>' +
           '<div class="tmq-route-sub">' + esc(item.sub) + ' · ' + esc(meta) + '</div>' +
-          '<p class="tmq-route-text">' + esc(item.text) + '</p>' +
           (status === 'active'
             ? '<button class="tmq-btn tmq-btn-sm" type="button" data-enter="' + i + '">Войти на этап</button>'
             : '') +
@@ -621,9 +843,7 @@
       chapter(fresh ? 'II' : '···', fresh ? 'Дверь открыта' : 'Карта пути', q.era) +
       '<div class="tmq-title">' + (fresh ? 'Вы проснулись в ' + esc(q.era) : 'Пять этапов становления') + '</div>' +
       '<div class="tmq-story"><p>' + esc(q.mission) + '</p></div>' +
-      '<div class="tmq-route-list">' + cards + '</div>' +
-      '<div class="tmq-mapnote">Жизни: <b>' + state.lives + '</b> из ' + CONFIG.maxLives +
-      ' · дуэли: <b>' + state.duelIdx + '/' + q.duels.length + '</b></div>'
+      '<div class="tmq-route-list">' + cards + '</div>'
     );
 
     var buttons = dom.body.querySelectorAll('[data-enter]');
@@ -1021,13 +1241,24 @@
       play('playCorrect');
       after(900, function () {
         if (state.screen !== 'duels') return;
-        if (state.duelIdx < state.quest.duels.length - 1) {
-          state.duelIdx++;
+        var won = state.duelIdx;
+        var total = state.quest.duels.length;
+        var last = won >= total - 1;
+
+        if (!last) {
+          state.duelIdx = won + 1;
           saveProgress();
-          renderDuel();
-        } else {
-          finishStage();
         }
+
+        renderCongrats('duel', {
+          name: duel.name,
+          idx: won,
+          total: total,
+          next: function () {
+            if (last) finishStage();
+            else renderDuel();
+          }
+        });
       });
       return;
     }
@@ -1156,15 +1387,19 @@
      VIII. ЗАВЕРШЕНИЕ ЭТАПА / ВЫБЫВАНИЕ
      ========================================================== */
   function finishStage() {
-    var next = state.stage + 1;
-    state.stage = Math.min(CONFIG.route.length, next);
+    var passed = state.stage;
+    state.stage = Math.min(CONFIG.route.length, passed + 1);
     state.step = 0;
     state.answered = false;
     state.chosen = null;
     state.missed = false;
     saveProgress();
     play('playFanfare');
-    renderMap(false);
+    renderCongrats('stage', {
+      index: passed,
+      line: STAGE_LINES[passed] || 'Идём дальше.',
+      next: function () { renderMap(false); }
+    });
   }
 
   function renderGameOver(reason) {
@@ -1263,6 +1498,8 @@
   function close() {
     if (!dom) return;
     clearTimers();
+    stopQuantum();
+    clearWarp();
     dom.overlay.classList.remove('tmq-open');
     dom.overlay.setAttribute('aria-hidden', 'true');
     state.inBattle = false;
