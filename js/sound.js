@@ -1,19 +1,33 @@
 // ================= ЗВУКОВОЙ ДВИЖОК WEB AUDIO API =================
+// Все прежние звуки сохранены без изменений.
+// Добавлены звуки квеста «Машина времени»:
+//   choir()   — хор приглашения (при открытии окна приветствия)
+//   warp()    — варп-прыжок
+//   arrival() — мягкое прибытие в эпоху
+//   crystal() — кристалл времени
+//   click()   — тихий тактильный клик
+// Никаких внешних файлов: всё синтезируется на месте.
 class SoundController {
   constructor() {
     this.ctx = null;
     this.enabled = false;
+    this.bus = null;
   }
 
   init() {
     if (!this.ctx) {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return null;
       this.ctx = new AudioContext();
+      this.bus = this.ctx.createGain();
+      this.bus.gain.value = 0.42;
+      this.bus.connect(this.ctx.destination);
     }
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
     this.enabled = true;
+    return this.ctx;
   }
 
   toggle() {
@@ -24,12 +38,55 @@ class SoundController {
     return this.enabled;
   }
 
+  setEnabled(value) {
+    this.enabled = !!value;
+    if (this.enabled && (!this.ctx || this.ctx.state === 'suspended')) {
+      this.init();
+    }
+  }
+
+  // ==========================================================
+  // НИЗКОУРОВНЕВЫЕ ХЕЛПЕРЫ (только для звуков квеста)
+  // ==========================================================
+  _tone(freq, delay, dur, opts) {
+    if (!this.enabled || !this.ctx || !this.bus) return;
+    const o = opts || {};
+    const t0 = this.ctx.currentTime + (delay || 0);
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = o.type || 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, t0 + dur);
+
+    const peak = o.gain === undefined ? 0.12 : o.gain;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t0 + Math.min(0.14, dur * 0.35));
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+    osc.connect(gain);
+    gain.connect(this.bus);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.05);
+  }
+
+  _noise(dur) {
+    if (!this.ctx) return null;
+    const len = Math.floor(this.ctx.sampleRate * dur);
+    const buffer = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < len; i += 1) data[i] = Math.random() * 2 - 1;
+    return buffer;
+  }
+
+  // ==========================================================
   // 1. Стук деревянной шахматной фигуры (UI-клик)
+  // ==========================================================
   playMove() {
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    
+
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(140, this.ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.08);
@@ -44,7 +101,9 @@ class SoundController {
     osc.stop(this.ctx.currentTime + 0.08);
   }
 
+  // ==========================================================
   // 2. Триумфальные фанфары
+  // ==========================================================
   playFanfare() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
@@ -86,7 +145,9 @@ class SoundController {
     });
   }
 
+  // ==========================================================
   // 3. Захват карточки камерой (AR Lock-on)
+  // ==========================================================
   playTargetFound() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
@@ -168,11 +229,13 @@ class SoundController {
     createShutterNoise(t2 + 0.01, 0.05, 0.22, 2800);
   }
 
+  // ==========================================================
   // 4. Правильный ход
+  // ==========================================================
   playCorrect() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
- [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'sine';
@@ -186,7 +249,9 @@ class SoundController {
     });
   }
 
+  // ==========================================================
   // 5. Зевок / Ошибка
+  // ==========================================================
   playWrong() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
@@ -203,7 +268,9 @@ class SoundController {
     osc.stop(now + 0.3);
   }
 
+  // ==========================================================
   // 6. Шах и мат
+  // ==========================================================
   playCheckmate() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
@@ -222,7 +289,9 @@ class SoundController {
     });
   }
 
+  // ==========================================================
   // 7. Мелодичный шахматный гонг/колокол при старте дуэли
+  // ==========================================================
   playBattleStart() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
@@ -246,12 +315,13 @@ class SoundController {
     });
   }
 
-  // 8. ПРЕМИАЛЬНЫЙ ТАКТИЧЕСКИЙ УДАР (Плотный щелчок утяжеленной фигуры + резонатор доски)
+  // ==========================================================
+  // 8. ПРЕМИАЛЬНЫЙ ТАКТИЧЕСКИЙ УДАР
+  // ==========================================================
   playAttackHit() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
 
-    // Слой А: Хлесткий щелчок дерева (High Transient)
     const click = this.ctx.createOscillator();
     const clickGain = this.ctx.createGain();
     click.type = 'triangle';
@@ -264,7 +334,6 @@ class SoundController {
     click.start(now);
     click.stop(now + 0.035);
 
-    // Слой Б: Глубокое тело дубовой доски (Wood Resonance Body)
     const body = this.ctx.createOscillator();
     const bodyGain = this.ctx.createGain();
     body.type = 'sine';
@@ -278,12 +347,13 @@ class SoundController {
     body.stop(now + 0.14);
   }
 
-  // 9. КРИТИЧЕСКИЙ УДАР (Кинематографичный крит: хрусталь + саб-дроп 808 + треск)
+  // ==========================================================
+  // 9. КРИТИЧЕСКИЙ УДАР
+  // ==========================================================
   playCritHit() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
 
-    // Слой А: Звон хрусталя/раскола стекла
     [2093.00, 2637.02, 3135.96].forEach((f, i) => {
       const glass = this.ctx.createOscillator();
       const glassGain = this.ctx.createGain();
@@ -297,7 +367,6 @@ class SoundController {
       glass.stop(now + i * 0.015 + 0.35);
     });
 
-    // Слой Б: Мощный саб-бас импульс (808 Drop)
     const sub = this.ctx.createOscillator();
     const subGain = this.ctx.createGain();
     sub.type = 'sine';
@@ -310,7 +379,6 @@ class SoundController {
     sub.start(now);
     sub.stop(now + 0.45);
 
-    // Слой В: Искрящийся щелчок рассеивания энергии
     const buffLen = Math.floor(this.ctx.sampleRate * 0.08);
     const buf = this.ctx.createBuffer(1, buffLen, this.ctx.sampleRate);
     const d = buf.getChannelData(0);
@@ -328,7 +396,9 @@ class SoundController {
     noise.start(now);
   }
 
-  // 10. АКТИВАЦИЯ ЩИТА / ЗАЩИТЫ (Благородный аккорд F# колокола + барьер)
+  // ==========================================================
+  // 10. АКТИВАЦИЯ ЩИТА / ЗАЩИТЫ
+  // ==========================================================
   playShield() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
@@ -350,12 +420,13 @@ class SoundController {
     });
   }
 
-  // 11. КОРОННЫЙ ПРИЕМ / УЛЬТИМЕЙТ (Кинематографичный Swell + величественный аккорд)
+  // ==========================================================
+  // 11. КОРОННЫЙ ПРИЕМ / УЛЬТИМЕЙТ
+  // ==========================================================
   playUltimate() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
 
-    // Взлёт энергии с динамическим фильтром
     const sweep = this.ctx.createOscillator();
     const sweepGain = this.ctx.createGain();
     sweep.type = 'sawtooth';
@@ -377,7 +448,6 @@ class SoundController {
     sweep.start(now);
     sweep.stop(now + 0.35);
 
-    // Мощный триумфальный аккорд
     const chordTime = now + 0.30;
     const chord = [220, 277.18, 329.63, 440, 659.25];
     chord.forEach((f) => {
@@ -396,7 +466,9 @@ class SoundController {
     });
   }
 
+  // ==========================================================
   // 12. Разблокировка новой легенды в коллекции
+  // ==========================================================
   playCardUnlock() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
@@ -418,7 +490,9 @@ class SoundController {
     });
   }
 
-  // 13. УСПЕШНЫЙ УРОН ПО СОПЕРНИКУ (Сочный деревянно-хрустящий раскол)
+  // ==========================================================
+  // 13. УСПЕШНЫЙ УРОН ПО СОПЕРНИКУ
+  // ==========================================================
   playDamageDealt() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
@@ -437,7 +511,9 @@ class SoundController {
     osc.stop(now + 0.12);
   }
 
-  // 14. ПОЛУЧЕННЫЙ УРОН (Глухой резонансный контузящий бас со срезом частот)
+  // ==========================================================
+  // 14. ПОЛУЧЕННЫЙ УРОН
+  // ==========================================================
   playDamageTaken() {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
@@ -462,6 +538,125 @@ class SoundController {
     gain.connect(this.ctx.destination);
     osc.start(now);
     osc.stop(now + 0.35);
+  }
+
+  // ==========================================================
+  // 15. ХОР ПРИГЛАШЕНИЯ (квест «Машина времени»)
+  // Тёплый четырёхголосный аккорд с вибрато и «воздухом».
+  // ==========================================================
+  choir() {
+    this.init();
+    if (!this.enabled || !this.ctx || !this.bus) return;
+    const notes = [261.63, 329.63, 392.00, 523.25];
+
+    notes.forEach((freq, i) => {
+      const t0 = this.ctx.currentTime + i * 0.09;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = i % 2 ? 'triangle' : 'sine';
+      osc.frequency.setValueAtTime(freq, t0);
+
+      const lfo = this.ctx.createOscillator();
+      const lfoGain = this.ctx.createGain();
+      lfo.frequency.value = 4.4 + i * 0.25;
+      lfoGain.gain.value = freq * 0.006;
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.13, t0 + 1.0);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 3.4);
+
+      osc.connect(gain);
+      gain.connect(this.bus);
+      osc.start(t0);
+      osc.stop(t0 + 3.6);
+      lfo.start(t0);
+      lfo.stop(t0 + 3.6);
+    });
+
+    this._tone(1046.5, 1.15, 1.8, { gain: 0.05 });
+    this._tone(1318.5, 1.31, 1.8, { gain: 0.045 });
+  }
+
+  // ==========================================================
+  // 16. ВАРП-ПРЫЖОК
+  // Шумовой свист + низкий спуск + «пинг» прибытия.
+  // ==========================================================
+  warp() {
+    this.init();
+    if (!this.enabled || !this.ctx || !this.bus) return;
+
+    const dur = 2.4;
+    const buffer = this._noise(dur);
+    if (!buffer) return;
+
+    const src = this.ctx.createBufferSource();
+    src.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 1.1;
+    filter.frequency.setValueAtTime(280, this.ctx.currentTime);
+    filter.frequency.exponentialRampToValueAtTime(4200, this.ctx.currentTime + dur);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.2, this.ctx.currentTime + 0.4);
+    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + dur);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.bus);
+    src.start();
+
+    const osc = this.ctx.createOscillator();
+    const og = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 1.8);
+    og.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+    og.gain.exponentialRampToValueAtTime(0.16, this.ctx.currentTime + 0.3);
+    og.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 2.2);
+    osc.connect(og);
+    og.connect(this.bus);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 2.3);
+
+    this._tone(880, 2.0, 0.9, { gain: 0.1 });
+    this._tone(1320, 2.12, 0.9, { gain: 0.07 });
+  }
+
+  // ==========================================================
+  // 17. ПРИБЫТИЕ В ЭПОХУ
+  // Мягкий аккорд: «зрение проясняется».
+  // ==========================================================
+  arrival() {
+    this.init();
+    if (!this.enabled || !this.ctx || !this.bus) return;
+    this._tone(392, 0, 1.4, { gain: 0.12 });
+    this._tone(587.33, 0.12, 1.4, { gain: 0.09 });
+    this._tone(784, 0.24, 1.6, { gain: 0.07 });
+  }
+
+  // ==========================================================
+  // 18. КРИСТАЛЛ ВРЕМЕНИ
+  // ==========================================================
+  crystal() {
+    this.init();
+    if (!this.enabled || !this.ctx || !this.bus) return;
+    this._tone(1567.98, 0, 0.12, { gain: 0.08 });
+    this._tone(2093, 0.07, 0.2, { gain: 0.05 });
+  }
+
+  // ==========================================================
+  // 19. ТИХИЙ КЛИК
+  // ==========================================================
+  click() {
+    this.init();
+    if (!this.enabled || !this.ctx || !this.bus) return;
+    this._tone(1180, 0, 0.05, { gain: 0.04 });
   }
 }
 

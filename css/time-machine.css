@@ -1002,8 +1002,342 @@
   .tmq-warp { min-height: 340px; }
 }
 
+/* ==========================================================
+   КВАНТОВАЯ СЦЕНА ПРИВЕТСТВИЯ
+   Горизонт событий, аккреционный диск, орбиты, искры.
+   Никаких шахматных фигур — только свет и гравитация.
+   ========================================================== */
+.tmq-qscene {
+  position: relative;
+  height: clamp(176px, 44vw, 236px);
+  margin: 2px 0 18px;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(53, 214, 240, 0.16);
+  background:
+    radial-gradient(90% 70% at 50% 118%, rgba(53, 214, 240, 0.26), transparent 62%),
+    radial-gradient(70% 60% at 50% -10%, rgba(184, 158, 201, 0.18), transparent 60%),
+    linear-gradient(180deg, #03060b 0%, #05090f 55%, #020407 100%);
+  isolation: isolate;
+}
+
+.tmq-qglow {
+  position: absolute;
+  left: 50%;
+  top: 64%;
+  width: 120%;
+  height: 60%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, rgba(53, 214, 240, 0.35), transparent 70%);
+  filter: blur(18px);
+  z-index: 1;
+}
+
+.tmq-qdisk {
+  position: absolute;
+  left: 50%;
+  top: 64%;
+  width: 132%;
+  height: 62%;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    rgba(53, 214, 240, 0) 0deg,
+    rgba(53, 214, 240, 0.55) 38deg,
+    rgba(184, 158, 201, 0.18) 88deg,
+    rgba(212, 180, 117, 0.5) 150deg,
+    rgba(53, 214, 240, 0.1) 214deg,
+    rgba(53, 214, 240, 0.6) 298deg,
+    rgba(53, 214, 240, 0) 360deg);
+  filter: blur(7px);
+  transform: translate(-50%, -50%) scaleY(0.32);
+  animation: tmqDiskSpin 26s linear infinite;
+  z-index: 2;
+}
+
+@keyframes tmqDiskSpin {
+  from { transform: translate(-50%, -50%) scaleY(0.32) rotate(0deg); }
+  to { transform: translate(-50%, -50%) scaleY(0.32) rotate(360deg); }
+}
+
+.tmq-qring {
+  position: absolute;
+  left: 50%;
+  top: 64%;
+  border-radius: 50%;
+  border: 1px solid rgba(125, 227, 255, 0.22);
+  z-index: 4;
+}
+
+.tmq-qring.q1 { width: 96%; height: 34%; transform: translate(-50%, -50%) rotate(-7deg); }
+.tmq-qring.q2 { width: 78%; height: 24%; border-color: rgba(212, 180, 117, 0.22); transform: translate(-50%, -50%) rotate(5deg); }
+.tmq-qring.q3 { width: 116%; height: 44%; border-color: rgba(184, 158, 201, 0.14); transform: translate(-50%, -50%) rotate(-12deg); }
+
+.tmq-qcore {
+  position: absolute;
+  left: 50%;
+  top: 64%;
+  width: 44%;
+  height: 15%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #01040a;
+  z-index: 5;
+  animation: tmqCorePulse 4.2s ease-in-out infinite;
+}
+
+@keyframes tmqCorePulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(125, 227, 255, 0.5),
+      0 0 20px 2px rgba(53, 214, 240, 0.45),
+      0 0 60px 12px rgba(53, 214, 240, 0.14);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(160, 238, 255, 0.8),
+      0 0 30px 5px rgba(53, 214, 240, 0.7),
+      0 0 84px 22px rgba(53, 214, 240, 0.24);
+  }
+}
+
+.tmq-qflare {
+  position: absolute;
+  left: 50%;
+  top: 64%;
+  width: 24%;
+  height: 1px;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(90deg, transparent, #d8f8ff 35%, #ffffff 50%, #d8f8ff 65%, transparent);
+  box-shadow: 0 0 14px 2px rgba(125, 227, 255, 0.75);
+  z-index: 6;
+  animation: tmqFlare 5.2s ease-in-out infinite;
+}
+
+@keyframes tmqFlare {
+  0%, 100% { opacity: 0.45; width: 22%; }
+  50% { opacity: 1; width: 34%; }
+}
+
+.tmq-qspark {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #eafcff;
+  box-shadow: 0 0 10px 2px rgba(125, 227, 255, 0.85);
+  z-index: 6;
+  animation: tmqQspark 6s ease-in-out infinite;
+}
+
+.tmq-qspark.s1 { left: 14%; top: 34%; animation-delay: 0s; }
+.tmq-qspark.s2 { left: 26%; top: 72%; animation-delay: 1.1s; }
+.tmq-qspark.s3 { left: 68%; top: 26%; animation-delay: 2.2s; }
+.tmq-qspark.s4 { left: 82%; top: 62%; animation-delay: 3.1s; }
+.tmq-qspark.s5 { left: 50%; top: 16%; animation-delay: 4.2s; }
+
+@keyframes tmqQspark {
+  0%, 100% { transform: translateY(6px) scale(0.6); opacity: 0; }
+  35% { opacity: 1; }
+  70% { transform: translateY(-14px) scale(1.15); opacity: 0.85; }
+}
+
+.tmq-qgrain {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 3px 3px;
+  opacity: 0.4;
+  mix-blend-mode: screen;
+}
+
+/* ==========================================================
+   ПРИВЕТСТВИЕ: кикер + серифный заголовок + лид + CTA
+   ========================================================== */
+.tmq-welcome { display: flex; flex-direction: column; }
+
+.tmq-kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 2.6px;
+  text-transform: uppercase;
+  color: var(--cy);
+}
+
+.tmq-kicker::before {
+  content: '';
+  width: 20px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.65;
+}
+
+.tmq-display {
+  margin: 12px 0 0;
+  font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+  font-size: clamp(25px, 7vw, 34px);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: #f5f9fd;
+}
+
+.tmq-display em {
+  font-style: italic;
+  color: var(--gold);
+  text-shadow: 0 0 22px rgba(212, 180, 117, 0.35);
+}
+
+.tmq-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0 16px;
+}
+
+.tmq-chip {
+  padding: 5px 9px;
+  border: 1px solid rgba(53, 214, 240, 0.2);
+  background: rgba(53, 214, 240, 0.05);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: #a4c2d4;
+}
+
+.tmq-copy { display: grid; gap: 11px; }
+.tmq-copy p { margin: 0; font-size: 13.5px; line-height: 1.72; color: var(--text-2); }
+.tmq-copy p.is-lead { font-size: 15px; line-height: 1.62; color: #dce7f3; }
+
+.tmq-copy-quote {
+  padding-left: 13px;
+  border-left: 2px solid rgba(53, 214, 240, 0.4);
+}
+
+.tmq-copy-quote p {
+  font-family: Georgia, 'Iowan Old Style', serif;
+  font-size: 14.5px;
+  line-height: 1.75;
+  color: #dbe5f2;
+}
+
+.tmq-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 16px 18px;
+  border: 1px solid rgba(240, 217, 168, 0.6);
+  background: linear-gradient(120deg, #f3dfb0, #d4b475 55%, #b98f45);
+  color: #1a1206;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  animation: tmqCtaPulse 2.6s ease-in-out infinite;
+  transition: filter 0.18s ease, transform 0.18s ease;
+}
+
+.tmq-cta span { font-size: 15px; letter-spacing: 0; }
+.tmq-cta:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.tmq-cta:active { transform: translateY(1px); }
+
+@keyframes tmqCtaPulse {
+  0%, 100% { box-shadow: 0 0 20px -8px rgba(212, 180, 117, 0.75); }
+  50% { box-shadow: 0 0 34px 0 rgba(212, 180, 117, 0.9); }
+}
+
+.tmq-welcome-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.tmq-welcome-foot .tmq-btn { flex: 0 0 auto; }
+
+.tmq-fineprint {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 8px;
+  letter-spacing: 1.3px;
+  line-height: 1.8;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* ==========================================================
+   ЭКРАН «ВЫ ПРОСНУЛИСЬ»
+   ========================================================== */
+.tmq-awake { display: flex; flex-direction: column; }
+
+.tmq-awake-title {
+  margin: 10px 0 16px;
+  font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+  font-size: clamp(26px, 7.4vw, 34px);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: #f5f9fd;
+}
+
+.tmq-status {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin: 16px 0 4px;
+}
+
+.tmq-status-item {
+  padding: 9px 10px;
+  border: 1px solid var(--line-soft);
+  background: rgba(53, 214, 240, 0.03);
+}
+
+.tmq-status-item span {
+  display: block;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 7.5px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.tmq-status-item b {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+@media (max-width: 480px) {
+  .tmq-qscene { height: 168px; margin-bottom: 14px; }
+  .tmq-display { font-size: 24px; }
+  .tmq-awake-title { font-size: 26px; }
+  .tmq-copy p { font-size: 13px; }
+  .tmq-copy p.is-lead { font-size: 14px; }
+  .tmq-status { grid-template-columns: 1fr 1fr; }
+  .tmq-status-item:last-child { grid-column: span 2; }
+  .tmq-cta { padding: 15px 16px; font-size: 9.5px; letter-spacing: 1.8px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tmq-fig, .tmq-orbit, .tmq-floor, .tmq-spark, .tmq-boss-orb { animation: none; }
   .tmq-fig::after { animation: none; }
   .tmq-tunnel, .tmq-streaks, .tmq-warp-core { animation-duration: 0.001ms; }
+  .tmq-qdisk, .tmq-qcore, .tmq-qflare, .tmq-qspark, .tmq-cta { animation: none; }
 }

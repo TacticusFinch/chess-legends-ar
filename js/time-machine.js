@@ -258,17 +258,23 @@
     pawn: '<circle cx="60" cy="26" r="13"/><path d="M48 40h24l6 18H42z"/><path d="M38 62h44l7 20H31z"/><path d="M30 84h60l6 10H24z"/>'
   };
 
-  function hologram(piece) {
-    var body = PIECES[piece] || PIECES.king;
-    return '<div class="tmq-holo">' +
-      '<span class="tmq-ring r1"></span><span class="tmq-ring r2"></span><span class="tmq-ring r3"></span>' +
-      '<span class="tmq-orbit o1"><i></i></span><span class="tmq-orbit o2"><i></i></span>' +
-      '<div class="tmq-fig"><svg viewBox="0 0 120 100" aria-hidden="true">' +
-      '<g class="tmq-fig-halo">' + body + '</g><g class="tmq-fig-body">' + body + '</g>' +
-      '</svg></div>' +
-      '<span class="tmq-floor"></span>' +
-      '<span class="tmq-spark s1"></span><span class="tmq-spark s2"></span>' +
-      '<span class="tmq-spark s3"></span><span class="tmq-spark s4"></span>' +
+  /* Квантовая сцена приветствия: горизонт событий, аккреционный диск,
+     орбиты и искры. Без шахматных фигур. */
+  function quantumScene() {
+    return '<div class="tmq-qscene" aria-hidden="true">' +
+      '<span class="tmq-qglow"></span>' +
+      '<span class="tmq-qdisk"></span>' +
+      '<span class="tmq-qring q1"></span>' +
+      '<span class="tmq-qring q2"></span>' +
+      '<span class="tmq-qring q3"></span>' +
+      '<span class="tmq-qcore"></span>' +
+      '<span class="tmq-qflare"></span>' +
+      '<span class="tmq-qspark s1"></span>' +
+      '<span class="tmq-qspark s2"></span>' +
+      '<span class="tmq-qspark s3"></span>' +
+      '<span class="tmq-qspark s4"></span>' +
+      '<span class="tmq-qspark s5"></span>' +
+      '<span class="tmq-qgrain"></span>' +
       '</div>';
   }
 
@@ -337,13 +343,31 @@
 
     if (!quiz.length) return null;
 
+    var story = (window.QUEST_STORY && window.QUEST_STORY[hero.id]) || {};
+    var heroName = hero.name || 'Чемпион';
+    var eraLabel = eras.era || hero.title || 'эпоха чемпиона';
+
+    var welcome = (story.welcome && story.welcome.length) ? story.welcome : [
+      'Ты оживил карточку — и она стала билетом в прошлое. Теперь это не портрет, а дверь в эпоху, где жил и побеждал ' + heroName + '.',
+      'Машина времени настроена на ' + eraLabel + '. Впереди пять этапов: память чемпиона, пробуждение силы, скрытая угроза, пять дуэлей и партия с Хранителем времени.',
+      'Кристаллы времени уже светятся. Не теряй их зря — и не теряй жизней: их всего десять.'
+    ];
+
+    var awake = (story.awake && story.awake.length) ? story.awake : [
+      'Вы просыпаетесь в незнакомом месте. Воздух другой: ' + eraLabel + '. Слышно, как идёт чужая жизнь — и она теперь ваша.',
+      'Вы с удивлением осознаёте, что оказались в теле будущего чемпиона — ' + heroName + '. Руки помнят вес фигур, а в голове звучит чужая мысль.',
+      'Вам предстоит пройти его путь: пять этапов становления и финальная партия с Хранителем времени.'
+    ];
+
     return {
       id: hero.id || heroId,
-      name: hero.name || 'Чемпион',
-      shortName: (hero.name || 'Чемпион').split(' ').pop(),
-      era: eras.era || hero.title || 'эпоха чемпиона',
+      name: heroName,
+      shortName: heroName.split(' ').pop(),
+      era: eraLabel,
       piece: eras.piece || 'king',
       mission: data.mission || 'Пройти пять этапов пути и выстоять в партии с Хранителем времени.',
+      welcome: welcome,
+      awake: awake,
       quiz: quiz,
       attack: attack,
       defense: defense,
@@ -448,28 +472,65 @@
     renderLives(false);
     var q = state.quest;
     var rankName = (state.hero && state.hero.rank && state.hero.rank.name) ? state.hero.rank.name : 'ЛЕГЕНДА';
+    var story = q.welcome || [];
 
     setBody(
-      chapter('I', 'Пролог', q.era) +
-      hologram(q.piece) +
-      '<div class="tmq-greet">' +
-        '<div class="tmq-hello">Добро пожаловать<br>на турнир «Машина времени»!</div>' +
-        '<div class="tmq-lead">' + esc(q.era) + ' · ' + esc(q.name) + '</div>' +
-        '<div class="tmq-rank-chip">' + esc(rankName) + '</div>' +
-        '<div class="tmq-story"><p>' + esc(CONFIG.heroGreeting) + '</p>' +
-        '<p>' + esc(q.mission) + '</p></div>' +
-        '<div class="tmq-actions">' +
-          '<button class="tmq-btn tmq-btn-ghost" type="button" id="tmq-bio">Биография</button>' +
-          '<button class="tmq-btn" type="button" id="tmq-jump">Прыжок во времени</button>' +
+      quantumScene() +
+      '<div class="tmq-welcome">' +
+        '<div class="tmq-kicker">Сигнал принят · ' + esc(q.era) + '</div>' +
+        '<h2 class="tmq-display">Добро пожаловать<br>на турнир <em>«Машина времени»</em></h2>' +
+        '<div class="tmq-chips">' +
+          '<span class="tmq-chip">' + esc(q.name) + '</span>' +
+          '<span class="tmq-chip">' + esc(rankName) + '</span>' +
+          '<span class="tmq-chip">Пять этапов</span>' +
         '</div>' +
-        '<div class="tmq-hintline">Звук включён · квест можно закрыть и продолжить позже</div>' +
+        '<div class="tmq-copy">' +
+          story.map(function (t, i) {
+            return '<p class="' + (i === 0 ? 'is-lead' : '') + '">' + esc(t) + '</p>';
+          }).join('') +
+        '</div>' +
+        '<button class="tmq-cta" type="button" id="tmq-jump">Прыжок во времени<span aria-hidden="true">→</span></button>' +
+        '<div class="tmq-welcome-foot">' +
+          '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-bio">Биография чемпиона</button>' +
+          '<span class="tmq-fineprint">10 жизней · звук включён<br>путь можно продолжить позже</span>' +
+        '</div>' +
       '</div>'
     );
 
     dom.body.querySelector('#tmq-bio').addEventListener('click', renderBio);
     dom.body.querySelector('#tmq-jump').addEventListener('click', function () {
-      play('playUltimate');
+      play('warp');
       renderWarp();
+    });
+  }
+
+  /* Экран «Вы проснулись» — между варпом и картой этапов. */
+  function renderAwake() {
+    state.screen = 'awake';
+    renderLives(false);
+    var q = state.quest;
+    var lines = q.awake || [];
+
+    setBody(
+      '<div class="tmq-awake">' +
+        '<div class="tmq-kicker">Точка прибытия · ' + esc(q.era) + '</div>' +
+        '<h2 class="tmq-awake-title">Вы проснулись.</h2>' +
+        '<div class="tmq-copy tmq-copy-quote">' +
+          lines.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') +
+        '</div>' +
+        '<div class="tmq-status">' +
+          '<div class="tmq-status-item"><span>Состояние</span><b>дезориентация</b></div>' +
+          '<div class="tmq-status-item"><span>Тело</span><b>' + esc(q.shortName) + '</b></div>' +
+          '<div class="tmq-status-item"><span>Цель</span><b>корона</b></div>' +
+        '</div>' +
+        '<button class="tmq-cta" type="button" id="tmq-map">Увидеть карту пути<span aria-hidden="true">→</span></button>' +
+        '<div class="tmq-fineprint">Этап I позади · впереди пять испытаний</div>' +
+      '</div>'
+    );
+
+    dom.body.querySelector('#tmq-map').addEventListener('click', function () {
+      play('click');
+      renderMap(false);
     });
   }
 
@@ -490,7 +551,7 @@
 
     dom.body.querySelector('#tmq-bio-back').addEventListener('click', renderGreet);
     dom.body.querySelector('#tmq-bio-next').addEventListener('click', function () {
-      play('playUltimate');
+      play('warp');
       renderWarp();
     });
   }
@@ -501,7 +562,6 @@
   function renderWarp() {
     state.screen = 'warp';
     var q = state.quest;
-    play('playUltimate');
 
     setBody(
       '<div class="tmq-warp">' +
@@ -516,11 +576,10 @@
       '</div>'
     );
 
-    play('playBattleStart');
-
     after(2600, function () {
       state.stage = 0;
-      renderMap(true);
+      renderAwake();
+      play('arrival');
     });
   }
 
@@ -1196,7 +1255,7 @@
       renderMap(false);
     } else {
       renderGreet();
-      play('playUltimate');
+      play('choir');
     }
     return true;
   }
