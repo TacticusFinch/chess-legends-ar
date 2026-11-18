@@ -1,20 +1,29 @@
 /* ==========================================================
-   МАШИНА ВРЕМЕНИ — КВЕСТ (встраиваемая версия)
+   МАШИНА ВРЕМЕНИ — КВЕСТ (v5, классический скрипт)
 
-   Классический скрипт, без import/export. Сам создаёт DOM
-   внутри body, работает поверх AR-сцены.
+   Что изменилось против v4:
+   1. Приветствие без 3D-canvas: чистая типографика, статичная
+      временная шкала, две кнопки — «Прыжок во времени»
+      и «Биография чемпиона».
+   2. Новый верхний HUD: «город · год», подпись «чемпион · этап»,
+      жизни сегментами. Угловые «закорючки» убраны.
+   3. Перед каждым этапом — брифинг (renderBriefing): что будет,
+      как играть, сколько стоит ошибка.
+   4. Доска рисуется компонентом createBoard() — тем же, что
+      используется на тактической доске дуэли. Один вид, одна
+      палитра (--tmq-sq-light / --tmq-sq-dark).
+   5. При выборе фигуры подсвечиваются законные ходы
+      (ChessLite.moves → точки и кольца взятия).
 
-   Подключение (порядок важен):
-     heroes-data.js → quest-data.js → duel-puzzles.js → sound.js
-     → net-duel.js → time-machine.js → app.js
-
-   Этап 4 «Путь героя» идёт через NetDuel.startQuestDuel().
-   Этап 5 «Хранитель времени» — партия с ботом на Lichess.
+   Зависимости:
+     js/chess-lite.js  — обязательно
+     js/hp-fx.js       — числа урона на арене (этап IV)
+     js/quest-data.js  — данные квестов (QUEST_DATA и др.)
+     NetDuel.startQuestDuel() — этап IV
 
    API:
-     TimeMachineQuest.open(heroId)
-     TimeMachineQuest.start(heroId)
-     TimeMachineQuest.close()
+     TimeMachineQuest.open(heroId) / .start(heroId) / .close()
+     TimeMachineQuest.createBoard(host, fen, opts) — общая доска
    ========================================================== */
 (function () {
   'use strict';
@@ -24,20 +33,55 @@
     botName: 'Watson-bot',
     botUrl: 'https://lichess.org/@/Watson-bot',
     maxLives: 10,
-    storagePrefix: 'tmq_v4_',
+    storagePrefix: 'tmq_v5_',
     judgeCode: '2026',
-    heroGreeting: 'Ты оживил карточку чемпиона — и она стала дверью в его эпоху. Впереди пять этапов: память чемпиона, пробуждение силы, скрытая угроза, пять дуэлей и партия с Хранителем времени. На весь путь десять жизней.',
+    heroGreeting: 'Ты оживил карточку чемпиона — и она стала дверью в его эпоху.',
     route: [
-      { key: 'quiz', num: 'I', title: 'Вспомнить всё', sub: 'Биография до чемпионства', glyph: '❖',
-        text: 'Факты из жизни чемпиона до того, как он взял корону. Ошибка стоит жизни, но вопрос можно переиграть.' },
-      { key: 'attack', num: 'II', title: 'Пробуждение силы', sub: 'Задачи на атаку', glyph: '⚔',
-        text: 'Мат в один ход. Фигуры двигаются на доске — так же, как в тактической дуэли.' },
-      { key: 'defense', num: 'III', title: 'Скрытая угроза', sub: 'Задачи на защиту', glyph: '⛨',
-        text: 'Соперник уже грозит матом. Найдите единственный ход, который спасает позицию.' },
-      { key: 'duels', num: 'IV', title: 'Путь героя', sub: 'Пять дуэлей', glyph: '♞',
-        text: 'Настоящая арена NetDuel: 50 HP, атака, защита, коронный ход и тактическая доска на 30 секунд.' },
-      { key: 'final', num: 'V', title: 'Финальная схватка', sub: 'Хранитель времени', glyph: '♚',
-        text: 'Последний рубеж — партия с ботом турнира на Lichess и грамота финалиста.' }
+      {
+        key: 'quiz', num: 'I', title: 'Вспомнить всё', sub: 'Биография до чемпионства', glyph: '❖',
+        text: 'Факты из жизни чемпиона до того, как он взял корону.',
+        brief: [
+          ['Что будет', 'Вопросы о пути чемпиона: город, соперник, главная идея.'],
+          ['Как отвечать', 'Выберите один вариант — проверка сразу после нажатия.'],
+          ['Цена ошибки', 'Неверный ответ — минус одна жизнь. Вопрос можно переиграть.']
+        ]
+      },
+      {
+        key: 'attack', num: 'II', title: 'Пробуждение силы', sub: 'Задачи на атаку', glyph: '⚔',
+        text: 'Мат в один ход. Фигуры двигаются на доске так же, как в тактической дуэли.',
+        brief: [
+          ['Что будет', 'Две позиции, где нужно найти мат в один ход.'],
+          ['Как играть', 'Нажмите свою фигуру — подсветятся возможные ходы. Затем поле.'],
+          ['Цена ошибки', 'Неверный ход — минус одна жизнь. Подсказку можно открыть в любой момент.']
+        ]
+      },
+      {
+        key: 'defense', num: 'III', title: 'Скрытая угроза', sub: 'Задачи на защиту', glyph: '⛨',
+        text: 'Соперник уже грозит матом. Найдите единственный ход, который спасает позицию.',
+        brief: [
+          ['Что будет', 'Две позиции, где нужно найти защиту от угрозы.'],
+          ['Как играть', 'Подсветка показывает все законные ходы выбранной фигуры.'],
+          ['Цена ошибки', 'Неверный ход — минус одна жизнь, попытку можно повторить.']
+        ]
+      },
+      {
+        key: 'duels', num: 'IV', title: 'Путь героя', sub: 'Пять дуэлей', glyph: '♞',
+        text: 'Настоящая арена NetDuel: 50 HP, атака, защита, коронный ход и тактическая доска на 30 секунд.',
+        brief: [
+          ['Что будет', 'Пять соперников подряд, у каждого 50 HP.'],
+          ['Как играть', 'Атака, защита или скилл. Урон показывается всплывающими числами.'],
+          ['Цена ошибки', 'Поражение — минус одна жизнь и повтор рубежа.']
+        ]
+      },
+      {
+        key: 'final', num: 'V', title: 'Финальная схватка', sub: 'Хранитель времени', glyph: '♚',
+        text: 'Последний рубеж — партия с ботом турнира на Lichess и грамота финалиста.',
+        brief: [
+          ['Что будет', 'Партия с ботом турнира на Lichess.'],
+          ['Как играть', 'Выберите контроль времени, укажите ник, получите грамоту.'],
+          ['Цена ошибки', 'Жизни не тратятся: это финальный рубеж.']
+        ]
+      }
     ]
   };
 
@@ -58,7 +102,8 @@
     code: '',
     busy: false,
     inBattle: false,
-    timers: []
+    timers: [],
+    pending: null
   };
 
   var dom = null;
@@ -104,59 +149,24 @@
       init: init,
       choir: function () {
         init();
-        [261.63, 329.63, 392, 523.25].forEach(function (f, i) {
-          tone(f, i * 0.09, 3.2, 0.1, i % 2 ? 'triangle' : 'sine');
-        });
+        [261.63, 329.63, 392, 523.25].forEach(function (f, i) { tone(f, i * 0.09, 3.2, 0.1, i % 2 ? 'triangle' : 'sine'); });
         tone(1046.5, 1.1, 1.6, 0.05);
       },
-      warp: function () {
-        init();
-        if (!ctx) return;
-        var dur = 2.2;
-        var buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
-        var data = buf.getChannelData(0);
-        for (var i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
-        var src = ctx.createBufferSource();
-        src.buffer = buf;
-        var filter = ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.Q.value = 1.1;
-        filter.frequency.setValueAtTime(280, ctx.currentTime);
-        filter.frequency.exponentialRampToValueAtTime(4200, ctx.currentTime + dur);
-        var g = ctx.createGain();
-        g.gain.setValueAtTime(0.0001, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.35);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
-        src.connect(filter);
-        filter.connect(g);
-        g.connect(master);
-        src.start();
-        tone(170, 0, 1.8, 0.16, 'sawtooth', 38);
-        tone(880, 1.9, 0.9, 0.09);
-      },
       step: function () { tone(880, 0, 0.13, 0.05, 'triangle', 620); },
-      correct: function () {
-        [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) { tone(f, i * 0.06, 0.32, 0.1); });
-      },
+      correct: function () { [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) { tone(f, i * 0.06, 0.32, 0.1); }); },
       wrong: function () { tone(180, 0, 0.3, 0.14, 'sawtooth', 100); },
       fanfare: function () {
         [392, 523.25, 659.25, 783.99].forEach(function (f, i) { tone(f, i * 0.14, 0.9, 0.09); });
         [523.25, 659.25, 783.99].forEach(function (f) { tone(f, 0.7, 1.5, 0.07); });
+      },
+      warp: function () {
+        init();
+        if (!ctx) return;
+        tone(170, 0, 1.4, 0.14, 'sawtooth', 44);
+        tone(880, 1.2, 0.8, 0.08);
       }
     };
   })();
-
-  var SOUND_MAP = {
-    playUltimate: 'choir',
-    playMove: 'step',
-    playCorrect: 'correct',
-    playWrong: 'wrong',
-    playFanfare: 'fanfare',
-    playShield: 'correct',
-    playBattleStart: 'warp',
-    playAttackHit: 'wrong',
-    playDamageTaken: 'wrong'
-  };
 
   function unlockAudio() {
     try {
@@ -168,11 +178,13 @@
   function play(name) {
     try {
       unlockAudio();
-      var key = SOUND_MAP[name] || name;
-      if (typeof sfx !== 'undefined' && sfx && typeof sfx[name] === 'function') {
-        sfx[name]();
-        return;
-      }
+      if (typeof sfx !== 'undefined' && sfx && typeof sfx[name] === 'function') { sfx[name](); return; }
+      var alias = {
+        playMove: 'step', playCorrect: 'correct', playWrong: 'wrong',
+        playFanfare: 'fanfare', playUltimate: 'choir', playBattleStart: 'warp',
+        click: 'step', warp: 'warp', arrival: 'choir', playDamageTaken: 'wrong'
+      };
+      var key = alias[name] || name;
       if (typeof Sound[key] === 'function') Sound[key]();
     } catch (e) {}
   }
@@ -190,9 +202,7 @@
     });
   }
 
-  function rand(min, max) {
-    return min + Math.floor(Math.random() * (max - min + 1));
-  }
+  function rand(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
 
   function after(ms, fn) {
     var id = setTimeout(function () {
@@ -212,17 +222,12 @@
     return !!dom && dom.overlay.classList.contains('tmq-open');
   }
 
-  function storageKey() {
-    return CONFIG.storagePrefix + (state.heroId || 'unknown');
-  }
+  function storageKey() { return CONFIG.storagePrefix + (state.heroId || 'unknown'); }
 
   function saveProgress() {
     try {
       localStorage.setItem(storageKey(), JSON.stringify({
-        stage: state.stage,
-        step: state.step,
-        duelIdx: state.duelIdx,
-        lives: state.lives
+        stage: state.stage, step: state.step, duelIdx: state.duelIdx, lives: state.lives
       }));
     } catch (e) {}
   }
@@ -231,9 +236,7 @@
     try {
       var raw = localStorage.getItem(storageKey());
       return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      return null;
-    }
+    } catch (e) { return null; }
   }
 
   function heroNumericId(hero) {
@@ -248,215 +251,7 @@
   }
 
   /* ==========================================================
-     ГОЛОГРАММА
-     ========================================================== */
-  var PIECES = {
-    rook: '<path d="M30 20h10v10h10V20h10v10h10V20h10v20l-8 5v33H38V45l-8-5z"/><path d="M34 82h52l7 12H27z"/>',
-    queen: '<path d="M24 28l10 24h52l10-24-16 13-9-21-11 21-11-21-9 21z"/><path d="M34 56h52l5 18H29z"/><path d="M28 82h64l6 12H22z"/>',
-    king: '<path d="M54 8h12v12h12v12H66v12H54V32H42V20h12z"/><path d="M36 50h48l7 28H29z"/><path d="M26 84h68l6 10H20z"/>',
-    bishop: '<circle cx="60" cy="22" r="11"/><path d="M60 34l16 24H44z"/><path d="M44 62h32l6 18H38z"/><path d="M32 84h56l6 10H26z"/>',
-    pawn: '<circle cx="60" cy="26" r="13"/><path d="M48 40h24l6 18H42z"/><path d="M38 62h44l7 20H31z"/><path d="M30 84h60l6 10H24z"/>'
-  };
-
-  /* ==========================================================
-     КВАНТОВАЯ 3D-СЦЕНА (canvas, реальное время)
-     Сфера частиц с перспективой, три орбиты, сканирующая
-     полоса и бегущая телеметрия. Без библиотек.
-     ========================================================== */
-  var Quantum = { raf: 0, tel: 0, alive: false };
-  var TEL_MOVES = ['e4 e5', 'Nf3 Nc6', 'Bb5 a6', 'Ba4 Nf6', 'O-O Be7', 'Re1 b5', 'd4 c5', 'c3 Nf6'];
-
-  function quantumMarkup() {
-    var slots = '';
-    for (var i = 1; i <= 6; i++) slots += '<span class="tmq-tel-line t' + i + '"></span>';
-    return '<div class="tmq-q3d">' +
-      '<canvas class="tmq-q3d-canvas" id="tmq-qcanvas"></canvas>' +
-      '<div class="tmq-tel" aria-hidden="true">' + slots + '</div>' +
-      '</div>';
-  }
-
-  function stopQuantum() {
-    Quantum.alive = false;
-    if (Quantum.raf) { cancelAnimationFrame(Quantum.raf); Quantum.raf = 0; }
-    if (Quantum.tel) { clearInterval(Quantum.tel); Quantum.tel = 0; }
-  }
-
-  function clearWarp() {
-    if (!dom) return;
-    var node = dom.overlay.querySelector('.tmq-warpfull');
-    if (node && node.parentNode) node.parentNode.removeChild(node);
-    dom.overlay.classList.remove('tmq-warping');
-  }
-
-  function startQuantum(canvas) {
-    stopQuantum();
-    if (!canvas || !canvas.getContext) return;
-
-    var ctx = canvas.getContext('2d');
-    var dpr = Math.min(2, window.devicePixelRatio || 1);
-    var w = 1;
-    var h = 1;
-
-    function resize() {
-      var rect = canvas.getBoundingClientRect();
-      w = Math.max(1, rect.width);
-      h = Math.max(1, rect.height);
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    resize();
-
-    var pts = [];
-    var N = 260;
-    for (var i = 0; i < N; i++) {
-      var phi = Math.acos(1 - 2 * (i + 0.5) / N);
-      var theta = Math.PI * (1 + Math.sqrt(5)) * i;
-      pts.push({
-        x: Math.sin(phi) * Math.cos(theta),
-        y: Math.cos(phi),
-        z: Math.sin(phi) * Math.sin(theta),
-        s: 0.55 + Math.random() * 1.05
-      });
-    }
-
-    var orbits = [
-      { r: 1.02, tilt: 0.06, spin: 0.34, c: '53, 214, 240' },
-      { r: 1.2, tilt: 1.02, spin: -0.22, c: '212, 180, 117' },
-      { r: 0.86, tilt: -0.7, spin: 0.48, c: '184, 158, 201' }
-    ];
-
-    var t0 = performance.now();
-    Quantum.alive = true;
-
-    function frame(now) {
-      if (!Quantum.alive) return;
-      var t = (now - t0) / 1000;
-
-      ctx.clearRect(0, 0, w, h);
-
-      var cx = w / 2;
-      var cy = h / 2 + h * 0.05;
-      var R = Math.min(w * 0.4, h * 0.42);
-      var f = 3.1;
-      var ay = t * 0.32;
-      var ax = Math.sin(t * 0.2) * 0.36;
-
-      function project(x, y, z) {
-        var cyA = Math.cos(ay);
-        var syA = Math.sin(ay);
-        var x1 = x * cyA + z * syA;
-        var z1 = -x * syA + z * cyA;
-        var cxA = Math.cos(ax);
-        var sxA = Math.sin(ax);
-        var y1 = y * cxA - z1 * sxA;
-        var z2 = y * sxA + z1 * cxA;
-        var p = f / (f + z2);
-        return { x: cx + x1 * R * p, y: cy + y1 * R * p, z: z2 };
-      }
-
-      var halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.08);
-      halo.addColorStop(0, 'rgba(190,246,255,0.30)');
-      halo.addColorStop(0.3, 'rgba(53,214,240,0.14)');
-      halo.addColorStop(0.7, 'rgba(30,80,130,0.05)');
-      halo.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = halo;
-      ctx.beginPath();
-      ctx.arc(cx, cy, R * 1.08, 0, Math.PI * 2);
-      ctx.fill();
-
-      for (var oi = 0; oi < orbits.length; oi++) {
-        var o = orbits[oi];
-        var ct = Math.cos(o.tilt);
-        var st = Math.sin(o.tilt);
-        ctx.beginPath();
-        for (var k = 0; k <= 72; k++) {
-          var a = (k / 72) * Math.PI * 2 + t * o.spin;
-          var ox = Math.cos(a) * o.r;
-          var oz = Math.sin(a) * o.r;
-          var ry = -oz * st;
-          var rz = oz * ct;
-          var pr = project(ox, ry, rz);
-          if (k === 0) ctx.moveTo(pr.x, pr.y);
-          else ctx.lineTo(pr.x, pr.y);
-        }
-        ctx.strokeStyle = 'rgba(' + o.c + ',0.34)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-
-      var arr = [];
-      for (var j = 0; j < pts.length; j++) {
-        var pt = pts[j];
-        var pj = project(pt.x, pt.y, pt.z);
-        pj.depth = (pj.z + 1.5) / 3;
-        pj.r = 0.6 + Math.max(0, 1 - pj.depth) * 2.1 * pt.s;
-        arr.push(pj);
-      }
-      arr.sort(function (m, n) { return m.z - n.z; });
-
-      for (var q = 0; q < arr.length; q++) {
-        var d = arr[q];
-        var alpha = 0.1 + Math.max(0, 1 - d.depth) * 0.9;
-        if (alpha <= 0.03) continue;
-        ctx.beginPath();
-        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(150,236,255,' + alpha.toFixed(3) + ')';
-        ctx.fill();
-      }
-
-      var sy = ((t * 46) % (h + 80)) - 40;
-      var band = ctx.createLinearGradient(0, sy - 18, 0, sy + 18);
-      band.addColorStop(0, 'rgba(53,214,240,0)');
-      band.addColorStop(0.5, 'rgba(53,214,240,0.14)');
-      band.addColorStop(1, 'rgba(53,214,240,0)');
-      ctx.fillStyle = band;
-      ctx.fillRect(0, sy - 18, w, 36);
-
-      Quantum.raf = requestAnimationFrame(frame);
-    }
-
-    Quantum.raf = requestAnimationFrame(frame);
-
-    var host = canvas.parentNode;
-    var slots = host ? Array.prototype.slice.call(host.querySelectorAll('.tmq-tel-line')) : [];
-
-    function readout() {
-      var r = Math.random();
-      if (r < 0.26) return 'ΔT ' + (Math.random() * 0.01).toFixed(4);
-      if (r < 0.44) return 'PHASE ' + ('0' + Math.floor(Math.random() * 99)).slice(-2);
-      if (r < 0.62) return 'Q ' + ('000' + Math.floor(Math.random() * 9999)).slice(-4);
-      if (r < 0.74) return 'ENT ' + (Math.random() * 1.2).toFixed(3);
-      return TEL_MOVES[Math.floor(Math.random() * TEL_MOVES.length)];
-    }
-
-    function tick() {
-      if (!Quantum.alive || !slots.length) return;
-      var free = [];
-      for (var s = 0; s < slots.length; s++) {
-        if (!slots[s].dataset.busy) free.push(slots[s]);
-      }
-      if (!free.length) return;
-      var slot = free[Math.floor(Math.random() * free.length)];
-      slot.dataset.busy = '1';
-      slot.textContent = readout();
-      slot.classList.add('is-on');
-      setTimeout(function () {
-        slot.classList.remove('is-on');
-        setTimeout(function () {
-          slot.textContent = '';
-          delete slot.dataset.busy;
-        }, 560);
-      }, 1500 + Math.random() * 1200);
-    }
-
-    Quantum.tel = setInterval(tick, 460);
-    tick();
-    tick();
-  }
-
-  /* ==========================================================
-     СБОРКА ДАННЫХ КВЕСТА
+     ДАННЫЕ КВЕСТА
      ========================================================== */
   function fromHeroPuzzles(hero) {
     if (!hero || !hero.puzzles || !hero.puzzles.length) return [];
@@ -494,13 +289,11 @@
         return { enemyId: r.enemyId, name: r.n, years: r.y, style: r.s };
       });
     }
-
     if (typeof HERO_STATS_DATA === 'undefined' || typeof HEROES === 'undefined') return [];
     var ids = Object.keys(HERO_STATS_DATA)
       .map(Number)
       .filter(function (id) { return !isNaN(id) && id < 100 && HEROES[id] && HEROES[id].id !== hero.id; })
       .slice(0, 5);
-
     return ids.map(function (id, i) {
       return { enemyId: id, name: HEROES[id].name, years: 'Рубеж ' + (i + 1), style: 'Хранитель эпохи' };
     });
@@ -565,12 +358,18 @@
     overlay.innerHTML =
       '<div class="tmq-card" role="dialog" aria-modal="true" aria-label="Квест Машина времени">' +
         '<header class="tmq-head">' +
-          '<div class="tmq-head-info">' +
-            '<div class="tmq-epoch" id="tmq-epoch">—</div>' +
-            '<div class="tmq-lives-row"><span class="tmq-lives-label">жизни</span>' +
-              '<div class="tmq-lives" id="tmq-lives"></div></div>' +
+          '<div class="tmq-head-main">' +
+            '<div class="tmq-era">' +
+              '<span id="tmq-city">—</span>' +
+              '<span class="tmq-era-sep">·</span>' +
+              '<span class="tmq-era-year" id="tmq-year">—</span>' +
+            '</div>' +
+            '<div class="tmq-head-sub" id="tmq-head-sub">—</div>' +
           '</div>' +
-          '<button class="tmq-close" type="button" id="tmq-close" aria-label="Закрыть квест">✕</button>' +
+          '<div class="tmq-head-side">' +
+            '<div class="tmq-lives" id="tmq-lives"></div>' +
+            '<button class="tmq-close" type="button" id="tmq-close" aria-label="Закрыть квест">✕</button>' +
+          '</div>' +
         '</header>' +
         '<div class="tmq-body" id="tmq-body"></div>' +
       '</div>';
@@ -579,18 +378,19 @@
 
     dom = {
       overlay: overlay,
+      card: overlay.querySelector('.tmq-card'),
       body: overlay.querySelector('#tmq-body'),
       lives: overlay.querySelector('#tmq-lives'),
-      epoch: overlay.querySelector('#tmq-epoch'),
+      city: overlay.querySelector('#tmq-city'),
+      year: overlay.querySelector('#tmq-year'),
+      headSub: overlay.querySelector('#tmq-head-sub'),
       closeBtn: overlay.querySelector('#tmq-close')
     };
 
     dom.closeBtn.addEventListener('click', close);
-
     overlay.addEventListener('click', function (e) {
       if (e.target === overlay) close();
     });
-
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && isOpen()) close();
     });
@@ -598,15 +398,31 @@
     return dom;
   }
 
-  function renderLives(shake) {
-    if (!dom || !dom.lives) return;
+  function renderHead() {
+    if (!dom) return;
+    var q = state.quest || {};
+    var era = String(q.era || '');
+    var parts = era.split(',');
+
+    dom.city.textContent = (parts[0] || '—').trim();
+    dom.year.textContent = (parts[1] || '').trim() || '—';
+
+    var label;
+    if (state.stage >= CONFIG.route.length) label = 'финал пройден';
+    else label = 'этап ' + CONFIG.route[state.stage].num + ' из V · ' + CONFIG.route[state.stage].title;
+
+    dom.headSub.textContent = (q.name || 'Чемпион') + ' · ' + label;
+
     var out = '';
     for (var i = 1; i <= CONFIG.maxLives; i++) {
-      out += '<span class="tmq-heart' + (i <= state.lives ? '' : ' is-lost') + '">' +
-        (i <= state.lives ? '♥' : '♡') + '</span>';
+      out += '<i class="tmq-life' + (i <= state.lives ? '' : ' is-off') + '"></i>';
     }
-    dom.lives.innerHTML = out;
-    if (shake) {
+    dom.lives.innerHTML = out + '<b class="tmq-lives-num">' + state.lives + '/' + CONFIG.maxLives + '</b>';
+  }
+
+  function renderLives(shake) {
+    renderHead();
+    if (shake && dom.lives) {
       dom.lives.classList.remove('is-broken');
       void dom.lives.offsetWidth;
       dom.lives.classList.add('is-broken');
@@ -622,7 +438,7 @@
     play('playWrong');
     renderLives(true);
     if (state.lives <= 0) {
-      after(700, function () { renderGameOver(reason); });
+      after(650, function () { renderGameOver(reason); });
       return false;
     }
     return true;
@@ -637,37 +453,194 @@
   }
 
   function setBody(html) {
-    stopQuantum();
     clearWarp();
+    renderHead();
     dom.body.innerHTML = html;
     dom.body.scrollTop = 0;
   }
 
+  function clearWarp() {
+    if (!dom) return;
+    var node = dom.overlay.querySelector('.tmq-warp') || dom.overlay.querySelector('.tmq-warpfull');
+    if (node && node.parentNode) node.parentNode.removeChild(node);
+    dom.overlay.classList.remove('tmq-warping');
+    if (typeof stopWarpFx === 'function') stopWarpFx();
+  }
+
   /* ==========================================================
-     I. ПРИВЕТСТВИЕ
+     ДОСКА — общий компонент (квест + дуэль)
+     ========================================================== */
+  var GLYPH = {
+    K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙',
+    k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟'
+  };
+
+  function createBoard(host, fen, opts) {
+    opts = opts || {};
+    var files = 'abcdefgh';
+    var curFen = fen;
+    var pos = ChessLite.parse(curFen);
+    var selected = null;
+    var locked = false;
+    var cells = {};
+
+    var grid = document.createElement('div');
+    grid.className = 'tmq-board';
+    host.innerHTML = '';
+    host.appendChild(grid);
+
+    function mkLabel(cls, text) {
+      var i = document.createElement('i');
+      i.className = 'tmq-lbl ' + cls;
+      i.textContent = text;
+      return i;
+    }
+
+    function paint() {
+      grid.innerHTML = '';
+      cells = {};
+      for (var rank = 8; rank >= 1; rank--) {
+        for (var f = 0; f < 8; f++) {
+          var sq = files[f] + rank;
+          var cell = document.createElement('button');
+          cell.type = 'button';
+          cell.className = 'tmq-sq ' + (((f + rank) % 2 === 1) ? 'is-dark' : 'is-light');
+          cell.setAttribute('data-sq', sq);
+          cell.setAttribute('aria-label', 'Поле ' + sq);
+
+          var piece = pos.board[sq];
+          if (piece) {
+            var span = document.createElement('span');
+            span.className = 'tmq-pc ' + (piece === piece.toUpperCase() ? 'is-w' : 'is-b');
+            span.textContent = GLYPH[piece] || '';
+            cell.appendChild(span);
+          }
+          if (f === 0) cell.appendChild(mkLabel('tmq-lbl-rank', String(rank)));
+          if (rank === 1) cell.appendChild(mkLabel('tmq-lbl-file', files[f]));
+
+          cells[sq] = cell;
+          grid.appendChild(cell);
+        }
+      }
+    }
+
+    function clearMarks() {
+      for (var sq in cells) {
+        cells[sq].classList.remove('is-sel');
+        var dots = cells[sq].querySelectorAll('.tmq-dot, .tmq-ring');
+        for (var i = 0; i < dots.length; i++) dots[i].parentNode.removeChild(dots[i]);
+      }
+      selected = null;
+    }
+
+    function select(sq) {
+      clearMarks();
+      selected = sq;
+      cells[sq].classList.add('is-sel');
+
+      var list = ChessLite.moves(curFen, sq);
+      for (var i = 0; i < list.length; i++) {
+        var target = cells[list[i].to];
+        if (!target) continue;
+        var mark = document.createElement('i');
+        mark.className = list[i].capture ? 'tmq-ring' : 'tmq-dot';
+        target.appendChild(mark);
+      }
+      play('playMove');
+    }
+
+    function commit(from, to) {
+      locked = true;
+      clearMarks();
+
+      var correct = !opts.solution || (from === opts.solution.from && to === opts.solution.to);
+
+      if (correct) {
+        if (cells[from]) cells[from].classList.add('is-ok-from');
+        if (cells[to]) cells[to].classList.add('is-ok-to');
+
+        var next = ChessLite.apply(curFen, from, to);
+        setTimeout(function () {
+          curFen = next;
+          pos = ChessLite.parse(curFen);
+          paint();
+          if (cells[from]) cells[from].classList.add('is-ok-from');
+          if (cells[to]) cells[to].classList.add('is-ok-to');
+          if (opts.onResult) opts.onResult(true, from, to);
+        }, 220);
+      } else {
+        if (cells[from]) cells[from].classList.add('is-bad-from');
+        if (cells[to]) cells[to].classList.add('is-bad-to');
+        host.classList.remove('is-shake');
+        void host.offsetWidth;
+        host.classList.add('is-shake');
+        if (opts.onResult) opts.onResult(false, from, to);
+        setTimeout(function () {
+          for (var sq in cells) cells[sq].classList.remove('is-bad-from', 'is-bad-to');
+          locked = false;
+        }, 780);
+      }
+    }
+
+    grid.addEventListener('click', function (e) {
+      var cell = e.target.closest ? e.target.closest('.tmq-sq') : null;
+      if (!cell || locked) return;
+      var sq = cell.getAttribute('data-sq');
+      var piece = pos.board[sq];
+
+      if (selected && sq === selected) { clearMarks(); return; }
+
+      if (selected) {
+        var list = ChessLite.moves(curFen, selected);
+        for (var i = 0; i < list.length; i++) {
+          if (list[i].to === sq) { commit(selected, sq); return; }
+        }
+      }
+
+      if (piece && ChessLite.colorOf(piece) === pos.turn) { select(sq); return; }
+      clearMarks();
+    });
+
+    paint();
+
+    return {
+      el: grid,
+      getFen: function () { return curFen; },
+      setFen: function (f) {
+        curFen = f;
+        pos = ChessLite.parse(f);
+        locked = false;
+        clearMarks();
+        paint();
+      },
+      destroy: function () { host.innerHTML = ''; }
+    };
+  }
+
+  /* ==========================================================
+     I. ПРИВЕТСТВИЕ — лаконичный экран
+     Один шрифт, без курсива, без перечня этапов:
+     эмблема → приветствие турнира → карточка чемпиона →
+     одна строка текста → две кнопки.
      ========================================================== */
   function renderGreet() {
     state.screen = 'greet';
-    renderLives(false);
     var q = state.quest;
-    var story = q.welcome || [];
 
     setBody(
-      quantumMarkup() +
       '<div class="tmq-welcome">' +
-        '<div class="tmq-kicker">' + esc(q.era) + '</div>' +
-        '<h2 class="tmq-display">Добро пожаловать<br><em>на турнир «Машина времени»</em></h2>' +
-        '<div class="tmq-copy">' +
-          story.map(function (t, i) {
-            return '<p class="' + (i === 0 ? 'is-lead' : '') + '">' + esc(t) + '</p>';
-          }).join('') +
+        '<div class="tmq-emblem" aria-hidden="true">♞</div>' +
+        '<div class="tmq-kicker">Турнир · ' + esc(CONFIG.dates) + '</div>' +
+        '<h2 class="tmq-welcome-title">Добро пожаловать на турнир «Машина времени»</h2>' +
+        '<div class="tmq-champion">' +
+          '<span class="tmq-champion-name">' + esc(q.name) + '</span>' +
+          '<span class="tmq-champion-era">' + esc(q.era) + '</span>' +
         '</div>' +
-        '<button class="tmq-cta" type="button" id="tmq-jump">Прыжок во времени<span aria-hidden="true">→</span></button>' +
-        '<button class="tmq-bio-link" type="button" id="tmq-bio">Биография чемпиона</button>' +
+        '<p class="tmq-welcome-text">Карточка ожила. Машина времени настроена — остался один шаг.</p>' +
+        '<button class="tmq-cta" type="button" id="tmq-jump">Прыжок во времени <span aria-hidden="true">→</span></button>' +
+        '<button class="tmq-link" type="button" id="tmq-bio">Биография чемпиона</button>' +
       '</div>'
     );
-
-    startQuantum(document.getElementById('tmq-qcanvas'));
 
     dom.body.querySelector('#tmq-bio').addEventListener('click', function () {
       play('click');
@@ -679,80 +652,6 @@
     });
   }
 
-  /* Экран «Вы проснулись» — между варпом и картой этапов. */
-  function renderAwake() {
-    state.screen = 'awake';
-    renderLives(false);
-    var q = state.quest;
-    var lines = q.awake || [];
-
-    setBody(
-      '<div class="tmq-awake">' +
-        '<div class="tmq-kicker">' + esc(q.era) + '</div>' +
-        '<h2 class="tmq-awake-title">Вы проснулись.</h2>' +
-        '<div class="tmq-copy tmq-copy-quote">' +
-          lines.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') +
-        '</div>' +
-        '<button class="tmq-cta" type="button" id="tmq-map">Карта пути<span aria-hidden="true">→</span></button>' +
-      '</div>'
-    );
-
-    dom.body.querySelector('#tmq-map').addEventListener('click', function () {
-      play('click');
-      renderMap(false);
-    });
-  }
-
-  /* ==========================================================
-     ПОЗДРАВЛЕНИЕ после этапа и после поверженного соперника
-     ========================================================== */
-  var STAGE_LINES = [
-    'Память чемпиона восстановлена. Теперь вы знаете, откуда он пришёл.',
-    'Сила проснулась. Атака стала инструментом, а не загадкой.',
-    'Вы увидели угрозу раньше, чем она появилась.',
-    'Пять соперников позади. Путь героя пройден.'
-  ];
-
-  function renderCongrats(kind, opts) {
-    state.screen = 'congrats';
-    var o = opts || {};
-    var isStage = kind === 'stage';
-    var route = CONFIG.route[o.index || 0] || {};
-    var kicker;
-    var title;
-    var line;
-
-    if (isStage) {
-      kicker = 'Этап ' + (route.num || '') + ' из V';
-      title = esc(route.title || 'Этап') + '<br><em>пройден</em>';
-      line = o.line || 'Идём дальше.';
-    } else {
-      kicker = 'Дуэль ' + ((o.idx || 0) + 1) + ' из ' + (o.total || 5);
-      title = esc(o.name || 'Соперник') + '<br><em>повержен</em>';
-      line = 'Рубеж взят. Следующий соперник уже за доской.';
-    }
-
-    state.pending = o.next || null;
-
-    setBody(
-      '<div class="tmq-done">' +
-        '<div class="tmq-done-badge">✓</div>' +
-        '<div class="tmq-kicker">' + kicker + '</div>' +
-        '<h2 class="tmq-display">' + title + '</h2>' +
-        '<p class="tmq-done-text">' + line + '</p>' +
-        '<button class="tmq-cta" type="button" id="tmq-done-next">Дальше<span aria-hidden="true">→</span></button>' +
-      '</div>'
-    );
-
-    dom.body.querySelector('#tmq-done-next').addEventListener('click', function () {
-      play('click');
-      var fn = state.pending;
-      state.pending = null;
-      if (typeof fn === 'function') fn();
-      else renderMap(false);
-    });
-  }
-
   function renderBio() {
     var bio = (state.hero && state.hero.bio) ? state.hero.bio : [];
     setBody(
@@ -760,12 +659,14 @@
         '<span class="tmq-badge">Хроники · ' + esc(state.quest.name) + '</span>' +
         '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-bio-back">Назад</button>' +
       '</div>' +
-      '<div class="tmq-story">' +
-        bio.map(function (s) {
-          return '<p><strong>' + esc(s.title) + '</strong><br>' + esc(s.text) + '</p>';
-        }).join('') +
+      '<div class="tmq-copy">' +
+        (bio.length
+          ? bio.map(function (s) {
+              return '<p><strong>' + esc(s.title) + '</strong><br>' + esc(s.text) + '</p>';
+            }).join('')
+          : '<p>Биография этой карточки ещё не заполнена.</p>') +
       '</div>' +
-      '<button class="tmq-btn" type="button" id="tmq-bio-next">Прыжок во времени</button>'
+      '<button class="tmq-cta" type="button" id="tmq-bio-next">Прыжок во времени <span aria-hidden="true">→</span></button>'
     );
 
     dom.body.querySelector('#tmq-bio-back').addEventListener('click', renderGreet);
@@ -776,44 +677,159 @@
   }
 
   /* ==========================================================
-     II. ВАРП
+     II. ВАРП-ПРЫЖОК — зрелищная последовательность
+
+     Слои: canvas-звёзды (разгон из центра), световое ядро,
+     три расходящихся кольца, диагональные лучи, панель с
+     названием эпохи, шкала перехода и вспышка на выходе.
+     Всё рисуется 2,6 секунды, затем экран «Вы проснулись».
      ========================================================== */
+  var WarpFx = { raf: 0, alive: false };
+
+  function stopWarpFx() {
+    WarpFx.alive = false;
+    if (WarpFx.raf) {
+      cancelAnimationFrame(WarpFx.raf);
+      WarpFx.raf = 0;
+    }
+  }
+
+  function startWarpStars(canvas) {
+    stopWarpFx();
+    if (!canvas || !canvas.getContext) return;
+
+    var ctx = canvas.getContext('2d');
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var w = 1;
+    var h = 1;
+
+    function resize() {
+      var rect = canvas.getBoundingClientRect();
+      w = Math.max(1, rect.width);
+      h = Math.max(1, rect.height);
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+
+    var stars = [];
+    for (var i = 0; i < 160; i++) {
+      stars.push({
+        a: Math.random() * Math.PI * 2,
+        d: Math.random() * 0.5,
+        v: 0.55 + Math.random() * 1.5,
+        s: 0.6 + Math.random() * 1.5
+      });
+    }
+
+    var t0 = performance.now();
+    WarpFx.alive = true;
+
+    function frame(now) {
+      if (!WarpFx.alive) return;
+      var t = (now - t0) / 1000;
+      ctx.clearRect(0, 0, w, h);
+
+      var cx = w / 2;
+      var cy = h / 2;
+      var maxD = Math.sqrt(w * w + h * h) * 0.62;
+
+      for (var k = 0; k < stars.length; k++) {
+        var st = stars[k];
+        var d = (st.d + t * st.v * 0.62) % 1;
+        var r = d * maxD;
+        var r0 = Math.max(0, d - 0.05) * maxD;
+        var ca = Math.cos(st.a);
+        var sa = Math.sin(st.a);
+        var alpha = Math.min(1, d * 1.7);
+
+        ctx.strokeStyle = 'rgba(170,236,255,' + (alpha * 0.85).toFixed(3) + ')';
+        ctx.lineWidth = st.s * (0.5 + d * 1.7);
+        ctx.beginPath();
+        ctx.moveTo(cx + ca * r0, cy + sa * r0);
+        ctx.lineTo(cx + ca * r, cy + sa * r);
+        ctx.stroke();
+      }
+
+      WarpFx.raf = requestAnimationFrame(frame);
+    }
+    WarpFx.raf = requestAnimationFrame(frame);
+  }
+
   function renderWarp() {
     state.screen = 'warp';
     var q = state.quest;
 
-    stopQuantum();
     setBody('');
-
     var warp = document.createElement('div');
-    warp.className = 'tmq-warpfull';
+    warp.className = 'tmq-warp';
     warp.innerHTML =
-      '<div class="tmq-tunnel"></div>' +
-      '<div class="tmq-streaks"></div>' +
-      '<div class="tmq-warp-core"></div>' +
-      '<div class="tmq-warp-text">' +
+      '<canvas class="tmq-warp-stars" id="tmq-warp-stars"></canvas>' +
+      '<div class="tmq-warp-glow"></div>' +
+      '<div class="tmq-warp-rings"><i></i><i></i><i></i></div>' +
+      '<div class="tmq-warp-beams"><i></i><i></i><i></i></div>' +
+      '<div class="tmq-warp-panel">' +
         '<div class="tmq-warp-label">ВАРП-ПРЫЖОК</div>' +
         '<div class="tmq-warp-target">' + esc(q.era) + '</div>' +
-      '</div>';
+        '<div class="tmq-warp-progress"><i></i></div>' +
+        '<div class="tmq-warp-status" id="tmq-warp-status">стабилизация канала</div>' +
+      '</div>' +
+      '<div class="tmq-warp-flash"></div>';
 
     dom.overlay.appendChild(warp);
     dom.overlay.classList.add('tmq-warping');
 
-    after(2600, function () {
-      state.stage = 0;
+    startWarpStars(warp.querySelector('#tmq-warp-stars'));
+
+    var status = warp.querySelector('#tmq-warp-status');
+
+    after(700, function () { if (status) status.textContent = 'расчёт координат'; });
+    after(1400, function () { if (status) status.textContent = 'переход сквозь эпоху'; });
+    after(2050, function () {
+      if (status) status.textContent = 'прибытие';
+      warp.classList.add('is-flash');
+      if (navigator.vibrate) {
+        try { navigator.vibrate([18, 40, 26]); } catch (e) {}
+      }
+    });
+    after(2560, function () {
+      stopWarpFx();
+      state.stage = Math.max(state.stage, 0);
       renderAwake();
       play('arrival');
     });
   }
 
   /* ==========================================================
-     III. КАРТА ПЯТИ ЭТАПОВ
+     III. «ВЫ ПРОСНУЛИСЬ» И КАРТА ПУТИ
      ========================================================== */
-  function renderMap(fresh) {
-    state.screen = 'map';
-    renderLives(false);
+  function renderAwake() {
+    state.screen = 'awake';
     var q = state.quest;
-    var current = state.stage; // 0..5
+    var lines = q.awake || [];
+
+    setBody(
+      '<div class="tmq-awake">' +
+        '<div class="tmq-kicker">' + esc(q.era) + '</div>' +
+        '<h2 class="tmq-awake-title">Вы проснулись.</h2>' +
+        '<div class="tmq-copy tmq-copy-quote">' +
+          lines.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') +
+        '</div>' +
+        '<button class="tmq-cta" type="button" id="tmq-map">Карта пути <span aria-hidden="true">→</span></button>' +
+      '</div>'
+    );
+
+    dom.body.querySelector('#tmq-map').addEventListener('click', function () {
+      play('click');
+      renderMap(false);
+    });
+  }
+
+  function renderMap() {
+    state.screen = 'map';
+    var q = state.quest;
+    var current = state.stage;
 
     var cards = CONFIG.route.map(function (item, i) {
       var status = i < current ? 'done' : i === current ? 'active' : 'locked';
@@ -825,7 +841,7 @@
         : 'Lichess';
 
       return '<article class="tmq-route ' + status + '">' +
-        '<div class="tmq-rail"><span class="tmq-dot">' + (status === 'done' ? '✓' : item.num) + '</span>' +
+        '<div class="tmq-rail"><span class="tmq-node">' + (status === 'done' ? '✓' : esc(item.num)) + '</span>' +
         '<span class="tmq-rail-line"></span></div>' +
         '<div class="tmq-route-body">' +
           '<div class="tmq-route-top"><span class="tmq-route-glyph">' + item.glyph + '</span>' +
@@ -840,28 +856,65 @@
     }).join('');
 
     setBody(
-      chapter(fresh ? 'II' : '···', fresh ? 'Дверь открыта' : 'Карта пути', q.era) +
-      '<div class="tmq-title">' + (fresh ? 'Вы проснулись в ' + esc(q.era) : 'Пять этапов становления') + '</div>' +
-      '<div class="tmq-story"><p>' + esc(q.mission) + '</p></div>' +
-      '<div class="tmq-route-list">' + cards + '</div>'
+      chapter('···', 'Карта пути', q.era) +
+      '<div class="tmq-title">Пять этапов становления</div>' +
+      '<div class="tmq-copy"><p class="is-lead">' + esc(q.mission) + '</p></div>' +
+      '<div class="tmq-route-list">' + cards + '</div>' +
+      '<div class="tmq-fineprint">Ошибка −1 ♥ · поражение в дуэли −1 ♥ и повтор рубежа</div>'
     );
 
     var buttons = dom.body.querySelectorAll('[data-enter]');
     Array.prototype.forEach.call(buttons, function (btn) {
       btn.addEventListener('click', function () {
         play('playMove');
-        enterStage();
+        renderBriefing(Number(btn.getAttribute('data-enter')));
       });
     });
   }
 
-  function enterStage() {
-    var key = CONFIG.route[state.stage] ? CONFIG.route[state.stage].key : 'final';
-    state.step = 0;
-    state.answered = false;
-    state.chosen = null;
-    state.missed = false;
+  /* ==========================================================
+     IV. БРИФИНГ ПЕРЕД ЭТАПОМ
+     ========================================================== */
+  function renderBriefing(index) {
+    state.screen = 'briefing';
+    state.stage = index;
+    saveProgress();
 
+    var route = CONFIG.route[index];
+    if (!route) { renderMap(); return; }
+
+    var rows = (route.brief || []).map(function (row) {
+      return '<div class="tmq-brief-row">' +
+        '<span class="tmq-brief-key">' + esc(row[0]) + '</span>' +
+        '<span class="tmq-brief-val">' + esc(row[1]) + '</span>' +
+        '</div>';
+    }).join('');
+
+    setBody(
+      chapter(route.num, route.title, 'перед стартом') +
+      '<div class="tmq-title">' + esc(route.title) + '</div>' +
+      '<div class="tmq-sub">' + esc(route.sub) + '</div>' +
+      '<div class="tmq-copy"><p class="is-lead">' + esc(route.text) + '</p></div>' +
+      '<div class="tmq-brief">' + rows + '</div>' +
+      '<button class="tmq-cta" type="button" id="tmq-start">Начать этап <span aria-hidden="true">→</span></button>' +
+      '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-back">К карте пути</button>'
+    );
+
+    dom.body.querySelector('#tmq-start').addEventListener('click', function () {
+      play('playMove');
+      state.step = 0;
+      state.answered = false;
+      state.chosen = null;
+      state.missed = false;
+      enterStage(route.key);
+    });
+    dom.body.querySelector('#tmq-back').addEventListener('click', function () {
+      play('click');
+      renderMap();
+    });
+  }
+
+  function enterStage(key) {
     if (key === 'quiz') renderQuiz();
     else if (key === 'attack') renderPuzzle('attack');
     else if (key === 'defense') renderPuzzle('defense');
@@ -870,7 +923,7 @@
   }
 
   /* ==========================================================
-     IV. БИОГРАФИЯ
+     V. ВОПРОСЫ
      ========================================================== */
   function renderQuiz() {
     state.screen = 'quiz';
@@ -900,7 +953,9 @@
     if (state.answered && chosen) {
       feedback = '<div class="tmq-feedback ' + (chosen.correct ? 'is-ok' : 'is-bad') + '">' +
         '<b>' + (chosen.correct ? 'Верно.' : 'Неверно.') + '</b> ' + esc(chosen.comment) +
-        (!chosen.correct && correct ? '<br><span class="tmq-dimline">Правильный ответ: ' + esc(correct.text) + '. ' + esc(correct.comment) + '</span>' : '') +
+        (!chosen.correct && correct
+          ? '<br><span class="tmq-dimline">Правильный ответ: ' + esc(correct.text) + '. ' + esc(correct.comment) + '</span>'
+          : '') +
         '<div class="tmq-actions"><button class="tmq-btn tmq-btn-sm" type="button" id="tmq-quiz-next">' +
         (chosen.correct ? (state.step < total - 1 ? 'Дальше' : 'К карте пути') : 'Попробовать снова') +
         '</button></div></div>';
@@ -920,10 +975,8 @@
         var idx = Number(btn.getAttribute('data-opt'));
         state.chosen = idx;
         state.answered = true;
-
         if (item.options[idx].correct) play('playCorrect');
         else loseLife('Ошибка в факте биографии чемпиона');
-
         if (state.lives > 0) renderQuiz();
       });
     });
@@ -953,136 +1006,8 @@
   }
 
   /* ==========================================================
-     V. ЗАДАЧИ НА ДОСКЕ
+     VI. ЗАДАЧИ НА ДОСКЕ
      ========================================================== */
-  var FILES = 'abcdefgh';
-  var GLYPH = {
-    K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙',
-    k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟'
-  };
-
-  function parseFen(fen) {
-    var parts = String(fen).split(' ');
-    var map = {};
-    (parts[0] || '').split('/').forEach(function (row, i) {
-      var rank = 8 - i;
-      var file = 0;
-      for (var c = 0; c < row.length; c++) {
-        var ch = row[c];
-        if (ch >= '1' && ch <= '8') file += Number(ch);
-        else { map[FILES[file] + rank] = ch; file++; }
-      }
-    });
-    return { map: map, turn: parts[1] || 'w' };
-  }
-
-  function isLegal(fen, from, to) {
-    if (typeof Chess === 'undefined') return true;
-    try {
-      var game = new Chess(fen);
-      return !!game.move({ from: from, to: to, promotion: 'q' });
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function paintBoard(host, fen, solution, onResult) {
-    var parsed = parseFen(fen);
-    var map = parsed.map;
-    var turn = parsed.turn;
-    var selected = null;
-
-    host.innerHTML = '';
-    var grid = document.createElement('div');
-    grid.className = 'tmq-board';
-    var cells = {};
-
-    for (var rank = 8; rank >= 1; rank--) {
-      for (var file = 0; file < 8; file++) {
-        var sq = FILES[file] + rank;
-        var cell = document.createElement('button');
-        cell.type = 'button';
-        cell.className = 'tmq-sq ' + ((file + rank) % 2 === 1 ? 'is-dark' : 'is-light');
-        cell.setAttribute('data-sq', sq);
-        cell.setAttribute('aria-label', 'Поле ' + sq);
-
-        var piece = map[sq];
-        if (piece) {
-          var span = document.createElement('span');
-          span.className = 'tmq-pc ' + (piece === piece.toUpperCase() ? 'is-w' : 'is-b');
-          span.textContent = GLYPH[piece] || '';
-          cell.appendChild(span);
-        }
-
-        if (file === 0) {
-          var rl = document.createElement('i');
-          rl.className = 'tmq-lbl tmq-lbl-rank';
-          rl.textContent = String(rank);
-          cell.appendChild(rl);
-        }
-        if (rank === 1) {
-          var fl = document.createElement('i');
-          fl.className = 'tmq-lbl tmq-lbl-file';
-          fl.textContent = FILES[file];
-          cell.appendChild(fl);
-        }
-
-        cells[sq] = cell;
-        grid.appendChild(cell);
-      }
-    }
-
-    host.appendChild(grid);
-
-    grid.addEventListener('click', function (event) {
-      var cell = event.target.closest('.tmq-sq');
-      if (!cell) return;
-      var sq = cell.getAttribute('data-sq');
-      var piece = map[sq];
-      var color = piece ? (piece === piece.toUpperCase() ? 'w' : 'b') : null;
-
-      if (selected === sq) {
-        cells[sq].classList.remove('is-sel');
-        selected = null;
-        return;
-      }
-
-      if (color && color === turn) {
-        if (selected) cells[selected].classList.remove('is-sel');
-        selected = sq;
-        cell.classList.add('is-sel');
-        play('playMove');
-        return;
-      }
-
-      if (!selected) return;
-
-      var from = selected;
-      cells[from].classList.remove('is-sel');
-      selected = null;
-
-      if (!isLegal(fen, from, sq)) return;
-
-      if (from === solution.from && sq === solution.to) {
-        cells[from].classList.add('is-ok-from');
-        cells[sq].classList.add('is-ok-to');
-        onResult(true);
-      } else {
-        cells[from].classList.add('is-bad-from');
-        cells[sq].classList.add('is-bad-to');
-        host.classList.remove('is-shake');
-        void host.offsetWidth;
-        host.classList.add('is-shake');
-        onResult(false);
-        setTimeout(function () {
-          Array.prototype.forEach.call(grid.children, function (c) {
-            c.classList.remove('is-bad-from', 'is-bad-to');
-          });
-        }, 900);
-      }
-    });
-  }
-
   function renderPuzzle(kind) {
     state.screen = kind;
     var q = state.quest;
@@ -1106,11 +1031,13 @@
     );
 
     var host = dom.body.querySelector('#tmq-board');
-    paintBoard(host, item.fen, item, function (ok) {
-      if (ok) {
-        play('playCorrect');
-        var fb = dom.body.querySelector('#tmq-puzzle-fb');
-        if (fb) {
+    createBoard(host, item.fen, {
+      solution: { from: item.from, to: item.to },
+      onResult: function (ok) {
+        if (ok) {
+          play('playCorrect');
+          var fb = dom.body.querySelector('#tmq-puzzle-fb');
+          if (!fb) return;
           fb.innerHTML = '<div class="tmq-feedback is-ok"><b>Точный ход!</b> ' + esc(item.why) +
             '<div class="tmq-actions"><button class="tmq-btn tmq-btn-sm" type="button" id="tmq-puzzle-next">' +
             (state.step < list.length - 1 ? 'Дальше' : 'К карте пути') + '</button></div></div>';
@@ -1125,13 +1052,13 @@
               finishStage();
             }
           });
+        } else {
+          state.missed = true;
+          loseLife('Неверный ход в тактической задаче');
+          if (state.lives <= 0) return;
+          var hint = dom.body.querySelector('#tmq-hint');
+          if (hint) hint.hidden = false;
         }
-      } else {
-        state.missed = true;
-        loseLife('Неверный ход в тактической задаче');
-        if (state.lives <= 0) return;
-        var hint = dom.body.querySelector('#tmq-hint');
-        if (hint) hint.hidden = false;
       }
     });
 
@@ -1147,7 +1074,7 @@
   }
 
   /* ==========================================================
-     VI. ДУЭЛИ ЧЕРЕЗ NetDuel
+     VII. ДУЭЛИ ЧЕРЕЗ NetDuel
      ========================================================== */
   function renderDuel() {
     state.screen = 'duels';
@@ -1171,9 +1098,9 @@
         '<div class="tmq-opp-title">' + esc(duel.years || '') + '</div>' +
         '<div class="tmq-quote">' + esc(duel.style || '') + '</div></div>' +
       '</div>' +
-      '<div class="tmq-story"><p>Дуэль идёт на настоящей арене: карточки, 50 HP, атака, защита и тактическая доска на 30 секунд. Победа открывает следующий рубеж.</p></div>' +
+      '<div class="tmq-copy"><p>Дуэль идёт на настоящей арене: 50 HP, атака, защита, коронный ход и тактическая доска. Победа открывает следующий рубеж.</p></div>' +
       '<div class="tmq-log" id="tmq-duel-log">Готовы выйти на арену?</div>' +
-      '<button class="tmq-btn" type="button" id="tmq-duel-start">Выйти на арену</button>' +
+      '<button class="tmq-cta" type="button" id="tmq-duel-start">Выйти на арену <span aria-hidden="true">→</span></button>' +
       '<div class="tmq-warn">Поражение −1 ♥ и повтор рубежа</div>'
     );
 
@@ -1229,6 +1156,7 @@
     if (!dom) return;
     dom.overlay.classList.add('tmq-open');
     dom.overlay.setAttribute('aria-hidden', 'false');
+    if (typeof HpFx !== 'undefined' && HpFx.refresh) HpFx.refresh();
   }
 
   function handleDuelResult(outcome) {
@@ -1239,17 +1167,15 @@
     if (outcome === 'win' || outcome === true) {
       if (log) log.textContent = 'Рубеж взят.';
       play('playCorrect');
-      after(900, function () {
+      after(800, function () {
         if (state.screen !== 'duels') return;
         var won = state.duelIdx;
         var total = state.quest.duels.length;
         var last = won >= total - 1;
-
         if (!last) {
           state.duelIdx = won + 1;
           saveProgress();
         }
-
         renderCongrats('duel', {
           name: duel.name,
           idx: won,
@@ -1272,7 +1198,7 @@
   }
 
   /* ==========================================================
-     VII. ФИНАЛ: LICHESS
+     VIII. ФИНАЛ
      ========================================================== */
   function renderFinal() {
     state.screen = 'final';
@@ -1285,7 +1211,7 @@
         '<div><div class="tmq-title">Хранитель времени</div>' +
         '<div class="tmq-sub">бот ' + esc(CONFIG.botName) + ' · Lichess</div></div>' +
       '</div>' +
-      '<div class="tmq-story"><p>«Ты прошёл память, атаку, защиту и пятерых хранителей эпох. Осталась партия. Садись — часы уже идут».</p></div>' +
+      '<div class="tmq-copy"><p>«Ты прошёл память, атаку, защиту и пятерых хранителей эпох. Осталась партия. Садись — часы уже идут».</p></div>' +
       '<div class="tmq-step"><div class="tmq-step-title">Шаг 1 · профиль бота</div>' +
         '<a class="tmq-btn tmq-btn-cyan" href="' + esc(CONFIG.botUrl) + '" target="_blank" rel="noopener">@' +
         esc(CONFIG.botName) + ' на Lichess ↗</a></div>' +
@@ -1320,9 +1246,7 @@
     }
 
     dom.body.querySelector('#tmq-verify').addEventListener('click', verify);
-    input.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') verify();
-    });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') verify(); });
   }
 
   function renderVictory() {
@@ -1358,7 +1282,7 @@
           ' · ' + esc(CONFIG.dates) + '</div>' +
       '</div>' +
       '<button class="tmq-btn tmq-btn-ghost" type="button" id="tmq-download">Скачать грамоту</button>' +
-      '<button class="tmq-btn" type="button" id="tmq-finish">К карточке</button>'
+      '<button class="tmq-cta" type="button" id="tmq-finish">К карточке <span aria-hidden="true">→</span></button>'
     );
 
     dom.body.querySelector('#tmq-download').addEventListener('click', function () {
@@ -1384,8 +1308,53 @@
   }
 
   /* ==========================================================
-     VIII. ЗАВЕРШЕНИЕ ЭТАПА / ВЫБЫВАНИЕ
+     IX. ЗАВЕРШЕНИЕ ЭТАПА / ВЫБЫВАНИЕ
      ========================================================== */
+  var STAGE_LINES = [
+    'Память чемпиона восстановлена. Теперь вы знаете, откуда он пришёл.',
+    'Сила проснулась. Атака стала инструментом, а не загадкой.',
+    'Вы увидели угрозу раньше, чем она появилась.',
+    'Пять соперников позади. Путь героя пройден.'
+  ];
+
+  function renderCongrats(kind, opts) {
+    state.screen = 'congrats';
+    var o = opts || {};
+    var isStage = kind === 'stage';
+    var route = CONFIG.route[o.index || 0] || {};
+    var kicker, title, line;
+
+    if (isStage) {
+      kicker = 'Этап ' + (route.num || '') + ' из V';
+      title = esc(route.title || 'Этап') + ' пройден';
+      line = o.line || 'Идём дальше.';
+    } else {
+      kicker = 'Дуэль ' + ((o.idx || 0) + 1) + ' из ' + (o.total || 5);
+      title = esc(o.name || 'Соперник') + ' повержен';
+      line = 'Рубеж взят. Следующий соперник уже за доской.';
+    }
+
+    state.pending = o.next || null;
+
+    setBody(
+      '<div class="tmq-done">' +
+        '<div class="tmq-done-badge">✓</div>' +
+        '<div class="tmq-kicker">' + kicker + '</div>' +
+        '<h2 class="tmq-title">' + title + '</h2>' +
+        '<p class="tmq-done-text">' + line + '</p>' +
+        '<button class="tmq-cta" type="button" id="tmq-done-next">Дальше <span aria-hidden="true">→</span></button>' +
+      '</div>'
+    );
+
+    dom.body.querySelector('#tmq-done-next').addEventListener('click', function () {
+      play('click');
+      var fn = state.pending;
+      state.pending = null;
+      if (typeof fn === 'function') fn();
+      else renderMap();
+    });
+  }
+
   function finishStage() {
     var passed = state.stage;
     state.stage = Math.min(CONFIG.route.length, passed + 1);
@@ -1398,7 +1367,7 @@
     renderCongrats('stage', {
       index: passed,
       line: STAGE_LINES[passed] || 'Идём дальше.',
-      next: function () { renderMap(false); }
+      next: function () { renderMap(); }
     });
   }
 
@@ -1435,7 +1404,7 @@
       state.step = 0;
       state.duelIdx = 0;
       play('playUltimate');
-      renderMap(false);
+      renderMap();
     });
 
     dom.body.querySelector('#tmq-close-go').addEventListener('click', close);
@@ -1468,6 +1437,7 @@
     state.answered = false;
     state.chosen = null;
     state.missed = false;
+    state.pending = null;
     clearTimers();
 
     var saved = loadProgress();
@@ -1480,14 +1450,13 @@
 
     dom.overlay.classList.add('tmq-open');
     dom.overlay.setAttribute('aria-hidden', 'false');
-    dom.epoch.textContent = quest.era + ' · ' + quest.name;
 
     unlockAudio();
 
     if (state.lives <= 0) {
       renderGameOver('Лимит ошибок исчерпан в предыдущей попытке');
     } else if (state.stage > 0) {
-      renderMap(false);
+      renderMap();
     } else {
       renderGreet();
       play('choir');
@@ -1498,7 +1467,6 @@
   function close() {
     if (!dom) return;
     clearTimers();
-    stopQuantum();
     clearWarp();
     dom.overlay.classList.remove('tmq-open');
     dom.overlay.setAttribute('aria-hidden', 'true');
@@ -1510,6 +1478,7 @@
     open: open,
     start: open,
     close: close,
+    createBoard: createBoard,
     config: CONFIG,
     state: state
   };
