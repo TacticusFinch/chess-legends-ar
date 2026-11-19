@@ -91,11 +91,11 @@
         ]
       },
       {
-        key: 'duels', num: 'IV', title: 'Путь героя', sub: 'Пять дуэлей', glyph: '♞',
-        text: 'Настоящая арена: 50 HP, атака, защита и коронный ход.',
-        why: 'Путь. Пять хранителей эпох — пять его настоящих соперников. Один давит, другой ждёт, третий жертвует. Здесь ты примеряешь его характер и понимаешь, чем на самом деле берутся короны.',
+        key: 'duels', num: 'IV', title: 'Круг соперников', sub: 'Пять поединков', glyph: '♞',
+        text: 'Пять живых соперников: у каждого свой характер, своя фраза и своя история.',
+        why: 'Круг. Пять человек, с которыми чемпион действительно садился за доску. Один давит, другой ждёт, третий жертвует всё. Здесь ты примеряешь его характер и понимаешь, чем на самом деле берутся короны.',
         brief: [
-          ['Что будет', 'Пять соперников подряд, у каждого 50 HP.'],
+          ['Что будет', 'Пять поединков подряд. Каждый соперник играет по-своему.'],
           ['Как играть', 'Атака, защита или коронный ход. Заряды копятся в защите.']
         ]
       },
@@ -1442,19 +1442,101 @@
     };
   }
 
+  /* ==========================================================
+     ПОРТРЕТЫ СОПЕРНИКОВ
+     Кладёте файл в assets/avatars/ и прописываете строку здесь.
+     Пока файла нет — рисуется монограмма, квест не ломается.
+     ========================================================== */
+  var RIVAL_AVATARS = {
+    'Фабиано Каруана': './assets/avatars/caruana.png',
+    'Хикару Накамура': './assets/avatars/nakamura.png',
+    'Акиба Рубинштейн': './assets/avatars/rubinstein.png'
+  };
+
+  /* Индекс «имя чемпиона → его номер карточки».
+     Нужен, чтобы соперник, названный именем реального чемпиона,
+     играл СВОЕЙ картой: свои статы, свой скилл, свой портрет. */
+  function championIndex() {
+    var map = {};
+    if (typeof HEROES === 'undefined' || !HEROES) return map;
+    Object.keys(HEROES).forEach(function (key) {
+      var n = Number(key);
+      var h = HEROES[key];
+      if (!h || isNaN(n) || n >= 100) return;
+      if (String(h.id || '').indexOf('rival-') === 0) return;
+      if (h.name) map[h.name] = n;
+    });
+    return map;
+  }
+
+  /* ==========================================================
+     СКИЛЛЫ СОПЕРНИКОВ
+     Раньше у всех теневых соперников был один «Точный расчёт».
+     Теперь им раздаются реальные коронные ходы чемпионов —
+     по кругу, стабильно. Баланс не меняется: atk/def остаются
+     из quest-data.js, меняется только название и эффект приёма.
+     ========================================================== */
+  var RIVAL_SKILLS = [
+    ['TAL_STORM', 'Ярость шторма', 'Жертва 3 HP ради 18 DMG и пробития блока.'],
+    ['KARPOV_ANACONDA', 'Хватка анаконды', '11 DMG, кража 1⚡ и снижение защиты врага.'],
+    ['PETROSYAN_FORTRESS', 'Железная крепость', '7 DMG, щит и исцеление +8 HP.'],
+    ['FISCHER_TORNADO', 'Ментальный торнадо', '14 DMG сквозь блок и цейтнотный буст.'],
+    ['LASKER_GAMBIT', 'Психологический гамбит', '12 DMG и оглушение: враг теряет атаку.'],
+    ['SPASSKY_GAMBIT', 'Королевский гамбит', 'Жертва 2 HP: 15 DMG, слом щита и крит.'],
+    ['ANAND_LIGHTNING', 'Молния Мадраса', 'Два блиц-такта 7+7 DMG и возврат 1⚡.'],
+    ['CARLSEN_ENDGAME', 'Квантовый эндшпиль', '13+ DMG и сброс 1⚡ энергии врага.'],
+    ['EUWE_LOGIC', 'Математический расчёт', '13 DMG и защита +3 до конца боя.'],
+    ['STEINITZ_EQUILIBRIUM', 'Теория равновесия', '12 DMG сквозь щит и подавление атаки врага.']
+  ];
+
+  var rivalSkillsApplied = false;
+
+  function applyRivalSkills() {
+    if (rivalSkillsApplied) return;
+    rivalSkillsApplied = true;
+
+    if (typeof HERO_STATS_DATA === 'undefined' || !HERO_STATS_DATA) return;
+
+    var champs = championIndex();
+    var used = {};
+    Object.keys(champs).forEach(function (name) { used[champs[name]] = true; });
+
+    var shadow = Object.keys(HERO_STATS_DATA)
+      .map(Number)
+      .filter(function (n) { return !isNaN(n) && n >= 100 && !used[n]; })
+      .sort(function (a, b) { return a - b; });
+
+    shadow.forEach(function (id, i) {
+      var card = HERO_STATS_DATA[id];
+      if (!card) return;
+      var pickSkill = RIVAL_SKILLS[i % RIVAL_SKILLS.length];
+      card.skillId = pickSkill[0];
+      card.skillName = pickSkill[1];
+      card.tip = pickSkill[2];
+    });
+  }
+
   function buildDuels(hero) {
     var rivals = (window.QUEST_RIVALS && window.QUEST_RIVALS[hero.id]) || null;
     if (rivals && rivals.length) {
+      var champs = championIndex();
       return rivals.map(function (r) {
         var lore = rivalLore(r.n);
-        var enemyHero = (typeof HEROES !== 'undefined' && HEROES && HEROES[r.enemyId])
-          ? HEROES[r.enemyId] : null;
+
+        /* Если соперник — реальный чемпион, берём его карточку целиком */
+        var realId = champs[r.n];
+        var enemyId = (realId !== undefined) ? realId : r.enemyId;
+        var enemyHero = (typeof HEROES !== 'undefined' && HEROES && HEROES[enemyId])
+          ? HEROES[enemyId] : null;
+
+        var avatar = RIVAL_AVATARS[r.n] || (enemyHero ? enemyHero.avatar : '');
+
         return {
-          enemyId: r.enemyId,
+          enemyId: enemyId,
           name: r.n,
           years: r.y,
           style: r.s,
-          avatar: enemyHero ? enemyHero.avatar : '',
+          avatar: avatar,
           quote: lore ? lore.quote : '',
           achievements: lore ? lore.achievements : '',
           story: lore ? lore.story : '',
@@ -2899,14 +2981,14 @@
     setBody(
       chapter(CONFIG.route[3].num, CONFIG.route[3].title, 'Рубеж ' + (state.duelIdx + 1) + ' / ' + q.duels.length) +
       '<div class="tmq-stage-head">' +
-        '<span class="tmq-badge tmq-badge-red">Хранитель рубежа</span>' +
+        '<span class="tmq-badge">Соперник эпохи</span>' +
         '<span class="tmq-pips">' + dots + '</span>' +
       '</div>' +
       '<div class="tmq-opp-card">' +
         '<div class="tmq-opp-head">' +
-          avatarHtml({ name: duel.name, avatar: duel.avatar, color: '#e0655f' }, 'is-opp') +
+          avatarHtml({ name: duel.name, avatar: duel.avatar, color: '#8fb8d8' }, 'is-opp') +
           '<div class="tmq-opp-meta">' +
-            '<div class="tmq-opp-role">Хранитель рубежа</div>' +
+            '<div class="tmq-opp-role">Соперник эпохи</div>' +
             '<div class="tmq-opp-name">' + esc(duel.name) + '</div>' +
             '<div class="tmq-opp-title">' + esc(duel.years || '') + '</div>' +
           '</div>' +
@@ -2921,8 +3003,6 @@
           : '') +
         (duel.style ? '<div class="tmq-opp-style">' + esc(duel.style) + '</div>' : '') +
       '</div>' +
-      '<div class="tmq-fineprint">50 HP у каждого · атака, защита и коронный ход, который копится зарядами</div>' +
-      '<div class="tmq-log" id="tmq-duel-log">Готовы выйти на арену?</div>' +
       '<button class="tmq-cta" type="button" id="tmq-duel-start">Выйти на арену <span aria-hidden="true">→</span></button>'
     );
 
@@ -3027,7 +3107,7 @@
     setBody(
       chapter(CONFIG.route[3].num, CONFIG.route[3].title, 'Рубеж ' + (state.duelIdx + 1) + ' / ' + state.quest.duels.length) +
       '<div class="tmq-fighter">' +
-        avatarHtml({ name: duel.name, avatar: duel.avatar, color: '#e0655f' }, 'is-opp') +
+        avatarHtml({ name: duel.name, avatar: duel.avatar, color: '#8fb8d8' }, 'is-opp') +
         '<div class="tmq-fighter-body">' +
           '<div class="tmq-fighter-top"><span>' + esc(duel.name) + '</span><b>' + b.ehp + '/50</b></div>' +
           battleHpBar(b.ehp, b.maxHp, 'is-enemy') +
@@ -3433,6 +3513,7 @@
      ========================================================== */
   function open(heroId, opts) {
     ensureDOM();
+    applyRivalSkills();
 
     var quest = resolveQuest(heroId);
     if (!quest) {

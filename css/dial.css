@@ -45,20 +45,11 @@
   display: flex;
   justify-content: center;
   pointer-events: auto;
-  background-image: repeating-linear-gradient(
-    to right,
-    rgba(242, 239, 233, 0.14) 0px,
-    rgba(242, 239, 233, 0.14) 1px,
-    transparent 1px,
-    transparent 12px
-  );
-  background-size: 100% 4px;
-  background-position: bottom center;
-  background-repeat: no-repeat;
   padding-bottom: 6px;
   mask-image: linear-gradient(to right, transparent 0%, black 22%, black 78%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, transparent 0%, black 22%, black 78%, transparent 100%);
 }
+
 
 .dial-scroll-track {
   display: flex;
@@ -166,6 +157,9 @@ body:has(#interactive-dock[style*="flex"]) .optical-dial-container {
   transform: scale(0.95);
   opacity: 0.85;
 }
+
+#interactive-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 960; }
+
 
 @media (max-width: 480px) {
   .optical-dial-container {
