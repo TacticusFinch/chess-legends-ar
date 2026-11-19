@@ -500,6 +500,16 @@
 }
 .tmq-link:hover { color: var(--tmq-cy); border-bottom-color: rgba(53, 214, 240, 0.5); }
 
+/* Две ссылки в ряд под кнопкой */
+.tmq-linkrow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 18px;
+  margin-top: 10px;
+}
+.tmq-linkrow .tmq-link { margin-top: 0; }
+
 .tmq-btn {
   display: inline-flex;
   align-items: center;
@@ -1230,6 +1240,222 @@
 .tmq-deck { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .tmq-deck .tmq-btn { padding: 12px 8px; font-size: 10.5px; letter-spacing: 1px; }
 .tmq-deck .tmq-btn:last-child { grid-column: 1 / -1; }
+
+/* ---------- Финал: ссылка на бота ---------- */
+.tmq-bot-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 15px;
+  border: 1px solid rgba(53, 214, 240, 0.4);
+  border-radius: 12px;
+  background: linear-gradient(120deg, rgba(53, 214, 240, 0.12), rgba(53, 214, 240, 0.02));
+  color: #d9f2fb;
+  text-decoration: none;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+.tmq-bot-link:hover {
+  border-color: rgba(53, 214, 240, 0.75);
+  background: linear-gradient(120deg, rgba(53, 214, 240, 0.2), rgba(53, 214, 240, 0.05));
+  transform: translateY(-1px);
+}
+.tmq-bot-link:active { transform: translateY(1px); }
+
+.tmq-bot-link-icon {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(53, 214, 240, 0.45);
+  border-radius: 10px;
+  background: rgba(6, 14, 20, 0.8);
+  font-size: 19px;
+  color: var(--tmq-cy);
+}
+
+.tmq-bot-link-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tmq-bot-link-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 1.9px;
+  text-transform: uppercase;
+  color: var(--tmq-cy);
+}
+.tmq-bot-link-url {
+  font-size: 13px;
+  font-weight: 700;
+  color: #eaf8ff;
+  word-break: break-all;
+}
+.tmq-bot-link-go {
+  flex: none;
+  margin-left: auto;
+  font-size: 15px;
+  color: var(--tmq-gold);
+}
+
+.tmq-bot-note {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--tmq-text-3);
+}
+
+/* ---------- Выход из боя ---------- */
+.tmq-flee {
+  width: 100%;
+  margin-top: 2px;
+  color: var(--tmq-text-3);
+}
+
+.tmq-net-exit {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  background: rgba(10, 14, 20, 0.92);
+  color: #cfdae6;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.tmq-net-exit:active { transform: translateX(-50%) scale(0.97); }
+
+/* ---------- Экран победы над Хранителем ---------- */
+.tmq-triumph {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 6px 6px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.tmq-triumph-rays {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  width: 320px;
+  height: 320px;
+  margin-left: -160px;
+  border-radius: 50%;
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      rgba(212, 180, 117, 0.16) 0deg 6deg,
+      transparent 6deg 18deg
+    );
+  animation: tmqRays 26s linear infinite;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+@keyframes tmqRays {
+  to { transform: rotate(360deg); }
+}
+
+.tmq-triumph-sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.tmq-triumph-sparks i {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--tmq-gold);
+  box-shadow: 0 0 10px rgba(212, 180, 117, 0.9);
+  opacity: 0;
+  animation: tmqSpark 3.2s ease-in-out infinite;
+}
+.tmq-triumph-sparks i:nth-child(1) { left: 12%; top: 22%; animation-delay: 0s; }
+.tmq-triumph-sparks i:nth-child(2) { left: 26%; top: 12%; animation-delay: 0.4s; }
+.tmq-triumph-sparks i:nth-child(3) { left: 44%; top: 8%;  animation-delay: 0.8s; }
+.tmq-triumph-sparks i:nth-child(4) { left: 62%; top: 14%; animation-delay: 1.2s; }
+.tmq-triumph-sparks i:nth-child(5) { left: 82%; top: 24%; animation-delay: 1.6s; }
+.tmq-triumph-sparks i:nth-child(6) { left: 88%; top: 46%; animation-delay: 2s; }
+.tmq-triumph-sparks i:nth-child(7) { left: 8%;  top: 44%; animation-delay: 2.4s; }
+.tmq-triumph-sparks i:nth-child(8) { left: 18%; top: 62%; animation-delay: 0.6s; }
+.tmq-triumph-sparks i:nth-child(9) { left: 76%; top: 64%; animation-delay: 1s; }
+.tmq-triumph-sparks i:nth-child(10) { left: 36%; top: 70%; animation-delay: 1.4s; }
+.tmq-triumph-sparks i:nth-child(11) { left: 54%; top: 74%; animation-delay: 1.8s; }
+.tmq-triumph-sparks i:nth-child(12) { left: 66%; top: 40%; animation-delay: 2.2s; }
+
+@keyframes tmqSpark {
+  0%, 100% { opacity: 0; transform: translateY(0) scale(0.6); }
+  40% { opacity: 1; transform: translateY(-8px) scale(1); }
+  70% { opacity: 0.5; transform: translateY(-14px) scale(0.8); }
+}
+
+.tmq-triumph-crown {
+  position: relative;
+  z-index: 2;
+  font-size: 46px;
+  line-height: 1;
+  color: #f0d8a6;
+  text-shadow: 0 0 30px rgba(212, 180, 117, 0.9), 0 0 70px rgba(212, 180, 117, 0.45);
+  animation: tmqCrownPop 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes tmqCrownPop {
+  0% { opacity: 0; transform: scale(0.4) translateY(10px); }
+  60% { opacity: 1; transform: scale(1.12) translateY(0); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.tmq-triumph-title {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  font-size: clamp(22px, 6vw, 27px);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #fdf6e6;
+}
+
+.tmq-triumph-text {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  max-width: 34ch;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #cfdae6;
+}
+
+.tmq-triumph-seal {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 14px 12px;
+  border: 1px solid rgba(212, 180, 117, 0.3);
+  border-radius: 12px;
+  background: rgba(212, 180, 117, 0.07);
+}
+
+.tmq-triumph-name { font-size: 15px; font-weight: 700; color: #f7eeda; }
+.tmq-triumph-line {
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--tmq-text-3);
+}
 
 /* ---------- Финал и грамота ---------- */
 .tmq-boss { display: flex; align-items: center; gap: 12px; }

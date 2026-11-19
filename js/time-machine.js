@@ -91,7 +91,7 @@
         ]
       },
       {
-        key: 'duels', num: 'IV', title: 'Круг соперников', sub: 'Пять поединков', glyph: '♞',
+        key: 'duels', num: 'IV', title: 'Пять поединков', sub: 'Соперники эпохи', glyph: '♞',
         text: 'Пять живых соперников: у каждого свой характер, своя фраза и своя история.',
         why: 'Круг. Пять человек, с которыми чемпион действительно садился за доску. Один давит, другой ждёт, третий жертвует всё. Здесь ты примеряешь его характер и понимаешь, чем на самом деле берутся короны.',
         brief: [
@@ -2396,14 +2396,23 @@
     var hero = state.hero || {};
     var saved = state.stage;
 
+    /* Варп-прыжок доступен всегда: его можно пересмотреть в любой момент,
+       даже если путь уже начат. */
+    var warpBtn =
+      '<button class="tmq-cta is-warp" type="button" id="tmq-jump">' +
+        '<span class="tmq-cta-label">Прыжок во времени</span>' +
+        '<span class="tmq-cta-arrow" aria-hidden="true">→</span>' +
+      '</button>';
+
     var primary = saved > 0
       ? '<button class="tmq-cta" type="button" id="tmq-continue">Продолжить путь · этап ' +
         esc(CONFIG.route[saved] ? CONFIG.route[saved].num : 'V') + '</button>' +
-        '<button class="tmq-link" type="button" id="tmq-restart">Начать заново</button>'
-      : '<button class="tmq-cta is-warp" type="button" id="tmq-jump">' +
-          '<span class="tmq-cta-label">Прыжок во времени</span>' +
-          '<span class="tmq-cta-arrow" aria-hidden="true">→</span>' +
-        '</button>' +
+        warpBtn +
+        '<div class="tmq-linkrow">' +
+          '<button class="tmq-link" type="button" id="tmq-bio">Биография</button>' +
+          '<button class="tmq-link" type="button" id="tmq-restart">Начать заново</button>' +
+        '</div>'
+      : warpBtn +
         '<button class="tmq-link" type="button" id="tmq-bio">Биография чемпиона</button>';
 
     setBody(
@@ -2741,7 +2750,6 @@
     }).join('');
 
     setBody(
-      chapter('···', 'Карта пути', q.era) +
       '<div class="tmq-title">Пять этапов становления</div>' +
       '<div class="tmq-synopsis">' +
         '<div class="tmq-synopsis-label">Синопсис</div>' +
@@ -2974,16 +2982,8 @@
     var duel = q.duels[state.duelIdx];
     if (!duel) { finishStage(); return; }
 
-    var dots = q.duels.map(function (_, i) {
-      return '<span class="tmq-pip ' + (i < state.duelIdx ? 'is-done' : i === state.duelIdx ? 'is-current' : '') + '"></span>';
-    }).join('');
-
     setBody(
-      chapter(CONFIG.route[3].num, CONFIG.route[3].title, 'Рубеж ' + (state.duelIdx + 1) + ' / ' + q.duels.length) +
-      '<div class="tmq-stage-head">' +
-        '<span class="tmq-badge">Соперник эпохи</span>' +
-        '<span class="tmq-pips">' + dots + '</span>' +
-      '</div>' +
+      chapter(CONFIG.route[3].num, CONFIG.route[3].title, (state.duelIdx + 1) + ' / ' + q.duels.length) +
       '<div class="tmq-opp-card">' +
         '<div class="tmq-opp-head">' +
           avatarHtml({ name: duel.name, avatar: duel.avatar, color: '#8fb8d8' }, 'is-opp') +
@@ -3035,6 +3035,7 @@
       if (btn) { btn.disabled = true; btn.textContent = 'Бой идёт...'; }
 
       hideQuestForBattle();
+      showNetExit();
 
       var started = NetDuel.startQuestDuel({
         playerId: state.quest.id,
@@ -3068,7 +3069,60 @@
     dom.overlay.setAttribute('aria-hidden', 'true');
   }
 
+  /* Кнопка выхода из боя NetDuel: квест-оверлей в этот момент скрыт,
+     поэтому кнопку кладём прямо в боевой слой. */
+  function showNetExit() {
+    var overlay = document.getElementById('net-battle-overlay');
+    if (!overlay) return;
+    var old = document.getElementById('tmq-net-exit');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+
+    var btn = document.createElement('button');
+    btn.id = 'tmq-net-exit';
+    btn.type = 'button';
+    btn.className = 'tmq-net-exit';
+    btn.textContent = 'Выйти из боя';
+    btn.addEventListener('click', exitNetDuel);
+    overlay.appendChild(btn);
+  }
+
+  function removeNetExit() {
+    var btn = document.getElementById('tmq-net-exit');
+    if (btn && btn.parentNode) btn.parentNode.removeChild(btn);
+  }
+
+  function exitNetDuel() {
+    removeNetExit();
+
+    if (typeof NetDuel !== 'undefined' && NetDuel) {
+      NetDuel.questHook = null;
+      NetDuel.lastOutcome = null;
+      try {
+        if (NetDuel.ws) { NetDuel.ws.close(); NetDuel.ws = null; }
+      } catch (e) {}
+      try {
+        if (typeof InteractiveBoardEngine !== 'undefined' && InteractiveBoardEngine.stopTimer) {
+          InteractiveBoardEngine.stopTimer();
+        }
+      } catch (e) {}
+    }
+
+    var overlay = document.getElementById('net-battle-overlay');
+    if (overlay) overlay.style.display = 'none';
+    var vm = document.getElementById('duel-victory-modal');
+    if (vm) vm.classList.remove('active');
+
+    state.inBattle = false;
+    state.busy = false;
+    state.battle = null;
+    restoreQuestAfterBattle();
+    play('click');
+    beat('back');
+    renderDuel(true);
+  }
+
   function restoreQuestAfterBattle() {
+    removeNetExit();
     if (!dom) return;
     dom.overlay.classList.add('tmq-open');
     dom.overlay.setAttribute('aria-hidden', 'false');
@@ -3126,7 +3180,8 @@
         '<button class="tmq-btn" type="button" data-act="attack"' + (b.busy || b.over ? ' disabled' : '') + '>Атака</button>' +
         '<button class="tmq-btn tmq-btn-ghost" type="button" data-act="defend"' + (b.busy || b.over ? ' disabled' : '') + '>Защита</button>' +
         '<button class="tmq-btn tmq-btn-cyan" type="button" data-act="skill"' + (b.busy || b.over || b.charge < 2 ? ' disabled' : '') + '>Коронный ход · ' + b.charge + '/2</button>' +
-      '</div>'
+      '</div>' +
+      '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm tmq-flee" type="button" data-act="flee">Выйти из боя</button>'
     );
 
     Array.prototype.forEach.call(dom.body.querySelectorAll('[data-act]'), function (btn) {
@@ -3136,8 +3191,19 @@
     });
   }
 
+  /* Выход из боя без потери жизни: бой отменяется, рубеж остаётся непройденным. */
+  function exitMiniDuel() {
+    state.battle = null;
+    state.inBattle = false;
+    state.busy = false;
+    play('click');
+    beat('back');
+    renderDuel(true);
+  }
+
   function battleAct(kind) {
     var b = state.battle;
+    if (kind === 'flee') { exitMiniDuel(); return; }
     if (!b || b.over || b.busy) return;
 
     b.busy = true;
@@ -3273,57 +3339,34 @@
         '<div class="tmq-sub">бот ' + esc(CONFIG.botName) + ' · Lichess</div></div>' +
       '</div>' +
       '<div class="tmq-copy"><p>«Ты прошёл память, атаку, защиту и пятерых хранителей эпох. Осталась партия. Садись — часы уже идут».</p></div>' +
-      '<div class="tmq-step"><div class="tmq-step-title">Шаг 1 · профиль бота</div>' +
-        '<button class="tmq-btn tmq-btn-cyan" type="button" id="tmq-bot-addr">@' +
-        esc(CONFIG.botName) + ' · lichess.org</button>' +
-        '<div class="tmq-bot-addr" id="tmq-bot-panel" hidden>' +
-          '<span class="tmq-bot-url">' + esc(String(CONFIG.botUrl).replace(/^https?:\/\//, '')) + '</span>' +
-          '<span class="tmq-bot-hint">Адрес только для чтения: откройте его на судейском устройстве. Из приложения переход не выполняется.</span>' +
-        '</div></div>' +
-      '<div class="tmq-step"><div class="tmq-step-title">Шаг 2 · контроль времени</div>' +
-        '<select class="tmq-select" id="tmq-tc">' +
-          '<option value="5+3">5 + 3 · блиц</option>' +
-          '<option value="10+5" selected>10 + 5 · рапид</option>' +
-          '<option value="15+10">15 + 10 · классика</option>' +
-        '</select></div>' +
-      '<div class="tmq-step"><div class="tmq-step-title">Шаг 3 · ник и грамота</div>' +
-        '<input class="tmq-input" type="text" id="tmq-nick" placeholder="Ваш ник на Lichess" autocomplete="off">' +
-        '<div class="tmq-err" id="tmq-nick-err" hidden>Ник должен быть не короче 3 символов.</div>' +
-        '<button class="tmq-btn" type="button" id="tmq-verify">Получить грамоту</button></div>' +
-      '<div class="tmq-hintline">Первые три участника, завершившие партию и показавшие грамоту судье, получают суперприз.</div>'
+      '<a class="tmq-bot-link" href="' + esc(CONFIG.botUrl) + '" target="_blank" rel="noopener noreferrer">' +
+        '<span class="tmq-bot-link-icon" aria-hidden="true">♞</span>' +
+        '<span class="tmq-bot-link-body">' +
+          '<span class="tmq-bot-link-label">Открыть соперника</span>' +
+          '<span class="tmq-bot-link-url">' + esc(String(CONFIG.botUrl).replace(/^https?:\/\//, '')) + '</span>' +
+        '</span>' +
+        '<span class="tmq-bot-link-go" aria-hidden="true">↗</span>' +
+      '</a>' +
+      '<div class="tmq-bot-note">Ссылка откроется в новой вкладке. Сыграйте партию и возвращайтесь сюда.</div>' +
+      '<button class="tmq-cta" type="button" id="tmq-win">Я выиграл партию</button>' +
+      '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-later">Ещё играю · вернуться к карте</button>'
     );
 
     beat('final');
 
-    var input = dom.body.querySelector('#tmq-nick');
-    var err = dom.body.querySelector('#tmq-nick-err');
-    var select = dom.body.querySelector('#tmq-tc');
-
-    function verify() {
-      var value = input.value.trim();
-      if (value.length < 3) {
-        err.hidden = false;
-        input.focus();
-        return;
-      }
-      err.hidden = true;
-      state.nick = value;
-      state.tc = select.value;
-      renderVictory();
+    var winBtn = dom.body.querySelector('#tmq-win');
+    if (winBtn) {
+      winBtn.addEventListener('click', function () {
+        play('playFanfare');
+        renderVictory();
+      });
     }
 
-    dom.body.querySelector('#tmq-verify').addEventListener('click', verify);
-    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') verify(); });
-
-    var botBtn = dom.body.querySelector('#tmq-bot-addr');
-    var botPanel = dom.body.querySelector('#tmq-bot-panel');
-    if (botBtn && botPanel) {
-      botBtn.addEventListener('click', function () {
+    var later = dom.body.querySelector('#tmq-later');
+    if (later) {
+      later.addEventListener('click', function () {
         play('click');
-        botPanel.hidden = !botPanel.hidden;
-        if (!botPanel.hidden && navigator.clipboard && navigator.clipboard.writeText) {
-          try { navigator.clipboard.writeText(CONFIG.botUrl).catch(function () {}); } catch (e) {}
-        }
+        renderMap();
       });
     }
   }
@@ -3350,53 +3393,33 @@
     ].join('\n');
 
     setBody(
-      '<div class="tmq-crown">ПУТЬ ПРОЙДЕН</div>' +
-      '<div class="tmq-title">' + esc(q.name) + ' пройден</div>' +
-      '<div class="tmq-sub">Пять этапов и партия с Хранителем</div>' +
-      '<div class="tmq-seal">' +
-        avatarHtml(state.hero || { name: q.name }, 'is-md') +
-        '<div class="tmq-seal-title">Грамота финалиста · топ-3</div>' +
-        '<div class="tmq-seal-name">' + esc(q.name) + '</div>' +
-        '<div class="tmq-seal-line">Игрок: ' + esc(state.nick) + '<br>Контроль: ' + esc(state.tc) +
-          ' · бот ' + esc(CONFIG.botName) + '</div>' +
-        '<div class="tmq-seal-code">' + state.code + '</div>' +
-        '<div class="tmq-seal-sub">Финиш ' + time + ' · жизни ' + state.lives + '/' + CONFIG.maxLives +
-          ' · ' + esc(CONFIG.dates) + '</div>' +
+      '<div class="tmq-triumph">' +
+        '<div class="tmq-triumph-rays" aria-hidden="true"></div>' +
+        '<div class="tmq-triumph-sparks" aria-hidden="true">' +
+          '<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>' +
+        '</div>' +
+        '<div class="tmq-triumph-crown" aria-hidden="true">♚</div>' +
+        '<div class="tmq-kicker">Хранитель времени повержен</div>' +
+        '<h2 class="tmq-triumph-title">Ты прошёл эпоху</h2>' +
+        '<p class="tmq-triumph-text">Пять этапов, пять соперников и одна партия, которую ты не отдал. ' +
+          esc(q.name) + ' смотрит на тебя с портрета — и, кажется, одобряет.</p>' +
+        '<div class="tmq-triumph-seal">' +
+          avatarHtml(state.hero || { name: q.name }, 'is-md') +
+          '<div class="tmq-triumph-name">' + esc(q.name) + '</div>' +
+          '<div class="tmq-triumph-line">Пять этапов · ' + state.lives + ' из ' + CONFIG.maxLives + ' жизней</div>' +
+        '</div>' +
       '</div>' +
-      '<button class="tmq-btn tmq-btn-ghost" type="button" id="tmq-cert-toggle">Текст грамоты</button>' +
-      '<pre class="tmq-cert" id="tmq-cert" hidden>' + esc(certificate) + '</pre>' +
-      '<button class="tmq-btn tmq-btn-ghost" type="button" id="tmq-download">Скачать файлом</button>' +
-      '<button class="tmq-cta" type="button" id="tmq-finish">К карточке <span aria-hidden="true">→</span></button>'
+      '<button class="tmq-cta" type="button" id="tmq-finish">К карточке <span aria-hidden="true">→</span></button>' +
+      '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-again">К карте пути</button>'
     );
 
-    var certToggle = dom.body.querySelector('#tmq-cert-toggle');
-    var certNode = dom.body.querySelector('#tmq-cert');
-    if (certToggle && certNode) {
-      certToggle.addEventListener('click', function () {
+    var again = dom.body.querySelector('#tmq-again');
+    if (again) {
+      again.addEventListener('click', function () {
         play('click');
-        certNode.hidden = !certNode.hidden;
-        certToggle.textContent = certNode.hidden ? 'Текст грамоты' : 'Скрыть текст';
+        renderMap();
       });
     }
-
-    dom.body.querySelector('#tmq-download').addEventListener('click', function () {
-      try {
-        var blob = new Blob([certificate], { type: 'text/plain;charset=utf-8' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = 'gramota-' + q.id + '.txt';
-        a.rel = 'noopener';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
-      } catch (e) {
-        if (certNode) certNode.hidden = false;
-        if (certToggle) certToggle.textContent = 'Скрыть текст';
-        if (typeof showDuelNotice === 'function') showDuelNotice('Файл недоступен — текст грамоты открыт выше');
-      }
-    });
 
     dom.body.querySelector('#tmq-finish').addEventListener('click', function () {
       var numericId = heroNumericId(state.hero);
@@ -3429,7 +3452,9 @@
     }
 
     state.pending = o.next || null;
-    resetNav([{ s: 'greet' }, { s: 'map' }]);
+    /* Историю экранов не обнуляем: из поздравления можно вернуться
+       назад и заново пройти этап или пересмотреть варп. */
+    pushNav({ s: 'congrats' });
 
     setBody(
       '<div class="tmq-done">' +
