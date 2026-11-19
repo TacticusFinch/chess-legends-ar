@@ -1,34 +1,39 @@
 /* ==========================================================
-   МАШИНА ВРЕМЕНИ — КВЕСТ (v7, классический скрипт)
+   МАШИНА ВРЕМЕНИ — КВЕСТ (v8, классический скрипт)
 
-   Что нового против v5/v6:
+   Что нового против v7:
 
-   1. ЛИМБ И ДОК. Квест больше не «роняет» лимб рангов на нижнюю
-      панель: док остаётся на месте, лимб поднимается по CSS
-      (css/dock-fix.css + js/dock-fix.js). Квест ставит на <body>
-      класс tmq-running и не даёт нижним элементам перехватывать
-      касания.
+   1. ЛИМБ И ДОК. Новых файлов больше нет: подъём лимба живёт
+      в css/dial.css (правило body:has(#interactive-dock ...)).
+      Квест лишь ставит body.tmq-running на время показа.
 
-   2. ПРИВЕТСТВИЕ БЕЗ СЛУЖЕБНЫХ НАДПИСЕЙ. Убраны строка
-      «Турнир · 21–22 ноября» над заголовком и подпись
-      «этап I из V · …» рядом с именем чемпиона.
-      Осталось: заголовок, карточка чемпиона, художественный
-      текст, ставки, две кнопки.
+   2. ДОСКА КАК В ДУЭЛИ. Этапы II и III строятся через
+      chessboard.js — тот же движок и тема фигур, что у кнопки
+      «Атака» в NetDuel. Если библиотеки нет, включается
+      встроенная CSS-доска, поэтому квест не ломается.
 
-   3. АВАТАР ИЗ assets/avatars. Берётся hero.avatar, иначе
-      ./assets/avatars/<id>.png. Если файла нет — рисуется
-      монограмма, поэтому недоделанная карточка не ломает квест.
+   3. ПРЕМИАЛЬНАЯ ПЛАШКА. В приветствии — именная плашка:
+      аватар из assets/avatars в золотом кольце, надзаголовок,
+      имя, титул, корона.
 
-   4. ХУДОЖЕСТВЕННЫЙ ТЕКСТ ПОСЛЕ КАЖДОГО НАЖАТИЯ. Полоса
-      «tmq-beat» под шапкой: своя реплика на каждое действие
-      (биография, прыжок, ответ, подсказка, дуэль, финал)
-      плюс атмосферная страховка на любую кнопку без реплики.
+   4. ВАРП БЕЗ ГОРИЗОНТАЛЬНЫХ ЛИНИЙ. Лучи удалены, вместо
+      полосы прогресса — пять точек.
 
-   5. КВЕСТ АВТОНОМЕН. Свои задачи «мат в один ход» и защита,
-      своя арена на случай, если NetDuel не подключён.
-      Если NetDuel есть — используется он, как раньше.
+   5. КНОПКА «НАЗАД». В шапке квеста, с историей экранов.
+      Работает на всех экранах, кроме боя и финального экрана.
 
-   Зависимости: heroes-data.js, quest-data.js (опционально).
+   6. СИНОПСИС. На карте пути — вступление и художественное
+      объяснение каждого этапа: что это и зачем.
+
+   7. БЕЗ ПОДСКАЗОК. Убраны «Показать подсказку», текст
+      подсказки, «Ошибка −1 ♥» и строка «Цена ошибки»
+      в брифингах.
+
+   8. ГАЛОЧКА ЗАМЕНЕНА. Пройденный этап отмечается ромбом ◆,
+      экран успеха — знаком ✦.
+
+   Зависимости: heroes-data.js, quest-data.js, duel-puzzles.js,
+   chess-lite.js (опционально), chessboard.js + jQuery (для доски).
    API: TimeMachineQuest.start(heroId) / .openBio(heroId) / .close()
    ========================================================== */
 (function () {
@@ -39,53 +44,55 @@
     botName: 'Watson-bot',
     botUrl: 'https://lichess.org/@/Watson-bot',
     maxLives: 10,
-    storagePrefix: 'tmq_v7_',
+    storagePrefix: 'tmq_v8_',
     judgeCode: '2026',
     avatarDir: './assets/avatars/',
+    pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+    synopsis: 'Карточка ожила — и время треснуло. Чтобы вернуть корону, ты пройдёшь пять кругов: вспомнишь, кем был чемпион до славы; разбудишь его удар; научишься видеть угрозу раньше, чем она родится; сойдёшься с пятью хранителями эпох; и сядешь за доску с тем, кто считает время своим. Каждый круг — не экзамен, а дорога, которую чемпион прошёл сам. Пройдёшь её ты — и корона признает нового хозяина.',
     route: [
       {
         key: 'quiz', num: 'I', title: 'Вспомнить всё', sub: 'Биография до чемпионства', glyph: '❖',
         text: 'Факты из жизни чемпиона до того, как он взял корону.',
+        why: 'Память. Пока ты не знаешь, из какого города он вышел и кого победил, его сила останется чужой. Здесь ты собираешь человека по кусочкам — и он начинает тебе доверять.',
         brief: [
           ['Что будет', 'Вопросы о пути чемпиона: город, соперник, главная идея.'],
-          ['Как отвечать', 'Выберите один вариант — проверка сразу после нажатия.'],
-          ['Цена ошибки', 'Неверный ответ — минус одна жизнь. Вопрос можно переиграть.']
+          ['Как отвечать', 'Выберите один вариант — проверка сразу после нажатия.']
         ]
       },
       {
         key: 'attack', num: 'II', title: 'Пробуждение силы', sub: 'Задачи на атаку', glyph: '⚔',
-        text: 'Мат в один ход. Фигуры двигаются на доске так же, как в тактической дуэли.',
+        text: 'Мат в один ход на настоящей доске — такой же, как в тактической дуэли.',
+        why: 'Удар. Чемпион не рождается с матом в голове: он годами учится видеть последнюю горизонталь, слабое поле и открытую линию. Здесь ты берёшь его силу в руки — и она должна сработать.',
         brief: [
           ['Что будет', 'Две позиции, где нужно найти мат в один ход.'],
-          ['Как играть', 'Нажмите свою фигуру — подсветятся возможные ходы. Затем поле.'],
-          ['Цена ошибки', 'Неверный ход — минус одна жизнь. Подсказку можно открыть в любой момент.']
+          ['Как играть', 'Перетащите фигуру на нужное поле. Доска отмечает ход сама.']
         ]
       },
       {
         key: 'defense', num: 'III', title: 'Скрытая угроза', sub: 'Задачи на защиту', glyph: '⛨',
         text: 'Соперник уже грозит матом. Найдите единственный ход, который спасает позицию.',
+        why: 'Оборона. Побеждает не тот, кто громче атакует, а тот, кто первым замечает опасность. Здесь тебе уже грозят матом, а в запасе один ход. Научишься — не потеряешь корону в настоящей партии.',
         brief: [
           ['Что будет', 'Две позиции, где нужно найти защиту от угрозы.'],
-          ['Как играть', 'Подсветка показывает все законные ходы выбранной фигуры.'],
-          ['Цена ошибки', 'Неверный ход — минус одна жизнь, попытку можно повторить.']
+          ['Как играть', 'Перетащите фигуру: засчитывается только спасающий ход.']
         ]
       },
       {
         key: 'duels', num: 'IV', title: 'Путь героя', sub: 'Пять дуэлей', glyph: '♞',
         text: 'Настоящая арена: 50 HP, атака, защита и коронный ход.',
+        why: 'Путь. Пять хранителей эпох — пять его настоящих соперников. Один давит, другой ждёт, третий жертвует. Здесь ты примеряешь его характер и понимаешь, чем на самом деле берутся короны.',
         brief: [
           ['Что будет', 'Пять соперников подряд, у каждого 50 HP.'],
-          ['Как играть', 'Атака, защита или коронный ход. Заряды копятся в защите.'],
-          ['Цена ошибки', 'Поражение — минус одна жизнь и повтор рубежа.']
+          ['Как играть', 'Атака, защита или коронный ход. Заряды копятся в защите.']
         ]
       },
       {
         key: 'final', num: 'V', title: 'Финальная схватка', sub: 'Хранитель времени', glyph: '♚',
         text: 'Последний рубеж — партия с ботом турнира и грамота финалиста.',
+        why: 'Финал. Хранитель времени — не человек, а сама эпоха. Он не проигрывает по правилам: он проигрывает тому, кто не отступил. Одна партия — и грамота с кодом, которую ты покажешь судье.',
         brief: [
           ['Что будет', 'Партия с ботом турнира на Lichess.'],
-          ['Как играть', 'Выберите контроль времени, укажите ник, получите грамоту.'],
-          ['Цена ошибки', 'Жизни не тратятся: это финальный рубеж.']
+          ['Как играть', 'Выберите контроль времени, укажите ник, получите грамоту.']
         ]
       }
     ]
@@ -252,10 +259,10 @@
       'Фигура выскользнула из пальцев. В этой позиции есть только один честный ход.',
       'Ты слышишь, как в глубине часов что-то щёлкает. Одна жизнь стала короче.'
     ],
-    hint: [
-      'Подсказка ложится в ладонь, как чужая записка.',
-      'Голос за плечом произносит полстроки — и умолкает.',
-      'Ты видишь стрелку, нарисованную мелом прямо в воздухе.'
+    back: [
+      'Ты возвращаешься на шаг назад. Время не против — оно терпеливо.',
+      'Дверь закрывается тихо. Ты ещё можешь выбрать другую.',
+      'Шаг назад — тоже ход. Иногда он лучший в партии.'
     ],
     duelStart: [
       'Арена вспыхивает. За спиной {short} — пять рубежей и ни одного запасного.',
@@ -330,7 +337,6 @@
     duelIdx: 0,
     chosen: null,
     answered: false,
-    missed: false,
     nick: '',
     tc: '10+5',
     code: '',
@@ -342,6 +348,7 @@
   };
 
   var dom = null;
+  var nav = [];
   var storageOk = true;
   var lastBeatAt = 0;
 
@@ -485,14 +492,12 @@
   }
 
   function heroNumericId(hero) {
-    if (!hero) return null;
-    if (typeof HEROES === 'undefined' || !HEROES) return null;
+    if (!hero || typeof HEROES === 'undefined' || !HEROES) return null;
     var keys = Object.keys(HEROES);
     for (var i = 0; i < keys.length; i++) {
-      var key = keys[i];
-      var h = HEROES[key];
+      var h = HEROES[keys[i]];
       if (h && String(h.id) === String(hero.id)) {
-        var n = Number(key);
+        var n = Number(keys[i]);
         if (!isNaN(n)) return n;
       }
     }
@@ -720,14 +725,12 @@
       task: 'Мат в один ход. Найдите удар по последней горизонтали.',
       fen: '6k1/5ppp/8/8/8/8/5PPP/1R4K1 w - - 0 1',
       from: 'b1', to: 'b8',
-      hint: 'Ладья любит открытые линии. Восьмая горизонталь — прямая дорога к королю.',
       why: 'Лb8# — мат по последней горизонтали: пешки f7, g7 и h7 запирают собственного короля.'
     },
     {
       task: 'Мат в один ход. Накажите соперника за слабость поля f7.',
       fen: 'r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 4 4',
       from: 'f3', to: 'f7',
-      hint: 'Поле f7 защищает только король. А вашего ферзя прикрывает слон с c4.',
       why: 'Фxf7# — мат: ферзя защищает слон c4, а королю некуда уйти.'
     }
   ];
@@ -737,14 +740,12 @@
       task: 'Белые грозят матом на b8. Найдите защиту — сделайте «форточку» для короля.',
       fen: '6k1/5ppp/8/8/8/8/5PPP/1R4K1 b - - 0 1',
       from: 'h7', to: 'h6',
-      hint: 'Королю нужен воздух. Какая пешка может освободить поле h7?',
       why: '1...h6! — у короля появляется поле h7, и мат по последней горизонтали больше не страшен.'
     },
     {
       task: 'Чёрный конь объявил шах. Найдите лучшую защиту.',
       fen: '6k1/5ppp/8/8/8/5n2/5PPP/6K1 w - - 0 1',
       from: 'g2', to: 'f3',
-      hint: 'Конь на f3 дерзок, но у пешки g2 есть чем ответить.',
       why: 'gxf3 — вы уничтожаете атакующего коня и остаётесь с лишней фигурой.'
     }
   ];
@@ -785,16 +786,15 @@
           fen: p.fen,
           from: p.move.from,
           to: p.move.to,
-          hint: 'Ищите форсированный ход: шах, взятие или мат.',
-          why: 'Точный тактический удар решает исход партии.'
+          why: kind === 'defense'
+            ? 'Именно этот ход снимает угрозу: позиция успокаивается, а соперник теряет темп.'
+            : 'Точный удар решает партию сразу — соперник не успевает ответить.'
         };
       });
     }
 
     return (kind === 'defense' ? DEFAULT_DEFENSE : DEFAULT_ATTACK).map(function (p) {
-      return {
-        task: p.task, fen: p.fen, from: p.from, to: p.to, hint: p.hint, why: p.why
-      };
+      return { task: p.task, fen: p.fen, from: p.from, to: p.to, why: p.why };
     });
   }
 
@@ -944,6 +944,7 @@
           '</div>' +
           '<div class="tmq-head-side">' +
             '<div class="tmq-lives" id="tmq-lives"></div>' +
+            '<button class="tmq-back" type="button" id="tmq-back" aria-label="Назад" hidden>‹</button>' +
             '<button class="tmq-close" type="button" id="tmq-close" aria-label="Закрыть квест">✕</button>' +
           '</div>' +
         '</header>' +
@@ -962,16 +963,19 @@
       city: overlay.querySelector('#tmq-city'),
       year: overlay.querySelector('#tmq-year'),
       headSub: overlay.querySelector('#tmq-head-sub'),
+      back: overlay.querySelector('#tmq-back'),
       closeBtn: overlay.querySelector('#tmq-close')
     };
 
+    dom.back.addEventListener('click', goBack);
     dom.closeBtn.addEventListener('click', close);
     overlay.addEventListener('click', function (e) {
       if (e.target === overlay && !state.inBattle) close();
     });
 
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && isOpen() && !state.inBattle) close();
+      if (e.key !== 'Escape' || !isOpen() || state.inBattle) return;
+      close();
     });
 
     /* Страховка «после каждого нажатия»: если у кнопки нет своей
@@ -986,6 +990,66 @@
     }, true);
 
     return dom;
+  }
+
+  /* ==========================================================
+     ИСТОРИЯ ЭКРАНОВ И КНОПКА «НАЗАД»
+     ========================================================== */
+  function updateBack() {
+    if (!dom || !dom.back) return;
+    var show = nav.length > 1 && !state.inBattle && state.screen !== 'gameover';
+    dom.back.hidden = !show;
+  }
+
+  function pushNav(entry) {
+    var last = nav[nav.length - 1];
+    if (last && last.s === entry.s && last.step === entry.step && last.i === entry.i) {
+      updateBack();
+      return;
+    }
+    nav.push(entry);
+    if (nav.length > 40) nav.shift();
+    updateBack();
+  }
+
+  function resetNav(base) {
+    nav = (base || []).slice();
+    updateBack();
+  }
+
+  function goBack() {
+    if (!dom || state.inBattle) return;
+    if (nav.length <= 1) return;
+    nav.pop();
+    var prev = nav[nav.length - 1];
+    if (!prev) return;
+    play('click');
+    beat('back');
+    renderEntry(prev);
+  }
+
+  function renderEntry(e) {
+    if (!e) return;
+    if (e.s === 'greet') { renderGreet(true); return; }
+    if (e.s === 'bio') { renderBio(true); return; }
+    if (e.s === 'awake') { renderAwake(true); return; }
+    if (e.s === 'map') { renderMap(true); return; }
+    if (e.s === 'briefing') { renderBriefing(e.i, true); return; }
+    if (e.s === 'quiz') {
+      state.step = e.step;
+      state.answered = false;
+      state.chosen = null;
+      renderQuiz(true);
+      return;
+    }
+    if (e.s === 'attack' || e.s === 'defense') {
+      state.step = e.step;
+      renderPuzzle(e.s, true);
+      return;
+    }
+    if (e.s === 'duels') { renderDuel(true); return; }
+    if (e.s === 'final') { renderFinal(true); return; }
+    renderMap(true);
   }
 
   function renderHead() {
@@ -1005,6 +1069,8 @@
       out += '<i class="tmq-life' + (i <= state.lives ? '' : ' is-off') + '"></i>';
     }
     dom.lives.innerHTML = out + '<b class="tmq-lives-num">' + state.lives + '/' + CONFIG.maxLives + '</b>';
+
+    updateBack();
   }
 
   function renderLives(shake) {
@@ -1063,8 +1129,64 @@
     k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟'
   };
 
-  function createBoard(host, fen, opts) {
-    opts = opts || {};
+  /* --- Вариант 1: chessboard.js — та же доска, что в дуэли --- */
+  function createChessboardBoard(host, fen, opts) {
+    if (!host.id) host.id = 'tmq-board-' + Math.random().toString(36).slice(2, 7);
+    host.classList.add('tmq-strike');
+    host.innerHTML = '';
+
+    var theme = (window.DUEL_BOARD_THEME || CONFIG.pieceTheme);
+    var current = fen;
+
+    var board = window.Chessboard(host.id, {
+      position: fen,
+      draggable: true,
+      showNotation: true,
+      pieceTheme: theme,
+      moveSpeed: 180,
+      snapbackSpeed: 140,
+      onDragStart: function (source, piece) {
+        var pos = Chess.parse(board.fen());
+        return Chess.colorOf(piece) === pos.turn;
+      },
+      onDrop: function (source, target) {
+        var ok = !opts.solution || (source === opts.solution.from && target === opts.solution.to);
+        if (ok) {
+          current = Chess.apply(board.fen(), source, target);
+          board.position(current, false);
+          play('playMove');
+          if (opts.onResult) setTimeout(function () { opts.onResult(true, source, target); }, 200);
+          return;
+        }
+        host.classList.remove('is-shake');
+        void host.offsetWidth;
+        host.classList.add('is-shake');
+        if (opts.onResult) opts.onResult(false, source, target);
+        return 'snapback';
+      }
+    });
+
+    function resize() {
+      try { board.resize(); } catch (e) {}
+    }
+    setTimeout(resize, 60);
+    setTimeout(resize, 260);
+    window.addEventListener('resize', resize);
+
+    return {
+      el: host,
+      getFen: function () { return board.fen(); },
+      setFen: function (f) { current = f; board.position(f, false); resize(); },
+      resize: resize,
+      destroy: function () {
+        window.removeEventListener('resize', resize);
+        try { board.destroy(); } catch (e) {}
+      }
+    };
+  }
+
+  /* --- Вариант 2: встроенная доска, если библиотеки нет --- */
+  function createCssBoard(host, fen, opts) {
     var files = 'abcdefgh';
     var curFen = fen;
     var pos = Chess.parse(curFen);
@@ -1231,6 +1353,19 @@
     };
   }
 
+  function createBoard(host, fen, opts) {
+    opts = opts || {};
+    if (!host) return null;
+    if (typeof window.Chessboard === 'function' && window.jQuery) {
+      try {
+        return createChessboardBoard(host, fen, opts);
+      } catch (e) {
+        console.warn('[TimeMachineQuest] chessboard.js не поднялся, играем на встроенной доске:', e);
+      }
+    }
+    return createCssBoard(host, fen, opts);
+  }
+
   /* ==========================================================
      ПРОЛОГ
      ========================================================== */
@@ -1255,16 +1390,18 @@
   /* ==========================================================
      I. ПРИВЕТСТВИЕ
      ========================================================== */
-  function renderGreet() {
+  function renderGreet(isBack) {
+    if (!isBack) pushNav({ s: 'greet' });
     state.screen = 'greet';
+
     var q = state.quest;
     var p = prologueFor();
     var hero = state.hero || {};
-    var accent = hero.color || '#d4b475';
     var saved = state.stage;
 
     var primary = saved > 0
-      ? '<button class="tmq-cta" type="button" id="tmq-continue">Продолжить путь · этап ' + esc(CONFIG.route[saved] ? CONFIG.route[saved].num : 'V') + '</button>' +
+      ? '<button class="tmq-cta" type="button" id="tmq-continue">Продолжить путь · этап ' +
+        esc(CONFIG.route[saved] ? CONFIG.route[saved].num : 'V') + '</button>' +
         '<button class="tmq-link" type="button" id="tmq-restart">Начать заново</button>'
       : '<button class="tmq-cta" type="button" id="tmq-jump">Прыжок во времени <span aria-hidden="true">→</span></button>' +
         '<button class="tmq-link" type="button" id="tmq-bio">Биография чемпиона</button>';
@@ -1272,14 +1409,17 @@
     setBody(
       '<div class="tmq-welcome">' +
         '<h2 class="tmq-welcome-title">Добро пожаловать<br>на турнир «Машина времени»</h2>' +
-        '<div class="tmq-cover" style="border-color: ' + esc(accent) + '44;">' +
-          avatarHtml(hero, 'is-lg') +
-          '<div class="tmq-cover-meta">' +
-            '<span class="tmq-cover-era">' + esc(q.era) + '</span>' +
-            '<span class="tmq-cover-name">' + esc(q.name) + '</span>' +
-            '<span class="tmq-cover-title">' + esc(hero.title || 'Чемпион мира по шахматам') + '</span>' +
-          '</div>' +
+
+        '<div class="tmq-plate">' +
+          '<span class="tmq-plate-crown" aria-hidden="true">♛</span>' +
+          '<span class="tmq-plate-ava">' + avatarHtml(hero, 'is-lg') + '</span>' +
+          '<span class="tmq-plate-body">' +
+            '<span class="tmq-plate-eyebrow">' + esc(q.era) + '</span>' +
+            '<span class="tmq-plate-name">' + esc(q.name) + '</span>' +
+            '<span class="tmq-plate-title">' + esc(hero.title || 'Чемпион мира по шахматам') + '</span>' +
+          '</span>' +
         '</div>' +
+
         '<div class="tmq-story">' +
           '<p class="is-lead">' + esc(p.lead) + '</p>' +
           '<p>' + esc(p.hook) + '</p>' +
@@ -1337,7 +1477,8 @@
     }
   }
 
-  function renderBio() {
+  function renderBio(isBack) {
+    if (!isBack) pushNav({ s: 'bio' });
     state.screen = 'bio';
     var hero = state.hero || {};
     var bio = bioFor(hero);
@@ -1377,7 +1518,7 @@
   }
 
   /* ==========================================================
-     II. ВАРП
+     II. ВАРП (без горизонтальных линий)
      ========================================================== */
   var WarpFx = { raf: 0, alive: false, done: false };
 
@@ -1475,17 +1616,18 @@
     var q = state.quest;
 
     setBody('');
+    updateBack();
+
     var warp = document.createElement('div');
     warp.className = 'tmq-warp';
     warp.innerHTML =
       '<canvas class="tmq-warp-stars" id="tmq-warp-stars"></canvas>' +
       '<div class="tmq-warp-glow"></div>' +
       '<div class="tmq-warp-rings"><i></i><i></i><i></i></div>' +
-      '<div class="tmq-warp-beams"><i></i><i></i><i></i></div>' +
       '<div class="tmq-warp-panel">' +
         '<div class="tmq-warp-label">ВАРП-ПРЫЖОК</div>' +
         '<div class="tmq-warp-target">' + esc(q.era) + '</div>' +
-        '<div class="tmq-warp-progress"><i></i></div>' +
+        '<div class="tmq-warp-dots"><i></i><i></i><i></i><i></i><i></i></div>' +
         '<div class="tmq-warp-status" id="tmq-warp-status">стабилизация канала</div>' +
       '</div>' +
       '<div class="tmq-warp-skip">нажмите, чтобы пропустить</div>' +
@@ -1528,7 +1670,8 @@
   /* ==========================================================
      III. ПРОБУЖДЕНИЕ
      ========================================================== */
-  function renderAwake() {
+  function renderAwake(isBack) {
+    if (!isBack) pushNav({ s: 'awake' });
     state.screen = 'awake';
     var q = state.quest;
     var p = prologueFor();
@@ -1560,9 +1703,10 @@
   }
 
   /* ==========================================================
-     IV. КАРТА
+     IV. КАРТА ПУТИ С СИНОПСИСОМ
      ========================================================== */
-  function renderMap() {
+  function renderMap(isBack) {
+    if (!isBack) pushNav({ s: 'map' });
     state.screen = 'map';
     var q = state.quest;
     var current = state.stage;
@@ -1577,13 +1721,14 @@
         : 'Lichess';
 
       return '<article class="tmq-route ' + status + '">' +
-        '<div class="tmq-rail"><span class="tmq-node">' + (status === 'done' ? '✓' : esc(item.num)) + '</span>' +
+        '<div class="tmq-rail"><span class="tmq-node">' + (status === 'done' ? '◆' : esc(item.num)) + '</span>' +
         '<span class="tmq-rail-line"></span></div>' +
         '<div class="tmq-route-body">' +
           '<div class="tmq-route-top"><span class="tmq-route-glyph">' + item.glyph + '</span>' +
           '<span class="tmq-route-status">' + label + '</span></div>' +
           '<div class="tmq-route-title">' + esc(item.title) + '</div>' +
           '<div class="tmq-route-sub">' + esc(item.sub) + ' · ' + esc(meta) + '</div>' +
+          '<div class="tmq-route-why">' + esc(item.why || '') + '</div>' +
           (status === 'active'
             ? '<button class="tmq-btn tmq-btn-sm" type="button" data-enter="' + i + '">Войти на этап</button>'
             : '') +
@@ -1594,9 +1739,12 @@
     setBody(
       chapter('···', 'Карта пути', q.era) +
       '<div class="tmq-title">Пять этапов становления</div>' +
+      '<div class="tmq-synopsis">' +
+        '<div class="tmq-synopsis-label">Синопсис</div>' +
+        '<p>' + esc(CONFIG.synopsis) + '</p>' +
+      '</div>' +
       '<div class="tmq-copy"><p class="is-lead">' + esc(q.mission) + '</p></div>' +
-      '<div class="tmq-route-list">' + cards + '</div>' +
-      '<div class="tmq-fineprint">Ошибка −1 ♥ · поражение в дуэли −1 ♥ и повтор рубежа</div>'
+      '<div class="tmq-route-list">' + cards + '</div>'
     );
 
     var buttons = dom.body.querySelectorAll('[data-enter]');
@@ -1612,7 +1760,8 @@
   /* ==========================================================
      V. БРИФИНГ
      ========================================================== */
-  function renderBriefing(index) {
+  function renderBriefing(index, isBack) {
+    if (!isBack) pushNav({ s: 'briefing', i: index });
     state.screen = 'briefing';
     state.stage = index;
     saveProgress();
@@ -1653,7 +1802,6 @@
       state.step = 0;
       state.answered = false;
       state.chosen = null;
-      state.missed = false;
       enterStage(route.key);
     });
     dom.body.querySelector('#tmq-back').addEventListener('click', function () {
@@ -1673,7 +1821,8 @@
   /* ==========================================================
      VI. ВОПРОСЫ
      ========================================================== */
-  function renderQuiz() {
+  function renderQuiz(isBack) {
+    if (!isBack) pushNav({ s: 'quiz', step: state.step });
     state.screen = 'quiz';
     var q = state.quest;
     var item = q.quiz[state.step];
@@ -1713,8 +1862,7 @@
       chapter(CONFIG.route[0].num, CONFIG.route[0].title, (state.step + 1) + ' / ' + total) +
       '<div class="tmq-question">' + esc(item.q) + '</div>' +
       '<div class="tmq-options">' + options + '</div>' +
-      feedback +
-      '<div class="tmq-warn">Ошибка −1 ♥</div>'
+      feedback
     );
 
     Array.prototype.forEach.call(dom.body.querySelectorAll('[data-opt]'), function (btn) {
@@ -1730,7 +1878,7 @@
           beat('quizWrong');
           loseLife('Ошибка в факте биографии чемпиона');
         }
-        if (state.lives > 0) renderQuiz();
+        if (state.lives > 0) renderQuiz(true);
       });
     });
 
@@ -1741,7 +1889,7 @@
         if (!chosenOpt || !chosenOpt.correct) {
           state.answered = false;
           state.chosen = null;
-          renderQuiz();
+          renderQuiz(true);
           return;
         }
         play('playMove');
@@ -1759,9 +1907,10 @@
   }
 
   /* ==========================================================
-     VII. ЗАДАЧИ
+     VII. ЗАДАЧИ НА ДОСКЕ ДУЭЛИ
      ========================================================== */
-  function renderPuzzle(kind) {
+  function renderPuzzle(kind, isBack) {
+    if (!isBack) pushNav({ s: kind, step: state.step });
     state.screen = kind;
     var q = state.quest;
     var list = q[kind];
@@ -1774,13 +1923,9 @@
     setBody(
       chapter(route.num, route.title, (state.step + 1) + ' / ' + list.length) +
       '<div class="tmq-question">' + esc(item.task) + '</div>' +
-      '<div class="tmq-sides">' + turnLabel + ' · нажмите фигуру, затем поле</div>' +
-      '<div class="tmq-board-host" id="tmq-board"></div>' +
-      '<div class="tmq-puzzle-hint" id="tmq-hint"' + (state.missed ? '' : ' hidden') + '>' +
-        '<b>Подсказка.</b> ' + esc(item.hint) + '</div>' +
-      '<div id="tmq-puzzle-fb"></div>' +
-      (state.missed ? '' : '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-show-hint">Показать подсказку</button>') +
-      '<div class="tmq-warn">Ошибка −1 ♥</div>'
+      '<div class="tmq-sides">' + turnLabel + ' · перетащите фигуру на нужное поле</div>' +
+      '<div class="tmq-board-host"><div class="tmq-board-mount" id="tmq-board"></div></div>' +
+      '<div id="tmq-puzzle-fb"></div>'
     );
 
     var host = dom.body.querySelector('#tmq-board');
@@ -1807,32 +1952,18 @@
             }
           });
         } else {
-          state.missed = true;
           beat('puzzleNo');
           loseLife('Неверный ход в тактической задаче');
-          if (state.lives <= 0) return;
-          var hint = dom.body.querySelector('#tmq-hint');
-          if (hint) hint.hidden = false;
         }
       }
     });
-
-    var showHint = dom.body.querySelector('#tmq-show-hint');
-    if (showHint) {
-      showHint.addEventListener('click', function () {
-        var hint = dom.body.querySelector('#tmq-hint');
-        if (hint) hint.hidden = false;
-        state.missed = true;
-        play('playMove');
-        beat('hint');
-      });
-    }
   }
 
   /* ==========================================================
      VIII. ДУЭЛИ
      ========================================================== */
-  function renderDuel() {
+  function renderDuel(isBack) {
+    if (!isBack) pushNav({ s: 'duels' });
     state.screen = 'duels';
     state.battle = null;
     var q = state.quest;
@@ -1857,8 +1988,7 @@
       '</div>' +
       '<div class="tmq-copy"><p>50 HP у каждого. Атака, защита и коронный ход, который копится зарядами.</p></div>' +
       '<div class="tmq-log" id="tmq-duel-log">Готовы выйти на арену?</div>' +
-      '<button class="tmq-cta" type="button" id="tmq-duel-start">Выйти на арену <span aria-hidden="true">→</span></button>' +
-      '<div class="tmq-warn">Поражение −1 ♥ и повтор рубежа</div>'
+      '<button class="tmq-cta" type="button" id="tmq-duel-start">Выйти на арену <span aria-hidden="true">→</span></button>'
     );
 
     dom.body.querySelector('#tmq-duel-start').addEventListener('click', beginDuel);
@@ -1884,6 +2014,7 @@
     if (typeof NetDuel !== 'undefined' && NetDuel && typeof NetDuel.startQuestDuel === 'function') {
       state.busy = true;
       state.inBattle = true;
+      updateBack();
 
       var btn = dom.body.querySelector('#tmq-duel-start');
       if (btn) { btn.disabled = true; btn.textContent = 'Бой идёт...'; }
@@ -2104,16 +2235,17 @@
       btn.disabled = false;
       btn.textContent = 'Повторить дуэль';
     }
-    if (alive && state.battle) {
+    if (alive) {
       state.battle = null;
-      renderDuel();
+      renderDuel(true);
     }
   }
 
   /* ==========================================================
      IX. ФИНАЛ
      ========================================================== */
-  function renderFinal() {
+  function renderFinal(isBack) {
+    if (!isBack) pushNav({ s: 'final' });
     state.screen = 'final';
     var q = state.quest;
 
@@ -2182,6 +2314,7 @@
 
   function renderVictory() {
     state.screen = 'victory';
+    resetNav([{ s: 'greet' }, { s: 'map' }]);
     play('playFanfare');
     beat('victory');
 
@@ -2280,10 +2413,11 @@
     }
 
     state.pending = o.next || null;
+    resetNav([{ s: 'greet' }, { s: 'map' }]);
 
     setBody(
       '<div class="tmq-done">' +
-        '<div class="tmq-done-badge">✓</div>' +
+        '<div class="tmq-done-badge">✦</div>' +
         '<div class="tmq-kicker">' + kicker + '</div>' +
         '<h2 class="tmq-title">' + title + '</h2>' +
         '<p class="tmq-done-text">' + line + '</p>' +
@@ -2306,7 +2440,6 @@
     state.step = 0;
     state.answered = false;
     state.chosen = null;
-    state.missed = false;
     state.battle = null;
     saveProgress();
     play('playFanfare');
@@ -2320,6 +2453,7 @@
 
   function renderGameOver(reason) {
     state.screen = 'gameover';
+    resetNav([{ s: 'greet' }]);
     play('playDamageTaken');
     beat('gameover');
 
@@ -2385,7 +2519,6 @@
     state.battle = null;
     state.answered = false;
     state.chosen = null;
-    state.missed = false;
     state.pending = null;
     clearTimers();
 
@@ -2400,6 +2533,7 @@
       if (typeof saved.duelIdx === 'number') state.duelIdx = Math.max(0, Math.min(saved.duelIdx, quest.duels.length - 1));
     }
 
+    resetNav([{ s: 'greet' }]);
     dom.overlay.classList.add('tmq-open');
     dom.overlay.setAttribute('aria-hidden', 'false');
     document.body.classList.add('tmq-running');
@@ -2433,6 +2567,7 @@
     document.body.classList.remove('tmq-running');
     state.inBattle = false;
     state.battle = null;
+    resetNav([]);
     if (typeof stopAllTargetVideosImmediate === 'function') stopAllTargetVideosImmediate();
   }
 

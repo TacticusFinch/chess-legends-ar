@@ -160,8 +160,9 @@
   font-weight: 700;
 }
 
-body.card-active .optical-dial-container {
-  bottom: 78px;
+body.card-active .optical-dial-container,
+body:has(#interactive-dock[style*="flex"]) .optical-dial-container {
+  bottom: calc(78px + env(safe-area-inset-bottom, 0px));
   transform: scale(0.95);
   opacity: 0.85;
 }
@@ -181,8 +182,10 @@ body.card-active .optical-dial-container {
   .dial-item.active {
     font-size: 11px;
   }
-  body.card-active .optical-dial-container {
-    bottom: 72px;
-    transform: scale(0.92);
-  }
+  body.card-active .optical-dial-container,
+  body:has(#interactive-dock[style*="flex"]) .optical-dial-container {
+  bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+  transform: scale(0.95);
+  opacity: 0.85;
+}
 }
