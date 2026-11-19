@@ -594,6 +594,118 @@
   color: var(--tmq-text-2);
 }
 
+/* ==========================================================
+   КАРТОЧКА СОПЕРНИКА В ДУЭЛИ
+   Портрет, роль, фраза и достижения хранителя рубежа.
+   ========================================================== */
+.tmq-opp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 14px 15px;
+  border: 1px solid rgba(224, 101, 95, 0.32);
+  border-radius: 4px;
+  background:
+    radial-gradient(120% 150% at 0% 0%, rgba(224, 101, 95, 0.12), transparent 60%),
+    linear-gradient(165deg, #150c0c 0%, #0c0708 55%, #080505 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 200, 200, 0.06),
+    inset 0 0 30px rgba(0, 0, 0, 0.55);
+}
+
+.tmq-opp-head { display: flex; align-items: center; gap: 13px; }
+
+.tmq-ava.is-opp {
+  width: 58px;
+  height: 58px;
+  border-radius: 2px;
+  border: 1px solid rgba(224, 101, 95, 0.62);
+  background: #0b0708;
+  box-shadow:
+    0 0 0 3px rgba(224, 101, 95, 0.1),
+    0 8px 18px rgba(0, 0, 0, 0.62);
+}
+.tmq-ava.is-opp img { filter: contrast(1.04) saturate(0.95); }
+
+.tmq-opp-meta { min-width: 0; }
+
+.tmq-opp-role {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #e0655f;
+}
+
+.tmq-opp-card .tmq-opp-name {
+  margin-top: 2px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #f6eeee;
+}
+
+.tmq-opp-card .tmq-opp-title {
+  margin-top: 2px;
+  font-size: 9.5px;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: #8d7c7c;
+}
+
+/* Яркая фраза — с золотой засечкой */
+.tmq-opp-quote {
+  margin: 0;
+  padding: 10px 12px 10px 13px;
+  border-left: 2px solid rgba(212, 180, 117, 0.6);
+  background: linear-gradient(90deg, rgba(212, 180, 117, 0.09), rgba(212, 180, 117, 0.01));
+  font-size: 13px;
+  line-height: 1.62;
+  color: #ecdfc4;
+}
+
+/* Художественный рассказ о сопернике */
+.tmq-opp-story {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: #cfc2c0;
+}
+
+/* Интересный факт — плашка с холодной подсветкой */
+.tmq-opp-fact {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(53, 214, 240, 0.18);
+  border-left: 2px solid rgba(53, 214, 240, 0.55);
+  border-radius: 0 8px 8px 0;
+  background: linear-gradient(90deg, rgba(53, 214, 240, 0.08), rgba(53, 214, 240, 0.01));
+}
+
+.tmq-opp-fact-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 1.9px;
+  text-transform: uppercase;
+  color: var(--tmq-cy);
+}
+
+.tmq-opp-fact p {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: #c4dde6;
+}
+
+.tmq-opp-style {
+  padding-top: 9px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--tmq-text-3);
+}
+
 /* ---------- Брифинг ---------- */
 .tmq-brief {
   display: grid;
@@ -1095,6 +1207,17 @@
   color: var(--tmq-text-2);
 }
 .tmq-fighter-top b { font-size: 12px; color: var(--tmq-text); font-variant-numeric: tabular-nums; }
+
+/* Фраза соперника на арене — одна строка, без переполнения */
+.tmq-fighter-quote {
+  margin-top: 5px;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: #c9b79a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .tmq-hpbar {
   height: 8px;
   border-radius: 5px;
