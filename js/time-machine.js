@@ -59,6 +59,9 @@
     maxLives: 10,
     storagePrefix: 'tmq_v8_',
     judgeCode: '2026',
+    /* Слово хранителя — пропуск к финалу без партии.
+       Меняется здесь: судья называет его участнику лично. */
+    winPhrase: 'вечный шах',
     avatarDir: './assets/avatars/',
     pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
     synopsis: 'Карточка ожила — и время треснуло. Чтобы вернуть корону, ты пройдёшь пять кругов: вспомнишь, кем был чемпион до славы; разбудишь его удар; научишься видеть угрозу раньше, чем она родится; сойдёшься с пятью хранителями эпох; и сядешь за доску с тем, кто считает время своим. Каждый круг — не экзамен, а дорога, которую чемпион прошёл сам. Пройдёшь её ты — и корона признает нового хозяина.',
@@ -457,6 +460,22 @@
       if (ch === '"') return '&quot;';
       return '&#39;';
     });
+  }
+
+  /* Проверка слова хранителя: регистр, пробелы, дефисы, «ё» и
+     лишняя пунктуация не мешают. Дополнительно принимается
+     судейский код — на случай, если слово забыли. */
+  function normalizeWord(value) {
+    return String(value == null ? '' : value)
+      .toLowerCase()
+      .replace(/ё/g, 'е')
+      .replace(/[^a-zа-я0-9]/g, '');
+  }
+
+  function checkWinWord(value) {
+    var v = normalizeWord(value);
+    if (!v) return false;
+    return v === normalizeWord(CONFIG.winPhrase) || v === normalizeWord(CONFIG.judgeCode);
   }
 
   function rand(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
@@ -1702,6 +1721,7 @@
         '</header>' +
         '<div class="tmq-beat" id="tmq-beat" aria-live="polite"></div>' +
         '<div class="tmq-body" id="tmq-body"></div>' +
+        '<div class="tmq-foot" id="tmq-foot" hidden></div>' +
       '</div>';
 
     document.body.appendChild(overlay);
@@ -1716,7 +1736,8 @@
       year: overlay.querySelector('#tmq-year'),
       headSub: overlay.querySelector('#tmq-head-sub'),
       back: overlay.querySelector('#tmq-back'),
-      closeBtn: overlay.querySelector('#tmq-close')
+      closeBtn: overlay.querySelector('#tmq-close'),
+      foot: overlay.querySelector('#tmq-foot')
     };
 
     dom.back.addEventListener('click', goBack);
@@ -1872,6 +1893,20 @@
     dom.body.innerHTML = html;
     bindAvatars(dom.body);
     dom.body.scrollTop = 0;
+
+    if (dom.foot) {
+      dom.foot.innerHTML = '';
+      dom.foot.hidden = true;
+    }
+  }
+
+  /* Закреплённая нижняя панель карточки квеста.
+     Нужна там, где действие обязано быть видно всегда: карта уровней. */
+  function setFoot(html) {
+    if (!dom || !dom.foot) return;
+    dom.foot.innerHTML = html || '';
+    dom.foot.hidden = !html;
+    bindAvatars(dom.foot);
   }
 
   function clearWarp() {
@@ -2741,9 +2776,6 @@
           '</div>' +
           '<div class="tmq-route-sub">' + esc(item.sub) + ' · ' + esc(meta) + '</div>' +
           '<div class="tmq-route-why">' + esc(item.why || '') + '</div>' +
-          (status === 'active'
-            ? '<button class="tmq-btn tmq-btn-sm" type="button" data-enter="' + i + '">Пройти уровень</button>'
-            : '') +
         '</div>' +
       '</article>';
     }).join('');
@@ -2757,23 +2789,26 @@
       '<div class="tmq-route-list">' + cards + '</div>'
     );
 
-    var buttons = dom.body.querySelectorAll('[data-enter]');
-    Array.prototype.forEach.call(buttons, function (btn) {
-      btn.addEventListener('click', function () {
+    /* Действие активного уровня живёт в закреплённой нижней панели:
+       его видно всегда, независимо от длины карточки и прокрутки. */
+    var active = current < CONFIG.route.length ? current : -1;
+    if (active >= 0) {
+      setFoot(
+        '<button class="tmq-cta tmq-foot-cta" type="button" id="tmq-enter">Пройти уровень</button>'
+      );
+      dom.foot.querySelector('#tmq-enter').addEventListener('click', function () {
         play('playMove');
         beat('briefing');
-        renderBriefing(Number(btn.getAttribute('data-enter')));
+        renderBriefing(active);
       });
-    });
 
-    /* Активный этап подкручиваем к центру: иначе на телефоне
-       кнопка «Пройти уровень» остаётся за нижней границей экрана. */
-    var activeBtn = dom.body.querySelector('[data-enter]');
-    if (activeBtn) {
-      setTimeout(function () {
-        if (!isOpen()) return;
-        try { activeBtn.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
-      }, 160);
+      var activeCard = dom.body.querySelector('.tmq-route.active');
+      if (activeCard) {
+        setTimeout(function () {
+          if (!isOpen()) return;
+          try { activeCard.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {}
+        }, 140);
+      }
     }
   }
 
@@ -2841,7 +2876,11 @@
     var q = state.quest || {};
     var hero = state.hero || {};
 
-    var rows = (route.brief || []).map(function (row) {
+    /* В финальном брифинге оставляем только «Что будет»:
+       правила игры объяснять не нужно, это босс. */
+    var rows = (route.brief || []).filter(function (row) {
+      return String(row[0]).toLowerCase().indexOf('как') !== 0;
+    }).map(function (row) {
       return '<div class="tmq-brief-row">' +
         '<span class="tmq-brief-key">' + esc(row[0]) + '</span>' +
         '<span class="tmq-brief-val">' + esc(row[1]) + '</span>' +
@@ -3439,17 +3478,41 @@
         '<span class="tmq-bot-link-go" aria-hidden="true">↗</span>' +
       '</a>' +
       '<div class="tmq-bot-note">Ссылка откроется в новой вкладке. Сыграйте партию и возвращайтесь сюда.</div>' +
-      '<button class="tmq-cta" type="button" id="tmq-win">Я выиграл партию</button>' +
+      '<div class="tmq-secret">' +
+        '<label class="tmq-secret-label" for="tmq-word">Слово хранителя</label>' +
+        '<div class="tmq-secret-row">' +
+          '<input class="tmq-input tmq-secret-input" type="text" id="tmq-word" ' +
+            'placeholder="Спросите у судьи" autocomplete="off" autocapitalize="off" spellcheck="false">' +
+          '<button class="tmq-cta tmq-secret-btn" type="button" id="tmq-win">Подтвердить победу</button>' +
+        '</div>' +
+        '<div class="tmq-err" id="tmq-word-err" hidden>Слово не подошло. Спросите его у судьи турнира.</div>' +
+      '</div>' +
       '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-later">Ещё играю · вернуться к карте</button>'
     );
 
     beat('final');
 
-    var winBtn = dom.body.querySelector('#tmq-win');
-    if (winBtn) {
-      winBtn.addEventListener('click', function () {
+    var wordInput = dom.body.querySelector('#tmq-word');
+    var wordErr = dom.body.querySelector('#tmq-word-err');
+
+    function confirmWin() {
+      var raw = wordInput ? wordInput.value : '';
+      if (checkWinWord(raw)) {
+        if (wordErr) wordErr.hidden = true;
         play('playFanfare');
         renderVictory();
+        return;
+      }
+      if (wordErr) wordErr.hidden = false;
+      play('playWrong');
+      if (wordInput) wordInput.focus();
+    }
+
+    var winBtn = dom.body.querySelector('#tmq-win');
+    if (winBtn) winBtn.addEventListener('click', confirmWin);
+    if (wordInput) {
+      wordInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') confirmWin();
       });
     }
 

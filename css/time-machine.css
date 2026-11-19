@@ -2107,6 +2107,24 @@
 .tmq-synopsis-label { display: none; }
 .tmq-synopsis { padding: 13px 14px 13px 15px; }
 
+/* ==========================================================
+   ЗАКРЕПЛЁННАЯ НИЖНЯЯ ПАНЕЛЬ КВЕСТА
+   Действие уровня всегда в кадре: панель не скроллится
+   вместе с текстом и не обрезается на телефоне.
+   ========================================================== */
+.tmq-foot {
+  position: relative;
+  z-index: 4;
+  flex: 0 0 auto;
+  padding: 12px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  background: linear-gradient(180deg, rgba(8, 13, 20, 0.92), #060a0e 55%);
+  box-shadow: 0 -18px 30px -18px rgba(0, 0, 0, 0.95);
+}
+.tmq-foot[hidden] { display: none; }
+
+.tmq-foot-cta { margin-top: 0; }
+
 /* ---------- 3. Выход из боя: тихая кнопка под логом ---------- */
 .tmq-net-exit {
   position: static;
@@ -2302,6 +2320,58 @@
   text-align: left;
 }
 .tmq-done-note b { color: #fbf0d6; }
+
+/* ==========================================================
+   СЛОВО ХРАНИТЕЛЯ — пропуск финального босса
+   ========================================================== */
+.tmq-secret {
+  display: grid;
+  gap: 7px;
+  padding: 13px 14px;
+  border: 1px solid rgba(184, 158, 201, 0.3);
+  border-radius: 12px;
+  background:
+    radial-gradient(110% 140% at 0% 0%, rgba(184, 158, 201, 0.1), transparent 62%),
+    rgba(255, 255, 255, 0.02);
+}
+
+.tmq-secret-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 1.9px;
+  text-transform: uppercase;
+  color: #c0a8d8;
+}
+
+.tmq-secret-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.tmq-secret-input {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.4px;
+}
+.tmq-secret-input::placeholder { color: #5d5568; letter-spacing: 0.2px; }
+
+.tmq-secret-btn {
+  margin-top: 0;
+  width: auto;
+  padding: 12px 15px;
+  font-size: 10px;
+  letter-spacing: 1.3px;
+  white-space: nowrap;
+}
+
+.tmq-secret .tmq-err { margin-top: 1px; }
+
+@media (max-width: 400px) {
+  .tmq-secret-row { grid-template-columns: 1fr; }
+  .tmq-secret-btn { width: 100%; }
+}
 
 /* ==========================================================
    ЛИМБ РАНГОВ НАД ДОКОМ
