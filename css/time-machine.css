@@ -2470,6 +2470,188 @@
 .tmq-ava.is-plate::after { content: none; }
 
 /* ==========================================================
+   v12 — ЭПИЧНАЯ ПЛАШКА ВЫЗОВА ХРАНИТЕЛЯ
+   Портал в финальный поединок: тёмный фиолет, золотая рама,
+   пульсирующий ореол и крупный вызов.
+   ========================================================== */
+.tmq-bot-link.is-epic {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 17px 16px;
+  overflow: hidden;
+  border: 1px solid rgba(212, 180, 117, 0.55);
+  border-radius: 3px;
+  background:
+    radial-gradient(120% 170% at 50% 0%, rgba(184, 158, 201, 0.22), transparent 68%),
+    linear-gradient(165deg, #17101f 0%, #0e0a14 58%, #070509 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 205, 0.12),
+    inset 0 0 0 1px rgba(240, 217, 168, 0.07),
+    0 18px 38px -26px rgba(0, 0, 0, 0.95);
+  transition: border-color 0.25s ease, box-shadow 0.3s ease, transform 0.18s ease;
+}
+
+/* ореол, который медленно дышит за плашкой */
+.tmq-bot-link-halo {
+  position: absolute;
+  top: -70px;
+  left: 50%;
+  width: 260px;
+  height: 260px;
+  margin-left: -130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(184, 158, 201, 0.3), transparent 68%);
+  animation: tmqHaloPulse 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes tmqHaloPulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+/* угловые скобы — «рамка портала» */
+.tmq-bot-link.is-epic::before,
+.tmq-bot-link.is-epic::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(240, 217, 168, 0.6);
+  pointer-events: none;
+}
+.tmq-bot-link.is-epic::before {
+  top: 5px;
+  left: 5px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.tmq-bot-link.is-epic::after {
+  right: 5px;
+  bottom: 5px;
+  border-left: 0;
+  border-top: 0;
+}
+
+.tmq-bot-link-crest {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(184, 158, 201, 0.7);
+  background: radial-gradient(circle at 35% 28%, rgba(200, 180, 255, 0.45), rgba(48, 30, 82, 0.95));
+  font-size: 25px;
+  color: #efe6ff;
+  text-shadow: 0 0 16px rgba(184, 158, 201, 0.9);
+  box-shadow: 0 0 22px rgba(184, 158, 201, 0.4);
+}
+
+.tmq-bot-link.is-epic .tmq-bot-link-body {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tmq-bot-link-kicker {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
+  color: #c0a8d8;
+}
+
+.tmq-bot-link-title {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: #fbf3e2;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+}
+
+.tmq-bot-link.is-epic .tmq-bot-link-url {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  color: #8f83a6;
+  word-break: break-all;
+}
+
+.tmq-bot-link.is-epic .tmq-bot-link-go {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(212, 180, 117, 0.6);
+  border-radius: 50%;
+  font-size: 13px;
+  color: #f0d8a6;
+  animation: tmqGoNudge 2.2s ease-in-out infinite;
+}
+
+@keyframes tmqGoNudge {
+  0%, 100% { transform: translateX(0); opacity: 0.85; }
+  50% { transform: translateX(3px); opacity: 1; }
+}
+
+.tmq-bot-link.is-epic:hover {
+  border-color: rgba(240, 217, 168, 0.9);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 215, 0.18),
+    inset 0 0 0 1px rgba(240, 217, 168, 0.12),
+    0 0 34px -8px rgba(184, 158, 201, 0.9);
+}
+
+.tmq-bot-link.is-epic:active { transform: translateY(1px); }
+
+/* ---------- Блок «после победы — к судье» ---------- */
+.tmq-judge {
+  display: grid;
+  gap: 4px;
+  padding: 12px 13px;
+  border: 1px solid rgba(168, 224, 95, 0.24);
+  border-left: 2px solid rgba(168, 224, 95, 0.65);
+  border-radius: 0 10px 10px 0;
+  background: linear-gradient(90deg, rgba(168, 224, 95, 0.08), rgba(168, 224, 95, 0.01));
+}
+
+.tmq-judge-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 1.9px;
+  text-transform: uppercase;
+  color: #a8e05f;
+}
+
+.tmq-judge p {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.62;
+  color: #cfdcc4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tmq-bot-link-halo,
+  .tmq-bot-link.is-epic .tmq-bot-link-go { animation: none; }
+}
+
+/* ==========================================================
    ЛИМБ РАНГОВ НАД ДОКОМ
    Перекрывает css/dial.css (он импортируется раньше).
    Держим лимб ближе к кнопкам дока и убираем подпись
