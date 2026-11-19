@@ -32,8 +32,21 @@
    8. ГАЛОЧКА ЗАМЕНЕНА. Пройденный этап отмечается ромбом ◆,
       экран успеха — знаком ✦.
 
+   ГДЕ ЛЕЖАТ ЗАДАЧИ ЭТАПОВ II И III (порядок поиска):
+     1. QUEST_DATA[hero].attack / .defense  (js/quest-data.js) — своя
+        пара задач для конкретного чемпиона;
+     2. window.QUEST_PUZZLES.attack / .defense — общий турнирный пакет,
+        задаётся одним объектом, файлы квеста править не нужно;
+     3. DUEL_STRIKE_PUZZLES / DUEL_DEFENSE_PUZZLES (js/duel-puzzles.js)
+        — база дуэли; из неё берутся две задачи, разные для разных
+        карточек (стабильно по id чемпиона);
+     4. DEFAULT_ATTACK / DEFAULT_DEFENSE — встроенный резерв.
+     Любая задача перед показом проверяется на легальность хода,
+     поэтому битые позиции из чужой базы автоматически отсеиваются.
+
    Зависимости: heroes-data.js, quest-data.js, duel-puzzles.js,
-   chess-lite.js (опционально), chessboard.js + jQuery (для доски).
+   chess.js (уже подключён в index.html), chessboard.js + jQuery.
+   js/chess-lite.js не обязателен: если он есть, используется он.
    API: TimeMachineQuest.start(heroId) / .openBio(heroId) / .close()
    ========================================================== */
 (function () {
@@ -61,11 +74,11 @@
       },
       {
         key: 'attack', num: 'II', title: 'Пробуждение силы', sub: 'Задачи на атаку', glyph: '⚔',
-        text: 'Мат в один ход на настоящей доске — такой же, как в тактической дуэли.',
+        text: 'Позиции из турнирной базы дуэли: найдите сильнейший ход на настоящей доске.',
         why: 'Удар. Чемпион не рождается с матом в голове: он годами учится видеть последнюю горизонталь, слабое поле и открытую линию. Здесь ты берёшь его силу в руки — и она должна сработать.',
         brief: [
-          ['Что будет', 'Две позиции, где нужно найти мат в один ход.'],
-          ['Как играть', 'Перетащите фигуру на нужное поле. Доска отмечает ход сама.']
+          ['Что будет', 'Две позиции из турнирной базы: нужно найти лучший ход.'],
+          ['Как играть', 'Нажмите фигуру — подсветятся её ходы. Затем поле. Или перетащите.']
         ]
       },
       {
@@ -715,7 +728,82 @@
     return { parse: parse, moves: moves, apply: apply, colorOf: colorOf };
   })();
 
-  var Chess = (typeof ChessLite !== 'undefined' && ChessLite && ChessLite.parse) ? ChessLite : MiniChess;
+  /* ==========================================================
+     ДВИЖОК ХОДОВ
+     Приоритет:
+       1. js/chess-lite.js — если файл когда-нибудь появится;
+       2. chess.js из cdnjs — он уже подключён в index.html,
+          даёт полную легальность: шахи, рокировка, взятие на проходе;
+       3. встроенный MiniChess — минимальный, без проверки шахов.
+     ========================================================== */
+  var ChessJsAdapter = (function () {
+    var Ctor = window.Chess;
+    if (typeof Ctor !== 'function') return null;
+
+    function game(fen) { return new Ctor(fen); }
+
+    try {
+      var probe = game('8/8/8/8/8/8/8/K6k w - - 0 1');
+      if (!probe || typeof probe.moves !== 'function') return null;
+    } catch (e) {
+      return null;
+    }
+
+    return {
+      parse: function (fen) {
+        try {
+          var g = game(fen);
+          var rows = g.board();
+          var out = {};
+          for (var r = 0; r < 8; r++) {
+            for (var f = 0; f < 8; f++) {
+              var cell = rows[r][f];
+              if (!cell) continue;
+              var sq = 'abcdefgh'.charAt(f) + (8 - r);
+              out[sq] = cell.color === 'w' ? String(cell.type).toUpperCase() : String(cell.type);
+            }
+          }
+          return { board: out, turn: g.turn() };
+        } catch (e) {
+          return MiniChess.parse(fen);
+        }
+      },
+
+      moves: function (fen, from) {
+        try {
+          var g = game(fen);
+          var list = g.moves({ square: from, verbose: true }) || [];
+          return list.map(function (m) {
+            var flags = String(m.flags || '');
+            return {
+              from: m.from,
+              to: m.to,
+              capture: flags.indexOf('c') !== -1 || flags.indexOf('e') !== -1
+            };
+          });
+        } catch (e) {
+          return MiniChess.moves(fen, from);
+        }
+      },
+
+      apply: function (fen, from, to) {
+        try {
+          var g = game(fen);
+          var made = g.move({ from: from, to: to, promotion: 'q' });
+          if (!made) return fen;
+          return g.fen();
+        } catch (e) {
+          return MiniChess.apply(fen, from, to);
+        }
+      },
+
+      colorOf: function (p) { return p === p.toUpperCase() ? 'w' : 'b'; }
+    };
+  })();
+
+  var Chess = (typeof ChessLite !== 'undefined' && ChessLite && ChessLite.parse)
+    ? ChessLite
+    : (ChessJsAdapter || MiniChess);
 
   /* ==========================================================
      ДАННЫЕ
@@ -774,27 +862,88 @@
     });
   }
 
-  function fromDuelPuzzles(kind) {
+  function hashStr(value) {
+    var s = String(value == null ? '' : value);
+    var h = 0;
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 1000003;
+    return h;
+  }
+
+  /* [FIX] Проверка, что решение вообще возможно на этой позиции.
+     Отсекает задачи, где ход невозможен по правилам (взятие своего,
+     отсутствующая фигура, рокировка): иначе ребёнок тапает фигуру,
+     а доска молчит. Работает и на встроенном движке. */
+  function isSolvable(fen, from, to) {
+    if (!fen || !from || !to) return false;
+    try {
+      var list = Chess.moves(fen, from);
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].to === to) return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  /* Две разные задачи из пула, стабильные для конкретной карточки:
+     у каждого чемпиона свой набор, при перезапуске — тот же. */
+  function pickPair(pool, seed) {
+    var valid = [];
+    for (var i = 0; i < pool.length; i++) {
+      var p = pool[i];
+      if (!p || !p.fen) continue;
+      var mv = p.move || p;
+      if (isSolvable(p.fen, mv.from, mv.to)) valid.push(p);
+    }
+    if (!valid.length) return [];
+    if (valid.length === 1) return [valid[0]];
+
+    var start = hashStr(seed) % valid.length;
+    var step = 1 + (hashStr(seed + '-b') % (valid.length - 1));
+    var second = valid[(start + step) % valid.length];
+    return second === valid[start] ? [valid[start]] : [valid[start], second];
+  }
+
+  function normalizePuzzle(p, kind) {
+    var mv = p.move || p;
+    var turn = String(p.fen).split(' ')[1] === 'b' ? 'чёрных' : 'белых';
+    return {
+      task: p.task || p.desc || ('Ход ' + turn + ': найдите сильнейший ход.'),
+      fen: p.fen,
+      from: mv.from,
+      to: mv.to,
+      why: p.why || (kind === 'defense'
+        ? 'Именно этот ход снимает угрозу: позиция успокаивается, а соперник теряет темп.'
+        : 'Точный удар решает партию сразу — соперник не успевает ответить.')
+    };
+  }
+
+  /* Источники задач по приоритету:
+       1. window.QUEST_PUZZLES.attack / .defense — свой турнирный пакет
+          (задаётся в quest-data.js или отдельным скриптом, файлы не правим);
+       2. DUEL_STRIKE_PUZZLES / DUEL_DEFENSE_PUZZLES из js/duel-puzzles.js;
+       3. встроенный минимальный набор DEFAULT_ATTACK / DEFAULT_DEFENSE. */
+  function fromDuelPuzzles(kind, seed) {
+    var custom = window.QUEST_PUZZLES && window.QUEST_PUZZLES[kind];
+    if (custom && custom.length) {
+      var chosen = pickPair(custom, kind + ':' + seed);
+      if (chosen.length) {
+        return chosen.map(function (p) { return normalizePuzzle(p, kind); });
+      }
+    }
+
     var pool = kind === 'defense'
       ? (typeof DUEL_DEFENSE_PUZZLES !== 'undefined' ? DUEL_DEFENSE_PUZZLES : null)
       : (typeof DUEL_STRIKE_PUZZLES !== 'undefined' ? DUEL_STRIKE_PUZZLES : null);
 
     if (pool && pool.length) {
-      return pool.slice(0, 2).map(function (p) {
-        return {
-          task: p.desc || (kind === 'defense' ? 'Найдите лучшую защиту.' : 'Найдите лучший ход.'),
-          fen: p.fen,
-          from: p.move.from,
-          to: p.move.to,
-          why: kind === 'defense'
-            ? 'Именно этот ход снимает угрозу: позиция успокаивается, а соперник теряет темп.'
-            : 'Точный удар решает партию сразу — соперник не успевает ответить.'
-        };
-      });
+      var pair = pickPair(pool, kind + ':' + seed);
+      if (pair.length) {
+        return pair.map(function (p) { return normalizePuzzle(p, kind); });
+      }
     }
 
     return (kind === 'defense' ? DEFAULT_DEFENSE : DEFAULT_ATTACK).map(function (p) {
-      return { task: p.task, fen: p.fen, from: p.from, to: p.to, why: p.why };
+      return normalizePuzzle(p, kind);
     });
   }
 
@@ -874,8 +1023,18 @@
     var eras = (window.QUEST_ERAS && window.QUEST_ERAS[hero.id]) || {};
 
     var quiz = (data.bioQuiz && data.bioQuiz.length) ? data.bioQuiz : fromHeroPuzzles(hero);
-    var attack = (data.attack && data.attack.length) ? data.attack : fromDuelPuzzles('attack');
-    var defense = (data.defense && data.defense.length) ? data.defense : fromDuelPuzzles('defense');
+
+    /* Свои задачи карточки берём, только если решение проходят проверку.
+       Иначе — пул дуэли, иначе встроенный набор. */
+    var attack = (data.attack && data.attack.length)
+      ? data.attack.filter(function (p) { return isSolvable(p.fen, p.from, p.to); })
+      : [];
+    if (!attack.length) attack = fromDuelPuzzles('attack', hero.id);
+
+    var defense = (data.defense && data.defense.length)
+      ? data.defense.filter(function (p) { return isSolvable(p.fen, p.from, p.to); })
+      : [];
+    if (!defense.length) defense = fromDuelPuzzles('defense', hero.id);
 
     var heroName = hero.name || 'Чемпион';
     var eraLabel = eras.era || hero.title || 'эпоха чемпиона';
@@ -1823,7 +1982,7 @@
         : 'Lichess';
 
       return '<article class="tmq-route ' + status + '">' +
-        '<div class="tmq-rail"><span class="tmq-node">' + (status === 'done' ? '◆' : esc(item.num)) + '</span>' +
+        '<div class="tmq-rail"><span class="tmq-node">' + (status === 'done' ? '✔' : esc(item.num)) + '</span>' +
         '<span class="tmq-rail-line"></span></div>' +
         '<div class="tmq-route-body">' +
           '<div class="tmq-route-top"><span class="tmq-route-glyph">' + item.glyph + '</span>' +
@@ -2519,7 +2678,7 @@
 
     setBody(
       '<div class="tmq-done">' +
-        '<div class="tmq-done-badge">✦</div>' +
+        '<div class="tmq-done-badge"><i class="tmq-check" aria-hidden="true"></i></div>' +
         '<div class="tmq-kicker">' + kicker + '</div>' +
         '<h2 class="tmq-title">' + title + '</h2>' +
         '<p class="tmq-done-text">' + line + '</p>' +

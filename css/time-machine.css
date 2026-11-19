@@ -789,7 +789,19 @@
   background: rgba(255, 255, 255, 0.03);
   color: var(--tmq-text-3);
 }
-.tmq-route.done .tmq-node { border-color: var(--tmq-li); color: var(--tmq-li); background: var(--tmq-li-soft); }
+/* Пройденный этап: золотой жетон с галочкой (не зелёный текст) */
+.tmq-route.done .tmq-node {
+  border-color: rgba(240, 217, 168, 0.8);
+  color: #1a1206;
+  background: linear-gradient(140deg, #f6e3b6, #d4b475 58%, #a97f3c);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 0 0 2px rgba(212, 180, 117, 0.12),
+    0 0 16px -4px rgba(212, 180, 117, 0.9);
+}
 .tmq-route.active .tmq-node {
   border-color: var(--tmq-gold);
   color: #1a1206;
@@ -994,16 +1006,42 @@
 .tmq-copy-quote p { font-size: 14px; line-height: 1.7; color: #dbe5f2; }
 
 .tmq-done { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 8px 0; }
+/* Экран успеха: золотая печать с гравированной галочкой */
 .tmq-done-badge {
-  width: 52px;
-  height: 52px;
+  position: relative;
+  width: 56px;
+  height: 56px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  font-size: 22px;
-  color: #06231a;
-  background: linear-gradient(135deg, #b7f4dd, #6fd6ad);
-  box-shadow: 0 0 28px -6px rgba(126, 224, 184, 0.85);
+  border: 1px solid rgba(240, 217, 168, 0.8);
+  background:
+    radial-gradient(circle at 32% 24%, #fbf0d2 0%, #e6cd97 38%, #c69c54 74%, #9c7534 100%);
+  box-shadow:
+    0 0 0 4px rgba(212, 180, 117, 0.1),
+    0 0 26px -6px rgba(212, 180, 117, 0.95),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.tmq-done-badge::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  border: 1px solid rgba(120, 88, 34, 0.28);
+  pointer-events: none;
+}
+
+/* Галочка нарисована линиями, а не символом шрифта */
+.tmq-check {
+  display: block;
+  width: 10px;
+  height: 18px;
+  margin-top: -3px;
+  border-right: 3px solid #1a1206;
+  border-bottom: 3px solid #1a1206;
+  border-radius: 0 0 2px 0;
+  transform: rotate(42deg);
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.35));
 }
 .tmq-done-text { margin: 0; font-size: 13.5px; line-height: 1.7; color: var(--tmq-text-2); }
 
