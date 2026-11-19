@@ -1267,6 +1267,15 @@
   function setBody(html) {
     clearWarp();
     renderHead();
+
+    /* [FIX] Старую доску уничтожаем до отрисовки нового экрана:
+       иначе chessboard.js и его обработчики копились с каждым шагом,
+       и телефон грелся сильнее от задачи к задаче. */
+    if (state.board && typeof state.board.destroy === 'function') {
+      try { state.board.destroy(); } catch (e) {}
+    }
+    state.board = null;
+
     dom.body.innerHTML = html;
     bindAvatars(dom.body);
     dom.body.scrollTop = 0;
@@ -1599,24 +1608,165 @@
     };
   }
 
+  /* ==========================================================
+     ДОСКА ДУЭЛИ — ровно тот же способ игры, что в NetDuel:
+     chessboard.js с draggable:false и тап по клетке .square-55d63.
+     Перетаскивание отключено намеренно: в дуэли его нет, а в квесте
+     drag конфликтовал с обработчиком тапов — фигура «залипала»,
+     и верный ход не принимался.
+     ========================================================== */
+  function createDuelBoard(host, fen, opts) {
+    opts = opts || {};
+    var $ = window.jQuery;
+    var Ctor = window.Chess;
+
+    if (!host) return null;
+    if (typeof window.Chessboard !== 'function' || !$ || typeof Ctor !== 'function') return null;
+
+    if (!host.id) host.id = 'tmq-board-' + Math.random().toString(36).slice(2, 7);
+    host.classList.add('tmq-strike');
+    host.innerHTML = '';
+
+    var game;
+    try { game = new Ctor(fen); } catch (e) { return null; }
+    if (!game || typeof game.moves !== 'function' || typeof game.get !== 'function') return null;
+
+    var theme = window.DUEL_BOARD_THEME || CONFIG.pieceTheme;
+    var board;
+    try {
+      board = window.Chessboard(host.id, {
+        position: fen,
+        draggable: false,
+        showNotation: true,
+        pieceTheme: theme
+      });
+    } catch (e) {
+      return null;
+    }
+    if (!board) return null;
+
+    var $host = $(host);
+    var selected = null;
+    var locked = false;
+    var HINT = 'tmq-hint-sel tmq-hint-sq tmq-hint-cap';
+
+    function cell(square) {
+      return $host.find('[data-square="' + square + '"]');
+    }
+
+    function clearHints() {
+      $host.find('.tmq-hint-sel, .tmq-hint-sq, .tmq-hint-cap').removeClass(HINT);
+      selected = null;
+    }
+
+    function shake() {
+      host.classList.remove('is-shake');
+      void host.offsetWidth;
+      host.classList.add('is-shake');
+      setTimeout(function () { host.classList.remove('is-shake'); }, 460);
+    }
+
+    function select(square) {
+      clearHints();
+      var piece = game.get(square);
+      if (!piece || piece.color !== game.turn()) return false;
+
+      selected = square;
+      cell(square).addClass('tmq-hint-sel');
+      game.moves({ square: square, verbose: true }).forEach(function (m) {
+        cell(m.to).addClass(game.get(m.to) ? 'tmq-hint-cap' : 'tmq-hint-sq');
+      });
+      play('playMove');
+      return true;
+    }
+
+    function commit(from, to) {
+      var ok = !opts.solution || (from === opts.solution.from && to === opts.solution.to);
+      var made;
+      try { made = game.move({ from: from, to: to, promotion: 'q' }); } catch (e) { made = null; }
+      if (!made) { clearHints(); return; }
+
+      board.position(game.fen(), false);
+      clearHints();
+
+      if (ok) {
+        locked = true;
+        if (opts.onResult) setTimeout(function () { opts.onResult(true, from, to); }, 200);
+        return;
+      }
+
+      locked = true;
+      shake();
+      if (opts.onResult) opts.onResult(false, from, to);
+      setTimeout(function () {
+        try { game.undo(); } catch (e) {}
+        board.position(game.fen(), false);
+        locked = false;
+      }, 620);
+    }
+
+    function onSquare(ev) {
+      if (locked) return;
+      var square = $(ev.currentTarget).attr('data-square');
+      if (!square) return;
+      if (ev.preventDefault) ev.preventDefault();
+
+      if (selected) {
+        if (square === selected) { clearHints(); return; }
+        var legal = game.moves({ square: selected, verbose: true })
+          .some(function (m) { return m.to === square; });
+        if (legal) { commit(selected, square); return; }
+      }
+
+      var piece = game.get(square);
+      if (piece && piece.color === game.turn()) { select(square); return; }
+      clearHints();
+    }
+
+    /* Один обработчик на контейнер: срабатывает и на тап, и на клик мышью */
+    $host.off('click.tmqBoard', '.square-55d63');
+    $host.on('click.tmqBoard', '.square-55d63', onSquare);
+
+    function resize() { try { board.resize(); } catch (e) {} }
+    setTimeout(resize, 60);
+    setTimeout(resize, 220);
+
+    return {
+      el: host,
+      getFen: function () { return game.fen(); },
+      setFen: function (f) {
+        try { game.load(f); } catch (e) {}
+        try { board.position(f, false); } catch (e) {}
+        clearHints();
+        locked = false;
+        resize();
+      },
+      resize: resize,
+      destroy: function () {
+        $host.off('click.tmqBoard');
+        try { board.destroy(); } catch (e) {}
+        host.innerHTML = '';
+      }
+    };
+  }
+
   function createBoard(host, fen, opts) {
     opts = opts || {};
     if (!host) return null;
-    if (typeof window.Chessboard === 'function' && window.jQuery) {
-      try {
-        var made = createChessboardBoard(host, fen, opts);
-        /* [FIX] Если библиотека отдала пустой контейнер (не нашла id,
-           заблокировала инициализацию), молча переходим на встроенную
-           доску — лучше рабочие клетки, чем пустой прямоугольник. */
-        if (made && host.querySelector('.board-b72b1')) return made;
-        console.warn('[TimeMachineQuest] chessboard.js отдал пустую доску — включаю встроенную.');
-        try { if (made && made.destroy) made.destroy(); } catch (e) {}
-        host.innerHTML = '';
-      } catch (e) {
-        console.warn('[TimeMachineQuest] chessboard.js не поднялся, играем на встроенной доске:', e);
+
+    try {
+      var made = createDuelBoard(host, fen, opts);
+      if (made && host.querySelector('.board-b72b1')) return made;
+      if (made) {
+        console.warn('[TimeMachineQuest] доска дуэли не отрисовалась — включаю встроенную.');
+        try { made.destroy(); } catch (e) {}
         host.innerHTML = '';
       }
+    } catch (e) {
+      console.warn('[TimeMachineQuest] chessboard.js не поднялся, играем на встроенной доске:', e);
+      host.innerHTML = '';
     }
+
     return createCssBoard(host, fen, opts);
   }
 
@@ -2190,7 +2340,7 @@
     );
 
     var host = dom.body.querySelector('#tmq-board');
-    createBoard(host, item.fen, {
+    state.board = createBoard(host, item.fen, {
       solution: { from: item.from, to: item.to },
       onResult: function (ok) {
         if (ok) {
@@ -2795,6 +2945,14 @@
     }
 
     resetNav([{ s: 'greet' }]);
+
+    /* [FIX] Пока открыт квест, AR-видео не декодируются.
+       Раньше поток камеры и ролики продолжали крутиться под оверлеем:
+       отсюда просадка загрузки видео и нагрев телефона. */
+    if (typeof stopAllTargetVideosImmediate === 'function') {
+      try { stopAllTargetVideosImmediate(); } catch (e) {}
+    }
+
     dom.overlay.classList.add('tmq-open');
     dom.overlay.setAttribute('aria-hidden', 'false');
     document.body.classList.add('tmq-running');

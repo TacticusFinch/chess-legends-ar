@@ -41,11 +41,13 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
+  /* [PERF] Без backdrop-filter: размытие полноэкранного слоя поверх
+     живой камеры заставляло GPU пересобирать кадр каждый кадр —
+     видео «тормозило», а телефон грелся. Фон почти непрозрачный,
+     разница визуально не заметна. */
   background:
-    radial-gradient(70% 50% at 50% 0%, rgba(53, 214, 240, 0.08), transparent 65%),
-    rgba(2, 4, 6, 0.94);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+    radial-gradient(70% 50% at 50% 0%, rgba(53, 214, 240, 0.06), transparent 65%),
+    rgba(3, 5, 8, 0.985);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s var(--tmq-ease);
@@ -423,7 +425,9 @@
     rgba(190, 246, 255, 0.16) 55%,
     transparent
   );
-  animation: tmqCtaScan 2.8s linear infinite;
+  /* [PERF] Блик проходит трижды и останавливается: бесконечная
+     анимация с градиентом на мобильном GPU грела телефон. */
+  animation: tmqCtaScan 2.8s linear 3;
   pointer-events: none;
 }
 
@@ -1480,11 +1484,17 @@
 }
 .tmq-strike.is-shake { animation: tmqShake 0.4s ease; }
 
-/* Подсветка выбранной фигуры и её законных ходов */
+/* Подсветка выбранной фигуры и её законных ходов.
+   position у клеток не переопределяем — chessboard.js ставит своё. */
 .tmq-strike [data-square] {
-  position: relative;
   cursor: pointer;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Фигуры не перехватывают тап: клик должен доходить до клетки */
+.tmq-strike [data-square] img {
+  pointer-events: none;
+  -webkit-user-drag: none;
 }
 .tmq-strike .tmq-hint-sel {
   box-shadow: inset 0 0 0 3px rgba(240, 217, 168, 0.95);
