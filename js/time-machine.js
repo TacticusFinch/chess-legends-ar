@@ -3523,19 +3523,18 @@
       '</div>' +
       '<a class="tmq-bot-link is-epic" href="' + esc(CONFIG.botUrl) + '" target="_blank" rel="noopener noreferrer">' +
         '<span class="tmq-bot-link-halo" aria-hidden="true"></span>' +
-        '<span class="tmq-bot-link-crest" aria-hidden="true">♚</span>' +
         '<span class="tmq-bot-link-body">' +
           '<span class="tmq-bot-link-kicker">Финальный поединок</span>' +
           '<span class="tmq-bot-link-title">Вызвать Хранителя</span>' +
           '<span class="tmq-bot-link-url">' + esc(String(CONFIG.botUrl).replace(/^https?:\/\//, '')) + '</span>' +
         '</span>' +
-        '<span class="tmq-bot-link-go" aria-hidden="true">→</span>' +
       '</a>' +
       '<div class="tmq-bot-note">Откроется в новой вкладке. Сыграйте партию — и возвращайтесь сюда.</div>' +
       '<div class="tmq-judge">' +
         '<span class="tmq-judge-label">После победы</span>' +
-        '<p>Подойдите к судье турнира. Он проверит партию, назовёт последнее слово Хранителя ' +
-          'и впишет вас в список финалистов.</p>' +
+        '<p>Вернитесь к судье турнира и назовите имя, под которым вы сражались с Хранителем. ' +
+          'Он сверит его со списком и вручит вам последний ключ — слово или фразу, ' +
+          'которую знает только он. С этого ключа эпоха отпустит вас домой.</p>' +
       '</div>' +
       '<div class="tmq-secret">' +
         '<label class="tmq-secret-label" for="tmq-word">Слово хранителя</label>' +
