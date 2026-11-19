@@ -2735,9 +2735,10 @@
         '<div class="tmq-rail"><span class="tmq-node">' + (status === 'done' ? '✔' : esc(item.num)) + '</span>' +
         '<span class="tmq-rail-line"></span></div>' +
         '<div class="tmq-route-body">' +
-          '<div class="tmq-route-top">' +
-          '<span class="tmq-route-status">' + label + '</span></div>' +
-          '<div class="tmq-route-title">' + esc(item.title) + '</div>' +
+          '<div class="tmq-route-head">' +
+            '<span class="tmq-route-title">' + esc(item.title) + '</span>' +
+            '<span class="tmq-route-status">' + label + '</span>' +
+          '</div>' +
           '<div class="tmq-route-sub">' + esc(item.sub) + ' · ' + esc(meta) + '</div>' +
           '<div class="tmq-route-why">' + esc(item.why || '') + '</div>' +
           (status === 'active'
@@ -2764,6 +2765,16 @@
         renderBriefing(Number(btn.getAttribute('data-enter')));
       });
     });
+
+    /* Активный этап подкручиваем к центру: иначе на телефоне
+       кнопка «Пройти уровень» остаётся за нижней границей экрана. */
+    var activeBtn = dom.body.querySelector('[data-enter]');
+    if (activeBtn) {
+      setTimeout(function () {
+        if (!isOpen()) return;
+        try { activeBtn.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+      }, 160);
+    }
   }
 
   /* ==========================================================

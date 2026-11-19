@@ -2132,3 +2132,68 @@
   background: rgba(212, 180, 117, 0.12);
 }
 .tmq-net-exit:active { transform: scale(0.97); }
+
+/* ---------- Карта пути: компактные карточки ---------- */
+.tmq-route-body {
+  padding: 11px 12px 12px;
+  margin-bottom: 7px;
+}
+
+/* Заголовок и статус в одну строку — экономит высоту */
+.tmq-route-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tmq-route-head .tmq-route-title {
+  margin-top: 0;
+  font-size: 14.5px;
+  line-height: 1.25;
+}
+
+.tmq-route-head .tmq-route-status { flex: none; }
+
+.tmq-route-sub { margin-top: 2px; }
+
+.tmq-route-why {
+  margin-top: 7px;
+  padding-top: 7px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tmq-route.active .tmq-route-why { -webkit-line-clamp: 4; }
+
+.tmq-route .tmq-btn { margin-top: 10px; }
+
+/* ==========================================================
+   ЛИМБ РАНГОВ НАД ДОКОМ
+   Перекрывает css/dial.css (он импортируется раньше).
+   Держим лимб ближе к кнопкам дока и убираем подпись
+   «Легенды I готовы…», которая смешивалась с названиями рангов.
+   ========================================================== */
+body.card-active .optical-dial-container,
+body:has(#interactive-dock[style*="flex"]) .optical-dial-container {
+  bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+/* Пока док на экране, статус сканера под лимбом не нужен */
+body:has(#interactive-dock[style*="flex"]) #scanner-hint .scanner-status {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  body.card-active .optical-dial-container,
+  body:has(#interactive-dock[style*="flex"]) .optical-dial-container {
+    bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+    transform: scale(0.94);
+  }
+}
