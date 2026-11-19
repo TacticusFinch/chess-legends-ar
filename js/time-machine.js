@@ -2775,7 +2775,7 @@
         '<div class="tmq-copy tmq-copy-quote">' +
           lines.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') +
         '</div>' +
-        '<button class="tmq-cta" type="button" id="tmq-map">Карта пути</button>' +
+        '<button class="tmq-cta" type="button" id="tmq-map">Карта уровней</button>' +
       '</div>'
     );
 
@@ -2892,7 +2892,7 @@
       '</div>' +
       '<div class="tmq-brief">' + rows + '</div>' +
       '<button class="tmq-cta" type="button" id="tmq-start">Начать уровень</button>' +
-      '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-back">К карте пути</button>'
+      '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-back">К карте уровней</button>'
     );
 
     dom.body.querySelector('#tmq-start').addEventListener('click', function () {
@@ -2950,7 +2950,7 @@
       '</div>' +
       '<div class="tmq-brief">' + rows + '</div>' +
       '<button class="tmq-cta" type="button" id="tmq-start">Начать финальную партию</button>' +
-      '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-back">К карте пути</button>'
+      '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-back">К карте уровней</button>'
     );
 
     dom.body.querySelector('#tmq-start').addEventListener('click', function () {
@@ -3010,7 +3010,7 @@
           ? '<br><span class="tmq-dimline">Правильный ответ: ' + esc(correct.text) + '. ' + esc(correct.comment) + '</span>'
           : '') +
         '<div class="tmq-actions"><button class="tmq-btn tmq-btn-sm" type="button" id="tmq-quiz-next">' +
-        (chosen.correct ? (state.step < total - 1 ? 'Дальше' : 'К карте пути') : 'Попробовать снова') +
+        (chosen.correct ? (state.step < total - 1 ? 'Дальше' : 'К карте уровней') : 'Попробовать снова') +
         '</button></div></div>';
     }
 
@@ -3095,7 +3095,7 @@
           if (!fb) return;
           fb.innerHTML = '<div class="tmq-feedback is-ok"><b>Точный ход!</b> ' + esc(item.why) +
             '<div class="tmq-actions"><button class="tmq-btn tmq-btn-sm" type="button" id="tmq-puzzle-next">' +
-            (state.step < list.length - 1 ? 'Дальше' : 'К карте пути') + '</button></div></div>';
+            (state.step < list.length - 1 ? 'Дальше' : 'К карте уровней') + '</button></div></div>';
           var next = fb.querySelector('#tmq-puzzle-next');
           next.addEventListener('click', function () {
             play('playMove');
@@ -3191,6 +3191,19 @@
           handleDuelResult(outcome);
         }
       });
+
+      /* [FIX] NetDuel собирает портрет из HEROES[enemyId], а у теневых
+         соперников там заглушка-монограмма. Подменяем картинку на ту,
+         что выбрал квест: shadow.png для теневых, портрет для чемпиона. */
+      if (started && NetDuel.enemyHero && duel.avatar) {
+        NetDuel.enemyHero.img = duel.avatar;
+        if (state.hero && state.hero.avatar && NetDuel.myHero) {
+          NetDuel.myHero.img = state.hero.avatar;
+        }
+        if (typeof NetDuel.updateHUD === 'function') {
+          try { NetDuel.updateHUD(); } catch (e) {}
+        }
+      }
 
       if (!started) {
         state.inBattle = false;
@@ -3604,7 +3617,7 @@
         '</div>' +
       '</div>' +
       '<button class="tmq-cta" type="button" id="tmq-finish">К карточке</button>' +
-      '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-again">К карте пути</button>'
+      '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-again">К карте уровней</button>'
     );
 
     var again = dom.body.querySelector('#tmq-again');
