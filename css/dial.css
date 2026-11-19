@@ -158,9 +158,6 @@ body:has(#interactive-dock[style*="flex"]) .optical-dial-container {
   opacity: 0.85;
 }
 
-#interactive-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 960; }
-
-
 @media (max-width: 480px) {
   .optical-dial-container {
     bottom: 14px;
