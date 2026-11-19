@@ -1695,6 +1695,38 @@
   /* ==========================================================
      DOM
      ========================================================== */
+  /* ==========================================================
+     РЕАЛЬНАЯ ВЫСОТА ЭКРАНА
+     100vh на телефоне больше видимой области: нижняя панель
+     с кнопкой уезжала под системные кнопки Android и под
+     панель браузера. Пишем в --tmq-vh фактическую высоту
+     visualViewport и считаем карточку от неё.
+     ========================================================== */
+  var viewportBound = false;
+
+  function syncViewport() {
+    var vv = window.visualViewport;
+    var h = (vv && vv.height) ? vv.height : window.innerHeight;
+    if (!h || h < 200) return;
+    document.documentElement.style.setProperty('--tmq-vh', Math.round(h) + 'px');
+  }
+
+  function bindViewport() {
+    syncViewport();
+    if (viewportBound) return;
+    viewportBound = true;
+
+    window.addEventListener('resize', syncViewport);
+    window.addEventListener('orientationchange', function () {
+      setTimeout(syncViewport, 120);
+      setTimeout(syncViewport, 420);
+    });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', syncViewport);
+      window.visualViewport.addEventListener('scroll', syncViewport);
+    }
+  }
+
   function ensureDOM() {
     if (dom) return dom;
 
@@ -3712,6 +3744,7 @@
      ========================================================== */
   function open(heroId, opts) {
     ensureDOM();
+    bindViewport();
     applyRivalSkills();
 
     var quest = resolveQuest(heroId);
