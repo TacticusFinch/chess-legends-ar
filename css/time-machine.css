@@ -637,6 +637,19 @@
 }
 .tmq-ava.is-opp img { filter: contrast(1.04) saturate(0.95); }
 
+/* Общий силуэт теневых соперников: вписываем целиком,
+   без тонировки, с холодной подложкой */
+.tmq-ava.is-shadow {
+  background: radial-gradient(circle at 50% 42%, #16202b 0%, #0a0f15 62%, #070a0e 100%);
+}
+.tmq-ava.is-shadow img {
+  object-fit: contain;
+  object-position: center bottom;
+  filter: none;
+  opacity: 0.92;
+}
+.tmq-ava.is-shadow img.is-mono { opacity: 1; }
+
 .tmq-opp-meta { min-width: 0; }
 
 .tmq-opp-role {

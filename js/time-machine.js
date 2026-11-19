@@ -564,10 +564,14 @@
   function avatarHtml(hero, cls) {
     var src = avatarSrc(hero);
     var name = esc((hero && hero.name) || 'Чемпион');
+    /* Общий силуэт теневых соперников получает свой класс:
+       его кадрируют иначе, чем портрет чемпиона. */
+    var extra = /shadow\.png/i.test(src) ? ' is-shadow' : '';
+
     if (!src) {
-      return '<span class="tmq-ava ' + (cls || '') + '"><img src="' + esc(monogram(hero)) + '" alt="Портрет: ' + name + '"></span>';
+      return '<span class="tmq-ava ' + (cls || '') + extra + '"><img src="' + esc(monogram(hero)) + '" alt="Портрет: ' + name + '"></span>';
     }
-    return '<span class="tmq-ava ' + (cls || '') + '">' +
+    return '<span class="tmq-ava ' + (cls || '') + extra + '">' +
       '<img src="' + esc(src) + '" alt="Портрет: ' + name + '" loading="lazy" data-fallback="' + esc(monogram(hero)) + '">' +
       '</span>';
   }
@@ -1463,14 +1467,15 @@
 
   /* ==========================================================
      ПОРТРЕТЫ СОПЕРНИКОВ
-     Кладёте файл в assets/avatars/ и прописываете строку здесь.
-     Пока файла нет — рисуется монограмма, квест не ломается.
+     Все теневые персонажи (не действующие чемпионы) получают
+     один общий силуэт shadow.png — так задумано: их лица
+     скрыты, важна эпоха, а не человек.
+     Реальные чемпионы берут свой портрет из карточки HEROES,
+     поэтому Карлсен, Карпов или Таль узнаются сразу.
+     Если shadow.png не найдётся, включится монограмма —
+     квест не ломается.
      ========================================================== */
-  var RIVAL_AVATARS = {
-    'Фабиано Каруана': './assets/avatars/caruana.png',
-    'Хикару Накамура': './assets/avatars/nakamura.png',
-    'Акиба Рубинштейн': './assets/avatars/rubinstein.png'
-  };
+  var SHADOW_AVATAR = './assets/avatars/shadow.png';
 
   /* Индекс «имя чемпиона → его номер карточки».
      Нужен, чтобы соперник, названный именем реального чемпиона,
@@ -1548,7 +1553,10 @@
         var enemyHero = (typeof HEROES !== 'undefined' && HEROES && HEROES[enemyId])
           ? HEROES[enemyId] : null;
 
-        var avatar = RIVAL_AVATARS[r.n] || (enemyHero ? enemyHero.avatar : '');
+        /* Действующий чемпион — свой портрет, теневой — общий силуэт */
+        var avatar = (realId !== undefined && enemyHero && enemyHero.avatar)
+          ? enemyHero.avatar
+          : SHADOW_AVATAR;
 
         return {
           enemyId: enemyId,
