@@ -74,8 +74,8 @@
       },
       {
         key: 'attack', num: 'II', title: 'Пробуждение силы', sub: 'Задачи на атаку', glyph: '⚔',
-        text: 'Позиции из турнирной базы дуэли: найдите сильнейший ход на настоящей доске.',
-        why: 'Удар. Чемпион не рождается с матом в голове: он годами учится видеть последнюю горизонталь, слабое поле и открытую линию. Здесь ты берёшь его силу в руки — и она должна сработать.',
+        text: 'Две позиции из турнирной базы. В каждой есть один ход, который решает всё.',
+        why: 'Сила не приходит из ниоткуда. Чемпион годами учился видеть последнюю горизонталь, слабое поле и открытую линию — и теперь эта способность просыпается в тебе. Рука уже помнит вес фигуры. Осталось найти тот самый ход: не самый красивый, а тот, после которого сопернику нечем ответить.',
         brief: [
           ['Что будет', 'Две позиции из турнирной базы: нужно найти лучший ход.'],
           ['Как играть', 'Нажмите фигуру — подсветятся её ходы. Затем поле. Или перетащите.']
@@ -117,7 +117,7 @@
   var PROLOGUE = {
     common: {
       lead: 'Ты оживил карточку чемпиона — и открыл дверь в его эпоху.',
-      tail: 'Пять этапов. Десять жизней. Одна корона, которую нужно вернуть.'
+      tail: 'Пять уровней. Десять жизней. Одна корона, которую нужно вернуть.'
     },
     heroes: {
       steinitz: {
@@ -332,7 +332,7 @@
     'Память чемпиона восстановлена. Теперь ты знаешь, откуда он пришёл.',
     'Сила проснулась. Атака стала инструментом, а не загадкой.',
     'Ты увидел угрозу раньше, чем она родилась.',
-    'Пять соперников позади. Путь героя пройден.',
+    'Пять соперников позади. Круг замкнулся.',
     'Осталась одна партия — и она будет последней.'
   ];
 
@@ -1637,14 +1637,14 @@
 
     var welcome = (story.welcome && story.welcome.length) ? story.welcome : [
       'Ты оживил карточку — и она стала билетом в прошлое. Теперь это не портрет, а дверь в эпоху, где жил и побеждал ' + heroName + '.',
-      'Машина времени настроена на ' + eraLabel + '. Впереди пять этапов: память чемпиона, пробуждение силы, скрытая угроза, пять дуэлей и партия с Хранителем времени.',
+      'Машина времени настроена на ' + eraLabel + '. Впереди пять уровней: память чемпиона, пробуждение силы, скрытая угроза, пять поединков и партия с Хранителем времени.',
       'Кристаллы времени уже светятся. Не теряй их зря — и не теряй жизней: их всего десять.'
     ];
 
     var awake = (story.awake && story.awake.length) ? story.awake : [
       'Вы просыпаетесь в незнакомом месте. Воздух другой: ' + eraLabel + '. Слышно, как идёт чужая жизнь — и она теперь ваша.',
       'Вы с удивлением осознаёте, что оказались в теле будущего чемпиона — ' + heroName + '. Руки помнят вес фигур, а в голове звучит чужая мысль.',
-      'Вам предстоит пройти его путь: пять этапов становления и финальная партия с Хранителем времени.'
+      'Вам предстоит пройти его путь: пять уровней становления и финальная партия с Хранителем времени.'
     ];
 
     return {
@@ -2749,7 +2749,7 @@
     }).join('');
 
     setBody(
-      '<div class="tmq-title">Пять этапов становления</div>' +
+      '<div class="tmq-title">Пять уровней становления</div>' +
       '<div class="tmq-synopsis">' +
         '<p>' + esc(CONFIG.synopsis) + '</p>' +
       '</div>' +
@@ -2789,6 +2789,9 @@
     var route = CONFIG.route[index];
     if (!route) { renderMap(); return; }
 
+    /* Финальный уровень — особый брифинг: это босс, а не задача. */
+    if (index === 4) { renderFinalBriefing(route); return; }
+
     var rows = (route.brief || []).map(function (row) {
       return '<div class="tmq-brief-row">' +
         '<span class="tmq-brief-key">' + esc(row[0]) + '</span>' +
@@ -2823,6 +2826,60 @@
       state.answered = false;
       state.chosen = null;
       enterStage(route.key);
+    });
+    dom.body.querySelector('#tmq-back').addEventListener('click', function () {
+      play('click');
+      renderMap();
+    });
+  }
+
+  /* ==========================================================
+     БРИФИНГ ФИНАЛЬНОГО УРОВНЯ
+     Художественная рамка босса: не правила, а ставка.
+     ========================================================== */
+  function renderFinalBriefing(route) {
+    var q = state.quest || {};
+    var hero = state.hero || {};
+
+    var rows = (route.brief || []).map(function (row) {
+      return '<div class="tmq-brief-row">' +
+        '<span class="tmq-brief-key">' + esc(row[0]) + '</span>' +
+        '<span class="tmq-brief-val">' + esc(row[1]) + '</span>' +
+        '</div>';
+    }).join('');
+
+    setBody(
+      '<div class="tmq-boss-brief">' +
+        '<div class="tmq-boss-brief-glow" aria-hidden="true"></div>' +
+        '<div class="tmq-boss-brief-orb" aria-hidden="true">♚</div>' +
+        '<div class="tmq-kicker">Уровень V · последний рубеж</div>' +
+        '<h2 class="tmq-boss-brief-title">Хранитель времени</h2>' +
+        '<p class="tmq-boss-brief-lead">Он не играет в шахматы. Он играет со временем.</p>' +
+        '<p class="tmq-boss-brief-text">' +
+          'Ты прошёл память, силу, оборону и пятерых соперников. ' +
+          esc(hero.name || q.name || 'Чемпион') + ' снова тот, кем был, — и это твоя победа. ' +
+          'Но портал закрылся за спиной, и открыть его может только тот, кто держит ключи от всех эпох.' +
+        '</p>' +
+        '<p class="tmq-boss-brief-text">' +
+          'За дверью нет зала. Только стол, две чашки и часы, которые идут громче обычного. ' +
+          'Хранитель знает каждый твой ход — он видел их все, в других веках, с другими детьми. ' +
+          'Он не знает одного: как ты сыграешь сейчас.' +
+        '</p>' +
+        '<div class="tmq-boss-brief-quote">' +
+          '«Я ждал тебя с первой минуты. Сядь. У нас всего одна партия — и целая вечность на неё»' +
+        '</div>' +
+      '</div>' +
+      '<div class="tmq-brief">' + rows + '</div>' +
+      '<button class="tmq-cta" type="button" id="tmq-start">Начать финальную партию</button>' +
+      '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-back">К карте пути</button>'
+    );
+
+    dom.body.querySelector('#tmq-start').addEventListener('click', function () {
+      play('warp');
+      state.step = 0;
+      state.answered = false;
+      state.chosen = null;
+      renderFinal();
     });
     dom.body.querySelector('#tmq-back').addEventListener('click', function () {
       play('click');
@@ -3476,8 +3533,8 @@
     var kicker, title, line;
 
     if (isStage) {
-      kicker = 'Этап ' + (route.num || '') + ' из V';
-      title = esc(route.title || 'Этап') + ' пройден';
+      kicker = o.kicker || ('Уровень ' + (route.num || '') + ' из V');
+      title = o.title || (esc(route.title || 'Уровень') + ' пройден');
       line = o.line || 'Идём дальше.';
     } else {
       kicker = 'Дуэль ' + ((o.idx || 0) + 1) + ' из ' + (o.total || 5);
@@ -3496,7 +3553,8 @@
         '<div class="tmq-kicker">' + kicker + '</div>' +
         '<h2 class="tmq-title">' + title + '</h2>' +
         '<p class="tmq-done-text">' + line + '</p>' +
-        '<button class="tmq-cta" type="button" id="tmq-done-next">Дальше</button>' +
+        (o.note ? '<div class="tmq-done-note">' + o.note + '</div>' : '') +
+        '<button class="tmq-cta" type="button" id="tmq-done-next">' + (o.cta || 'Дальше') + '</button>' +
       '</div>'
     );
 
@@ -3519,6 +3577,25 @@
     saveProgress();
     play('playFanfare');
     if (STAGE_LINES[passed]) say(STAGE_LINES[passed]);
+
+    /* После IV уровня — особое поздравление: чемпион восстановлен,
+       но игрок ещё в прошлом. Впереди финал. */
+    if (passed === 3) {
+      var heroName = (state.hero && state.hero.name) || (state.quest && state.quest.name) || 'Чемпион';
+      renderCongrats('stage', {
+        index: passed,
+        kicker: 'Уровень IV из V',
+        title: 'Ты вернул ему корону',
+        line: 'Пять соперников позади. ' + esc(heroName) + ' снова тот, кем был, — и это сделал ты.',
+        note: '<b>Но ты всё ещё в прошлом.</b> Портал закрылся за спиной, эпоха не отпускает просто так. ' +
+              'Открыть её может только Хранитель времени — и он не отдаст ключ без партии. ' +
+              'Остался последний уровень: выбраться из прошлого.',
+        cta: 'К финальному уровню',
+        next: function () { renderMap(); }
+      });
+      return;
+    }
+
     renderCongrats('stage', {
       index: passed,
       line: STAGE_LINES[passed] || 'Идём дальше.',
