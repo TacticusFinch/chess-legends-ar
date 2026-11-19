@@ -1949,3 +1949,186 @@
   .tmq-beat.is-in { animation: none; }
   .tmq-warp-progress i { width: 100%; }
 }
+
+/* ==========================================================
+   v9 — уточнения оформления (перекрывают правила выше)
+   ========================================================== */
+
+/* ---------- 1. Кнопка «Прыжок во времени»: латунная табличка ---------- */
+.tmq-cta.is-warp {
+  position: relative;
+  gap: 0;
+  margin-top: 22px;
+  padding: 18px 22px;
+  clip-path: none;
+  border: 1px solid rgba(212, 180, 117, 0.55);
+  border-radius: 3px;
+  background:
+    radial-gradient(120% 170% at 50% 0%, rgba(212, 180, 117, 0.2), transparent 70%),
+    linear-gradient(180deg, #1b1509 0%, #120e07 55%, #0a0704 100%);
+  color: #f2e2bd;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3.4px;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6), 0 0 16px rgba(212, 180, 117, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 205, 0.16),
+    inset 0 0 0 1px rgba(240, 217, 168, 0.09),
+    inset 0 -16px 28px -20px rgba(0, 0, 0, 0.9),
+    0 14px 30px -20px rgba(0, 0, 0, 0.95);
+  transition: border-color 0.2s ease, box-shadow 0.25s ease, transform 0.18s ease, background 0.25s ease;
+}
+
+.tmq-cta.is-warp::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(240, 217, 168, 0.72), transparent);
+  pointer-events: none;
+}
+
+/* бегущий скан и стрелка больше не нужны */
+.tmq-cta.is-warp::after { content: none; animation: none; }
+.tmq-cta.is-warp .tmq-cta-arrow { display: none; }
+
+.tmq-cta.is-warp:hover {
+  filter: none;
+  transform: translateY(-1px);
+  border-color: rgba(240, 217, 168, 0.85);
+  background:
+    radial-gradient(120% 170% at 50% 0%, rgba(212, 180, 117, 0.3), transparent 70%),
+    linear-gradient(180deg, #241b0c 0%, #171008 55%, #0c0805 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 215, 0.22),
+    inset 0 0 0 1px rgba(240, 217, 168, 0.14),
+    0 0 30px -10px rgba(212, 180, 117, 0.85);
+}
+
+.tmq-cta.is-warp:active { transform: translateY(1px); }
+
+.tmq-cta.is-warp .tmq-cta-label {
+  position: relative;
+  z-index: 2;
+  font-size: 11px;
+  letter-spacing: 3.4px;
+}
+
+/* ---------- 2. Плашка чемпиона: графит с золотой линией ---------- */
+.tmq-plate {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px 16px 14px 18px;
+  overflow: hidden;
+  text-align: left;
+  border: 1px solid rgba(212, 180, 117, 0.26);
+  border-left: 2px solid rgba(212, 180, 117, 0.85);
+  border-radius: 2px;
+  background:
+    radial-gradient(110% 160% at 100% 0%, rgba(53, 214, 240, 0.08), transparent 62%),
+    linear-gradient(135deg, #0f151c 0%, #0b1015 55%, #070b0f 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 18px 38px -28px rgba(0, 0, 0, 0.95);
+}
+
+/* диагональный блик вместо углового свечения */
+.tmq-plate::before {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -25%;
+  width: 55%;
+  height: 220%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.055), transparent);
+  transform: rotate(18deg);
+  pointer-events: none;
+}
+
+.tmq-plate::after { content: none; }
+.tmq-plate-frame { display: none; }
+
+.tmq-plate-eyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2.2px;
+  color: #d9c191;
+}
+
+.tmq-plate-name {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: 0.01em;
+  color: #f4f8fb;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.tmq-plate-rule {
+  display: block;
+  width: 34px;
+  height: 1px;
+  margin: 2px 0 3px;
+  background: linear-gradient(90deg, rgba(212, 180, 117, 0.9), rgba(212, 180, 117, 0));
+}
+
+.tmq-plate-title {
+  font-size: 9px;
+  line-height: 1.5;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #7f8b98;
+}
+
+/* квадратный портрет: тонкая золотая рама, без тонировки */
+.tmq-ava.is-plate {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  border-radius: 2px;
+  border: 1px solid rgba(212, 180, 117, 0.6);
+  background: #0a0d11;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.03),
+    0 8px 18px rgba(0, 0, 0, 0.6);
+}
+.tmq-ava.is-plate img { filter: none; }
+.tmq-ava.is-plate::after { content: none; }
+
+/* ---------- 4–6. Карта пути без иконок и служебных подписей ---------- */
+.tmq-route-top { justify-content: flex-end; }
+.tmq-route-glyph { display: none; }
+.tmq-synopsis-label { display: none; }
+.tmq-synopsis { padding: 13px 14px 13px 15px; }
+
+/* ---------- 3. Выход из боя: тихая кнопка под логом ---------- */
+.tmq-net-exit {
+  position: static;
+  transform: none;
+  margin-top: 10px;
+  padding: 7px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(8, 12, 18, 0.6);
+  color: rgba(207, 218, 230, 0.65);
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.tmq-net-exit:hover,
+.tmq-net-exit.is-armed {
+  color: #f0d8a6;
+  border-color: rgba(212, 180, 117, 0.6);
+  background: rgba(212, 180, 117, 0.12);
+}
+.tmq-net-exit:active { transform: scale(0.97); }

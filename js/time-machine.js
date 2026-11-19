@@ -2401,7 +2401,6 @@
     var warpBtn =
       '<button class="tmq-cta is-warp" type="button" id="tmq-jump">' +
         '<span class="tmq-cta-label">Прыжок во времени</span>' +
-        '<span class="tmq-cta-arrow" aria-hidden="true">→</span>' +
       '</button>';
 
     var primary = saved > 0
@@ -2515,7 +2514,6 @@
       '</div>' +
       '<button class="tmq-cta is-warp" type="button" id="tmq-bio-next">' +
         '<span class="tmq-cta-label">Прыжок во времени</span>' +
-        '<span class="tmq-cta-arrow" aria-hidden="true">→</span>' +
       '</button>'
     );
 
@@ -2702,7 +2700,7 @@
         '<div class="tmq-copy tmq-copy-quote">' +
           lines.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') +
         '</div>' +
-        '<button class="tmq-cta" type="button" id="tmq-map">Карта пути <span aria-hidden="true">→</span></button>' +
+        '<button class="tmq-cta" type="button" id="tmq-map">Карта пути</button>' +
       '</div>'
     );
 
@@ -2737,13 +2735,13 @@
         '<div class="tmq-rail"><span class="tmq-node">' + (status === 'done' ? '✔' : esc(item.num)) + '</span>' +
         '<span class="tmq-rail-line"></span></div>' +
         '<div class="tmq-route-body">' +
-          '<div class="tmq-route-top"><span class="tmq-route-glyph">' + item.glyph + '</span>' +
+          '<div class="tmq-route-top">' +
           '<span class="tmq-route-status">' + label + '</span></div>' +
           '<div class="tmq-route-title">' + esc(item.title) + '</div>' +
           '<div class="tmq-route-sub">' + esc(item.sub) + ' · ' + esc(meta) + '</div>' +
           '<div class="tmq-route-why">' + esc(item.why || '') + '</div>' +
           (status === 'active'
-            ? '<button class="tmq-btn tmq-btn-sm" type="button" data-enter="' + i + '">Войти на этап</button>'
+            ? '<button class="tmq-btn tmq-btn-sm" type="button" data-enter="' + i + '">Пройти уровень</button>'
             : '') +
         '</div>' +
       '</article>';
@@ -2752,7 +2750,6 @@
     setBody(
       '<div class="tmq-title">Пять этапов становления</div>' +
       '<div class="tmq-synopsis">' +
-        '<div class="tmq-synopsis-label">Синопсис</div>' +
         '<p>' + esc(CONFIG.synopsis) + '</p>' +
       '</div>' +
       '<div class="tmq-copy"><p class="is-lead">' + esc(q.mission) + '</p></div>' +
@@ -2805,7 +2802,7 @@
         '<p>' + esc(route.text) + '</p>' +
       '</div>' +
       '<div class="tmq-brief">' + rows + '</div>' +
-      '<button class="tmq-cta" type="button" id="tmq-start">Начать этап <span aria-hidden="true">→</span></button>' +
+      '<button class="tmq-cta" type="button" id="tmq-start">Начать уровень</button>' +
       '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-back">К карте пути</button>'
     );
 
@@ -3003,7 +3000,7 @@
           : '') +
         (duel.style ? '<div class="tmq-opp-style">' + esc(duel.style) + '</div>' : '') +
       '</div>' +
-      '<button class="tmq-cta" type="button" id="tmq-duel-start">Выйти на арену <span aria-hidden="true">→</span></button>'
+      '<button class="tmq-cta" type="button" id="tmq-duel-start">Выйти на арену</button>'
     );
 
     dom.body.querySelector('#tmq-duel-start').addEventListener('click', beginDuel);
@@ -3074,6 +3071,12 @@
   function showNetExit() {
     var overlay = document.getElementById('net-battle-overlay');
     if (!overlay) return;
+
+    /* Кнопка живёт под логом боя, в центральной колонке:
+       не перекрывает имя соперника и не мешает жать атаку.
+       Первый тап «взводит», второй — выходит: случайно не нажмёшь. */
+    var host = overlay.querySelector('.duel-center-content') || overlay;
+
     var old = document.getElementById('tmq-net-exit');
     if (old && old.parentNode) old.parentNode.removeChild(old);
 
@@ -3082,8 +3085,28 @@
     btn.type = 'button';
     btn.className = 'tmq-net-exit';
     btn.textContent = 'Выйти из боя';
-    btn.addEventListener('click', exitNetDuel);
-    overlay.appendChild(btn);
+
+    var armed = false;
+    var timer = 0;
+
+    btn.addEventListener('click', function () {
+      if (!armed) {
+        armed = true;
+        btn.classList.add('is-armed');
+        btn.textContent = 'Нажмите ещё раз, чтобы выйти';
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          armed = false;
+          btn.classList.remove('is-armed');
+          btn.textContent = 'Выйти из боя';
+        }, 3200);
+        return;
+      }
+      clearTimeout(timer);
+      exitNetDuel();
+    });
+
+    host.appendChild(btn);
   }
 
   function removeNetExit() {
@@ -3409,7 +3432,7 @@
           '<div class="tmq-triumph-line">Пять этапов · ' + state.lives + ' из ' + CONFIG.maxLives + ' жизней</div>' +
         '</div>' +
       '</div>' +
-      '<button class="tmq-cta" type="button" id="tmq-finish">К карточке <span aria-hidden="true">→</span></button>' +
+      '<button class="tmq-cta" type="button" id="tmq-finish">К карточке</button>' +
       '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-again">К карте пути</button>'
     );
 
@@ -3462,7 +3485,7 @@
         '<div class="tmq-kicker">' + kicker + '</div>' +
         '<h2 class="tmq-title">' + title + '</h2>' +
         '<p class="tmq-done-text">' + line + '</p>' +
-        '<button class="tmq-cta" type="button" id="tmq-done-next">Дальше <span aria-hidden="true">→</span></button>' +
+        '<button class="tmq-cta" type="button" id="tmq-done-next">Дальше</button>' +
       '</div>'
     );
 
