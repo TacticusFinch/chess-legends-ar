@@ -359,7 +359,125 @@
 }
 .tmq-cta:hover { filter: brightness(1.06); transform: translateY(-1px); }
 .tmq-cta:active { transform: translateY(1px); }
-.tmq-cta span { font-size: 15px; letter-spacing: 0; }
+.tmq-cta span[aria-hidden] { font-size: 15px; letter-spacing: 0; }
+
+/* ==========================================================
+   ВАРП-КНОПКА — панель хроно-перехода из фантастики
+   Срезанные углы, металлическая подложка, бегущий скан,
+   холодное свечение канала и золотая стрелка.
+   ========================================================== */
+.tmq-cta.is-warp {
+  position: relative;
+  gap: 14px;
+  margin-top: 22px;
+  padding: 17px 20px;
+  overflow: hidden;
+  border: 1px solid rgba(53, 214, 240, 0.45);
+  border-radius: 0;
+  clip-path: polygon(
+    15px 0, calc(100% - 15px) 0, 100% 15px,
+    100% calc(100% - 15px), calc(100% - 15px) 100%,
+    15px 100%, 0 calc(100% - 15px), 0 15px
+  );
+  background:
+    linear-gradient(180deg, rgba(53, 214, 240, 0.16), rgba(4, 16, 24, 0.98) 62%),
+    linear-gradient(90deg, rgba(212, 180, 117, 0.16), transparent 46%);
+  color: #d7f4ff;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-shadow: 0 0 14px rgba(53, 214, 240, 0.55);
+  box-shadow:
+    inset 0 0 0 1px rgba(53, 214, 240, 0.16),
+    inset 0 0 26px rgba(53, 214, 240, 0.14),
+    0 0 28px -10px rgba(53, 214, 240, 0.75);
+  transition: box-shadow 0.25s ease, transform 0.18s ease, background 0.25s ease;
+}
+
+/* верхняя и нижняя «шины» панели */
+.tmq-cta.is-warp::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(190, 246, 255, 0.9), transparent);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* бегущий скан канала */
+.tmq-cta.is-warp::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -40%;
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(190, 246, 255, 0.16) 45%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(190, 246, 255, 0.16) 55%,
+    transparent
+  );
+  animation: tmqCtaScan 2.8s linear infinite;
+  pointer-events: none;
+}
+
+.tmq-cta.is-warp:hover {
+  filter: none;
+  transform: translateY(-1px);
+  background:
+    linear-gradient(180deg, rgba(53, 214, 240, 0.26), rgba(4, 16, 24, 0.98) 62%),
+    linear-gradient(90deg, rgba(212, 180, 117, 0.22), transparent 46%);
+  box-shadow:
+    inset 0 0 0 1px rgba(53, 214, 240, 0.28),
+    inset 0 0 30px rgba(53, 214, 240, 0.2),
+    0 0 38px -8px rgba(53, 214, 240, 0.95);
+}
+
+.tmq-cta.is-warp:active { transform: translateY(1px) scale(0.995); }
+
+.tmq-cta.is-warp .tmq-cta-label {
+  position: relative;
+  z-index: 2;
+  font-size: 11.5px;
+  letter-spacing: 3px;
+}
+
+.tmq-cta.is-warp .tmq-cta-arrow {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(212, 180, 117, 0.6);
+  border-radius: 50%;
+  color: #f0d8a6;
+  font-size: 12px;
+  letter-spacing: 0;
+  text-shadow: 0 0 10px rgba(212, 180, 117, 0.8);
+  animation: tmqCtaArrow 1.9s ease-in-out infinite;
+}
+
+@keyframes tmqCtaScan {
+  0% { left: -45%; }
+  100% { left: 115%; }
+}
+
+@keyframes tmqCtaArrow {
+  0%, 100% { transform: translateX(0); opacity: 0.85; }
+  50% { transform: translateX(3px); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tmq-cta.is-warp::after,
+  .tmq-cta.is-warp .tmq-cta-arrow { animation: none; }
+}
 
 .tmq-link {
   margin-top: 12px;
@@ -541,7 +659,12 @@
 }
 .tmq-feedback.is-ok { border-color: var(--tmq-li); background: var(--tmq-li-soft); color: #dff3c8; }
 .tmq-feedback.is-bad { border-color: var(--tmq-rd); background: rgba(224, 101, 95, 0.08); color: #f2d4d1; }
-.tmq-feedback .tmq-actions { margin-top: 9px; }
+/* Кнопка «Дальше» — справа, под большим пальцем */
+.tmq-feedback .tmq-actions {
+  margin-top: 10px;
+  justify-content: flex-end;
+}
+.tmq-feedback .tmq-btn { margin-left: auto; }
 
 /* ---------- Доска ---------- */
 .tmq-board-host {
@@ -1123,6 +1246,8 @@
 /* ==========================================================
    ПРЕМИАЛЬНАЯ ПЛАШКА ЧЕМПИОНА
    ========================================================== */
+/* Винтажная именная табличка: тёмный пергамент, двойной кант,
+   угловые насечки, квадратный портрет в золотой раме */
 .tmq-plate {
   position: relative;
   display: flex;
@@ -1133,27 +1258,50 @@
   padding: 15px 16px;
   overflow: hidden;
   text-align: left;
-  border: 1px solid rgba(212, 180, 117, 0.34);
-  border-radius: 16px;
+  border: 1px solid rgba(212, 180, 117, 0.42);
+  border-radius: 3px;
   background:
-    radial-gradient(130% 140% at 0% 0%, rgba(212, 180, 117, 0.17), transparent 58%),
-    linear-gradient(158deg, rgba(255, 255, 255, 0.062), rgba(255, 255, 255, 0.012));
+    radial-gradient(125% 150% at 0% 0%, rgba(212, 180, 117, 0.15), transparent 62%),
+    linear-gradient(165deg, #16120b 0%, #0d0a06 52%, #080603 100%);
   box-shadow:
-    inset 0 0 0 1px rgba(240, 217, 168, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 1px 0 rgba(255, 236, 196, 0.09),
+    inset 0 0 34px rgba(0, 0, 0, 0.55),
     0 20px 44px -28px rgba(0, 0, 0, 0.95);
 }
 
-/* тонкий золотой кант внутри плашки */
-.tmq-plate::before {
-  content: '';
+/* внутренний кант */
+.tmq-plate-frame {
   position: absolute;
-  inset: 4px;
-  border: 1px solid rgba(240, 217, 168, 0.13);
-  border-radius: 12px;
+  inset: 5px;
+  border: 1px solid rgba(240, 217, 168, 0.16);
+  border-radius: 1px;
   pointer-events: none;
 }
 
+/* угловые насечки — «гравировка» */
+.tmq-plate-frame::before,
+.tmq-plate-frame::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(240, 217, 168, 0.5);
+  pointer-events: none;
+}
+.tmq-plate-frame::before {
+  top: -1px;
+  left: -1px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.tmq-plate-frame::after {
+  right: -1px;
+  bottom: -1px;
+  border-left: 0;
+  border-top: 0;
+}
+
+/* мягкое тёплое свечение в углу */
 .tmq-plate::after {
   content: '';
   position: absolute;
@@ -1162,27 +1310,35 @@
   width: 180px;
   height: 180px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(212, 180, 117, 0.16), transparent 68%);
-  pointer-events: none;
-}
-
-.tmq-plate-crown {
-  position: absolute;
-  top: 6px;
-  right: 10px;
-  font-size: 30px;
-  line-height: 1;
-  color: rgba(212, 180, 117, 0.16);
+  background: radial-gradient(circle, rgba(212, 180, 117, 0.14), transparent 68%);
   pointer-events: none;
 }
 
 .tmq-plate-ava { position: relative; z-index: 2; display: block; flex: none; }
-.tmq-plate-ava .tmq-ava {
-  border-color: rgba(240, 217, 168, 0.75);
+
+/* Квадратный портрет в золотой раме — вместо круга */
+.tmq-ava.is-plate {
+  position: relative;
+  width: 66px;
+  height: 66px;
+  border-radius: 2px;
+  border: 1px solid rgba(240, 217, 168, 0.8);
+  background: #0a0805;
   box-shadow:
-    0 0 0 3px rgba(212, 180, 117, 0.12),
-    0 0 0 4px rgba(240, 217, 168, 0.22),
-    0 12px 26px rgba(0, 0, 0, 0.6);
+    0 0 0 3px #0b0906,
+    0 0 0 4px rgba(212, 180, 117, 0.45),
+    0 10px 22px rgba(0, 0, 0, 0.65);
+}
+.tmq-ava.is-plate img {
+  filter: sepia(0.16) contrast(1.05) saturate(0.95);
+}
+.tmq-ava.is-plate::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 1px;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
 }
 
 .tmq-plate-body {
@@ -1204,18 +1360,28 @@
 
 .tmq-plate-name {
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.2;
-  letter-spacing: -0.01em;
-  color: #fbf7ee;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+  letter-spacing: 0.01em;
+  color: #f7eeda;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), 0 0 18px rgba(212, 180, 117, 0.18);
+}
+
+/* гравированная линия под именем */
+.tmq-plate-rule {
+  display: block;
+  width: 42px;
+  height: 1px;
+  margin: 1px 0 2px;
+  background: linear-gradient(90deg, rgba(212, 180, 117, 0.85), rgba(212, 180, 117, 0.05));
 }
 
 .tmq-plate-title {
-  font-size: 10px;
+  font-size: 9.5px;
   line-height: 1.45;
-  letter-spacing: 0.3px;
-  color: #8f9aa6;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: #9a8b6f;
 }
 
 /* ==========================================================
@@ -1275,6 +1441,46 @@
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
 }
 .tmq-strike.is-shake { animation: tmqShake 0.4s ease; }
+
+/* Подсветка выбранной фигуры и её законных ходов */
+.tmq-strike [data-square] {
+  position: relative;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.tmq-strike .tmq-hint-sel {
+  box-shadow: inset 0 0 0 3px rgba(240, 217, 168, 0.95);
+}
+.tmq-strike .tmq-hint-sq::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 26%;
+  height: 26%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(15, 25, 38, 0.42);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+  z-index: 3;
+}
+.tmq-strike .tmq-hint-cap::after {
+  content: '';
+  position: absolute;
+  inset: 5%;
+  border-radius: 50%;
+  border: 3px solid rgba(15, 25, 38, 0.55);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  z-index: 3;
+}
+.tmq-strike .black-3c85d.tmq-hint-sq::after,
+.tmq-strike .black-3c85d.tmq-hint-cap::after {
+  background: rgba(240, 248, 255, 0.55);
+  border-color: rgba(240, 248, 255, 0.65);
+  box-shadow: 0 0 0 1px rgba(10, 16, 24, 0.4);
+}
 
 /* ---------- Мобильные ---------- */
 @media (max-width: 480px) {

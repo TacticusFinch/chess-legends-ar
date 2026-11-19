@@ -1146,24 +1146,111 @@
       moveSpeed: 180,
       snapbackSpeed: 140,
       onDragStart: function (source, piece) {
+        if (locked) return false;
         var pos = Chess.parse(board.fen());
-        return Chess.colorOf(piece) === pos.turn;
+        /* [FIX] chessboard.js отдаёт фигуру как 'wP' / 'bK'.
+           Первая буква — цвет. Раньше здесь сравнивался цвет
+           по регистру ('wP' считался чёрным), поэтому ни одна
+           фигура не бралась — доска «не нажималась». */
+        return String(piece).charAt(0) === pos.turn;
       },
       onDrop: function (source, target) {
-        var ok = !opts.solution || (source === opts.solution.from && target === opts.solution.to);
-        if (ok) {
-          current = Chess.apply(board.fen(), source, target);
-          board.position(current, false);
-          play('playMove');
-          if (opts.onResult) setTimeout(function () { opts.onResult(true, source, target); }, 200);
-          return;
-        }
+        return tryMove(source, target) ? undefined : 'snapback';
+      }
+    });
+
+    /* ---------- Выбор фигуры нажатием (телефон и мышь) ---------- */
+    var selected = null;
+    var locked = false;
+
+    function boardEl() {
+      return host.querySelector('.board-b72b1') || host;
+    }
+
+    function squareFromEvent(ev) {
+      var rect = boardEl().getBoundingClientRect();
+      if (!rect.width || !rect.height) return null;
+      var x = ev.clientX - rect.left;
+      var y = ev.clientY - rect.top;
+      if (x < 0 || y < 0 || x >= rect.width || y >= rect.height) return null;
+      var file = Math.floor(x / (rect.width / 8));
+      var rank = 8 - Math.floor(y / (rect.height / 8));
+      if (file < 0 || file > 7 || rank < 1 || rank > 8) return null;
+      return 'abcdefgh'.charAt(file) + rank;
+    }
+
+    function cellOf(sq) {
+      return host.querySelector('[data-square="' + sq + '"]');
+    }
+
+    function clearHints() {
+      Array.prototype.forEach.call(
+        host.querySelectorAll('.tmq-hint-sel, .tmq-hint-sq, .tmq-hint-cap'),
+        function (el) { el.classList.remove('tmq-hint-sel', 'tmq-hint-sq', 'tmq-hint-cap'); }
+      );
+      selected = null;
+    }
+
+    function selectSquare(sq) {
+      clearHints();
+      var pos = Chess.parse(board.fen());
+      var piece = pos.board[sq];
+      if (!piece || Chess.colorOf(piece) !== pos.turn) return false;
+
+      selected = sq;
+      var own = cellOf(sq);
+      if (own) own.classList.add('tmq-hint-sel');
+
+      Chess.moves(board.fen(), sq).forEach(function (m) {
+        var cell = cellOf(m.to);
+        if (cell) cell.classList.add(m.capture ? 'tmq-hint-cap' : 'tmq-hint-sq');
+      });
+      return true;
+    }
+
+    function tryMove(from, to) {
+      if (locked || !from || !to || from === to) return false;
+
+      var legal = Chess.moves(board.fen(), from).some(function (m) { return m.to === to; });
+      if (!legal) return false;
+
+      var ok = !opts.solution || (from === opts.solution.from && to === opts.solution.to);
+
+      if (!ok) {
+        locked = true;
         host.classList.remove('is-shake');
         void host.offsetWidth;
         host.classList.add('is-shake');
-        if (opts.onResult) opts.onResult(false, source, target);
-        return 'snapback';
+        if (opts.onResult) opts.onResult(false, from, to);
+        setTimeout(function () { locked = false; }, 620);
+        return false;
       }
+
+      locked = true;
+      board.position(Chess.apply(board.fen(), from, to), false);
+      play('playMove');
+      if (opts.onResult) setTimeout(function () { opts.onResult(true, from, to); }, 220);
+      return true;
+    }
+
+    host.addEventListener('click', function (ev) {
+      if (locked) return;
+      var sq = squareFromEvent(ev);
+      if (!sq) return;
+
+      if (selected && sq === selected) { clearHints(); return; }
+
+      if (selected) {
+        var legal = Chess.moves(board.fen(), selected).some(function (m) { return m.to === sq; });
+        if (legal) {
+          tryMove(selected, sq);
+          clearHints();
+          return;
+        }
+      }
+
+      if (selectSquare(sq)) play('playMove');
+      else clearHints();
     });
 
     function resize() {
@@ -1358,9 +1445,17 @@
     if (!host) return null;
     if (typeof window.Chessboard === 'function' && window.jQuery) {
       try {
-        return createChessboardBoard(host, fen, opts);
+        var made = createChessboardBoard(host, fen, opts);
+        /* [FIX] Если библиотека отдала пустой контейнер (не нашла id,
+           заблокировала инициализацию), молча переходим на встроенную
+           доску — лучше рабочие клетки, чем пустой прямоугольник. */
+        if (made && host.querySelector('.board-b72b1')) return made;
+        console.warn('[TimeMachineQuest] chessboard.js отдал пустую доску — включаю встроенную.');
+        try { if (made && made.destroy) made.destroy(); } catch (e) {}
+        host.innerHTML = '';
       } catch (e) {
         console.warn('[TimeMachineQuest] chessboard.js не поднялся, играем на встроенной доске:', e);
+        host.innerHTML = '';
       }
     }
     return createCssBoard(host, fen, opts);
@@ -1403,7 +1498,10 @@
       ? '<button class="tmq-cta" type="button" id="tmq-continue">Продолжить путь · этап ' +
         esc(CONFIG.route[saved] ? CONFIG.route[saved].num : 'V') + '</button>' +
         '<button class="tmq-link" type="button" id="tmq-restart">Начать заново</button>'
-      : '<button class="tmq-cta" type="button" id="tmq-jump">Прыжок во времени <span aria-hidden="true">→</span></button>' +
+      : '<button class="tmq-cta is-warp" type="button" id="tmq-jump">' +
+          '<span class="tmq-cta-label">Прыжок во времени</span>' +
+          '<span class="tmq-cta-arrow" aria-hidden="true">→</span>' +
+        '</button>' +
         '<button class="tmq-link" type="button" id="tmq-bio">Биография чемпиона</button>';
 
     setBody(
@@ -1411,11 +1509,12 @@
         '<h2 class="tmq-welcome-title">Добро пожаловать<br>на турнир «Машина времени»</h2>' +
 
         '<div class="tmq-plate">' +
-          '<span class="tmq-plate-crown" aria-hidden="true">♛</span>' +
-          '<span class="tmq-plate-ava">' + avatarHtml(hero, 'is-lg') + '</span>' +
+          '<span class="tmq-plate-frame" aria-hidden="true"></span>' +
+          '<span class="tmq-plate-ava">' + avatarHtml(hero, 'is-plate') + '</span>' +
           '<span class="tmq-plate-body">' +
             '<span class="tmq-plate-eyebrow">' + esc(q.era) + '</span>' +
             '<span class="tmq-plate-name">' + esc(q.name) + '</span>' +
+            '<span class="tmq-plate-rule" aria-hidden="true"></span>' +
             '<span class="tmq-plate-title">' + esc(hero.title || 'Чемпион мира по шахматам') + '</span>' +
           '</span>' +
         '</div>' +
@@ -1503,7 +1602,10 @@
             }).join('')
           : '<p>Биография этой карточки ещё не заполнена.</p>') +
       '</div>' +
-      '<button class="tmq-cta" type="button" id="tmq-bio-next">Прыжок во времени <span aria-hidden="true">→</span></button>'
+      '<button class="tmq-cta is-warp" type="button" id="tmq-bio-next">' +
+        '<span class="tmq-cta-label">Прыжок во времени</span>' +
+        '<span class="tmq-cta-arrow" aria-hidden="true">→</span>' +
+      '</button>'
     );
 
     dom.body.querySelector('#tmq-bio-back').addEventListener('click', function () {
