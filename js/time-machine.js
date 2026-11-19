@@ -1,29 +1,35 @@
 /* ==========================================================
-   МАШИНА ВРЕМЕНИ — КВЕСТ (v5, классический скрипт)
+   МАШИНА ВРЕМЕНИ — КВЕСТ (v7, классический скрипт)
 
-   Что изменилось против v4:
-   1. Приветствие без 3D-canvas: чистая типографика, статичная
-      временная шкала, две кнопки — «Прыжок во времени»
-      и «Биография чемпиона».
-   2. Новый верхний HUD: «город · год», подпись «чемпион · этап»,
-      жизни сегментами. Угловые «закорючки» убраны.
-   3. Перед каждым этапом — брифинг (renderBriefing): что будет,
-      как играть, сколько стоит ошибка.
-   4. Доска рисуется компонентом createBoard() — тем же, что
-      используется на тактической доске дуэли. Один вид, одна
-      палитра (--tmq-sq-light / --tmq-sq-dark).
-   5. При выборе фигуры подсвечиваются законные ходы
-      (ChessLite.moves → точки и кольца взятия).
+   Что нового против v5/v6:
 
-   Зависимости:
-     js/chess-lite.js  — обязательно
-     js/hp-fx.js       — числа урона на арене (этап IV)
-     js/quest-data.js  — данные квестов (QUEST_DATA и др.)
-     NetDuel.startQuestDuel() — этап IV
+   1. ЛИМБ И ДОК. Квест больше не «роняет» лимб рангов на нижнюю
+      панель: док остаётся на месте, лимб поднимается по CSS
+      (css/dock-fix.css + js/dock-fix.js). Квест ставит на <body>
+      класс tmq-running и не даёт нижним элементам перехватывать
+      касания.
 
-   API:
-     TimeMachineQuest.open(heroId) / .start(heroId) / .close()
-     TimeMachineQuest.createBoard(host, fen, opts) — общая доска
+   2. ПРИВЕТСТВИЕ БЕЗ СЛУЖЕБНЫХ НАДПИСЕЙ. Убраны строка
+      «Турнир · 21–22 ноября» над заголовком и подпись
+      «этап I из V · …» рядом с именем чемпиона.
+      Осталось: заголовок, карточка чемпиона, художественный
+      текст, ставки, две кнопки.
+
+   3. АВАТАР ИЗ assets/avatars. Берётся hero.avatar, иначе
+      ./assets/avatars/<id>.png. Если файла нет — рисуется
+      монограмма, поэтому недоделанная карточка не ломает квест.
+
+   4. ХУДОЖЕСТВЕННЫЙ ТЕКСТ ПОСЛЕ КАЖДОГО НАЖАТИЯ. Полоса
+      «tmq-beat» под шапкой: своя реплика на каждое действие
+      (биография, прыжок, ответ, подсказка, дуэль, финал)
+      плюс атмосферная страховка на любую кнопку без реплики.
+
+   5. КВЕСТ АВТОНОМЕН. Свои задачи «мат в один ход» и защита,
+      своя арена на случай, если NetDuel не подключён.
+      Если NetDuel есть — используется он, как раньше.
+
+   Зависимости: heroes-data.js, quest-data.js (опционально).
+   API: TimeMachineQuest.start(heroId) / .openBio(heroId) / .close()
    ========================================================== */
 (function () {
   'use strict';
@@ -33,9 +39,9 @@
     botName: 'Watson-bot',
     botUrl: 'https://lichess.org/@/Watson-bot',
     maxLives: 10,
-    storagePrefix: 'tmq_v5_',
+    storagePrefix: 'tmq_v7_',
     judgeCode: '2026',
-    heroGreeting: 'Ты оживил карточку чемпиона — и она стала дверью в его эпоху.',
+    avatarDir: './assets/avatars/',
     route: [
       {
         key: 'quiz', num: 'I', title: 'Вспомнить всё', sub: 'Биография до чемпионства', glyph: '❖',
@@ -66,16 +72,16 @@
       },
       {
         key: 'duels', num: 'IV', title: 'Путь героя', sub: 'Пять дуэлей', glyph: '♞',
-        text: 'Настоящая арена NetDuel: 50 HP, атака, защита, коронный ход и тактическая доска на 30 секунд.',
+        text: 'Настоящая арена: 50 HP, атака, защита и коронный ход.',
         brief: [
           ['Что будет', 'Пять соперников подряд, у каждого 50 HP.'],
-          ['Как играть', 'Атака, защита или скилл. Урон показывается всплывающими числами.'],
+          ['Как играть', 'Атака, защита или коронный ход. Заряды копятся в защите.'],
           ['Цена ошибки', 'Поражение — минус одна жизнь и повтор рубежа.']
         ]
       },
       {
         key: 'final', num: 'V', title: 'Финальная схватка', sub: 'Хранитель времени', glyph: '♚',
-        text: 'Последний рубеж — партия с ботом турнира на Lichess и грамота финалиста.',
+        text: 'Последний рубеж — партия с ботом турнира и грамота финалиста.',
         brief: [
           ['Что будет', 'Партия с ботом турнира на Lichess.'],
           ['Как играть', 'Выберите контроль времени, укажите ник, получите грамоту.'],
@@ -86,16 +92,7 @@
   };
 
   /* ==========================================================
-     ХУДОЖЕСТВЕННЫЙ ПРОЛОГ
-     Раньше лежал отдельным файлом quest-prologue.js — теперь
-     внутри движка, чтобы не плодить файлы.
-
-     common.lead  — первая строка, одна на всех
-     hook         — драма чемпиона: в чём его ставка
-     scene        — погружение: место, год, звуки
-     stakes       — что случится, если путь не пройти
-
-     Правится здесь же, вёрстку трогать не нужно.
+     ПРОЛОГ: драма чемпиона
      ========================================================== */
   var PROLOGUE = {
     common: {
@@ -201,6 +198,127 @@
     }
   };
 
+  /* ==========================================================
+     ХУДОЖЕСТВЕННЫЕ РЕПЛИКИ — по одной после каждого нажатия
+     ========================================================== */
+  var BEATS = {
+    open: [
+      'Карточка ещё тёплая от твоих пальцев. Где-то внутри неё тикает механизм, которому больше ста лет.',
+      'Ты слышишь, как время примеряется к тебе, будто портной к новому костюму.',
+      '{name} смотрит с портрета внимательно. Он ждёт не поклона — он ждёт хода.'
+    ],
+    bio: [
+      'Ты листаешь чужую жизнь, как старую книгу, и чувствуешь запах типографской краски.',
+      'В биографии {short} больше тумана, чем дат. Туман рассеивается, если идти вперёд.',
+      'Между строк биографии слышно, как переставляют фигуры. Кто-то уже ждёт партию.'
+    ],
+    jump: [
+      'Ты закрываешь глаза — и время срывается с места, как поезд, у которого не было расписания.',
+      'Где-то позади остаётся твой век. Впереди — чужая эпоха, которая уже считает тебя своим.',
+      'Воздух густеет. Ещё секунда — и ты перестанешь быть гостем.'
+    ],
+    awake: [
+      'Первый вдох — и лёгкие наполняются воздухом другого столетия.',
+      'Ты пробуешь своё новое имя на вкус. Оно чужое. Пока чужое.',
+      'Сердце стучит ровно, хотя должно бы сбиться. Тело чемпиона знает, что делает.'
+    ],
+    map: [
+      'Пять этапов лежат перед тобой, как пять городов на старинной карте.',
+      'Карта пути пахнет дорогой. Дорога пахнет риском.',
+      'Ты считаешь этапы по пальцам и понимаешь: запасных нет.'
+    ],
+    briefing: [
+      'Правила простые. Сложным будет всё остальное.',
+      'Ты проверяешь, на месте ли руки. Руки на месте. Голова — вопрос.',
+      'Перед стартом всегда тихо. Это самая громкая тишина на свете.'
+    ],
+    quizRight: [
+      'Верно. Память щёлкает, как замок, который сто лет не открывали.',
+      '{name} будто кивает: этот факт ты теперь несёшь сам.',
+      'Ответ верный — и в комнате становится светлее на одну свечу.'
+    ],
+    quizWrong: [
+      'Неверно. Время забирает одну жизнь и не извиняется.',
+      'Ошибка остаётся на доске, как отпечаток пальца на стекле.',
+      '{name} хмурится. Он не сердится — он проверяет.'
+    ],
+    puzzleOk: [
+      'Ход точный. Фигуры переставляются с сухим щелчком, будто кто-то считает вслух.',
+      'Ты попал в нужное поле — и время отпустило ещё один виток.',
+      'Фигура встала так, как стояла сто лет назад. Позиция узнала тебя.'
+    ],
+    puzzleNo: [
+      'Не тот ход. Доска вздрагивает и возвращает тебя на шаг назад.',
+      'Фигура выскользнула из пальцев. В этой позиции есть только один честный ход.',
+      'Ты слышишь, как в глубине часов что-то щёлкает. Одна жизнь стала короче.'
+    ],
+    hint: [
+      'Подсказка ложится в ладонь, как чужая записка.',
+      'Голос за плечом произносит полстроки — и умолкает.',
+      'Ты видишь стрелку, нарисованную мелом прямо в воздухе.'
+    ],
+    duelStart: [
+      'Арена вспыхивает. За спиной {short} — пять рубежей и ни одного запасного.',
+      'Первый удар всегда самый громкий. Главное — не зажмуриться.',
+      'Соперник выходит навстречу. Он не торопится — он уже видел твой страх.'
+    ],
+    duelWin: [
+      'Рубеж взят. Ты слышишь, как трещит время, отпуская ещё одну эпоху.',
+      'Соперник отводит взгляд. Это и есть победа — не только в фигурах.',
+      'Зал выдыхает. Ты — нет. Впереди ещё есть кто-то сильнее.'
+    ],
+    duelLose: [
+      'Ты падаешь на одно колено. Жизнь уходит — но не всё потеряно.',
+      'Соперник не смеётся. Он ждёт, когда ты встанешь. Это тоже уважение.',
+      'Доска пуста. Ты запомнил каждый ход. Этого хватит, чтобы вернуться.'
+    ],
+    final: [
+      'За дверью нет зала. Только стол, две чашки и часы, которые идут громче обычного.',
+      'Хранитель времени не здоровается. Он просто сдвигает пешку на два поля.',
+      'Ты садишься. Спина прямая. Ладони сухие. Пора.'
+    ],
+    victory: [
+      'Хранитель времени снимает шляпу. Впервые за пятьсот лет.',
+      'Корона тяжелее, чем кажется. И легче, чем ты боялся.',
+      'Ты возвращаешься в свой век, унося чужую победу. Она теперь общая.'
+    ],
+    gameover: [
+      'Свечи гаснут одна за другой. Но дверь в эпоху не закрывается навсегда.',
+      'Часы останавливаются. Судья подходит и молча кладёт руку на плечо.',
+      'Ты слышишь, как карточка шелестит в кармане. Она ещё жива. Она ждёт.'
+    ],
+    resume: [
+      'Ты возвращаешься туда, где остановился. Время помнит.',
+      'Пять этапов не стали короче. Зато ты стал точнее.',
+      'Дверь открывается с той же стороны, где ты её оставил.'
+    ],
+    restart: [
+      'Всё начинается заново. На этот раз ты знаешь, где скрипит пол.',
+      'Ты стираешь прошлую попытку, как мел с доски. Чисто. Поехали.',
+      'Корона снова далеко. Но дорога уже знакома.'
+    ],
+    generic: [
+      'Время шуршит страницей.',
+      'Ты делаешь шаг — и эпоха делает шаг навстречу.',
+      'Где-то далеко щёлкают часы. Это не твои часы.',
+      'Пыль в луче света кружится медленнее, чем должна.',
+      'Воздух становится плотнее, будто время затаило дыхание.',
+      'Свеча на столе дрогнула, хотя окна закрыты.',
+      'Ты слышишь запах старой бумаги и почему-то — моря.'
+    ]
+  };
+
+  var STAGE_LINES = [
+    'Память чемпиона восстановлена. Теперь ты знаешь, откуда он пришёл.',
+    'Сила проснулась. Атака стала инструментом, а не загадкой.',
+    'Ты увидел угрозу раньше, чем она родилась.',
+    'Пять соперников позади. Путь героя пройден.',
+    'Осталась одна партия — и она будет последней.'
+  ];
+
+  /* ==========================================================
+     СОСТОЯНИЕ
+     ========================================================== */
   var state = {
     heroId: null,
     hero: null,
@@ -218,11 +336,14 @@
     code: '',
     busy: false,
     inBattle: false,
+    battle: null,
     timers: [],
     pending: null
   };
 
   var dom = null;
+  var storageOk = true;
+  var lastBeatAt = 0;
 
   /* ==========================================================
      ЗВУК
@@ -319,6 +440,7 @@
   }
 
   function rand(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
+  function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
 
   function after(ms, fn) {
     var id = setTimeout(function () {
@@ -341,34 +463,304 @@
   function storageKey() { return CONFIG.storagePrefix + (state.heroId || 'unknown'); }
 
   function saveProgress() {
+    if (!storageOk) return;
     try {
       localStorage.setItem(storageKey(), JSON.stringify({
         stage: state.stage, step: state.step, duelIdx: state.duelIdx, lives: state.lives
       }));
-    } catch (e) {}
+    } catch (e) { storageOk = false; }
   }
 
   function loadProgress() {
+    if (!storageOk) return null;
     try {
       var raw = localStorage.getItem(storageKey());
       return raw ? JSON.parse(raw) : null;
-    } catch (e) { return null; }
+    } catch (e) { storageOk = false; return null; }
+  }
+
+  function clearSaved() {
+    if (!storageOk) return;
+    try { localStorage.removeItem(storageKey()); } catch (e) { storageOk = false; }
   }
 
   function heroNumericId(hero) {
-    if (!hero || typeof HERO_STATS_DATA === 'undefined') return null;
-    var keys = Object.keys(HERO_STATS_DATA);
+    if (!hero) return null;
+    if (typeof HEROES === 'undefined' || !HEROES) return null;
+    var keys = Object.keys(HEROES);
     for (var i = 0; i < keys.length; i++) {
       var key = keys[i];
-      if (typeof HEROES !== 'undefined' && HEROES[key] && HEROES[key].id === hero.id) return Number(key);
-      if (String(key) === String(hero.id)) return Number(key);
+      var h = HEROES[key];
+      if (h && String(h.id) === String(hero.id)) {
+        var n = Number(key);
+        if (!isNaN(n)) return n;
+      }
     }
     return null;
   }
 
   /* ==========================================================
-     ДАННЫЕ КВЕСТА
+     АВАТАР
      ========================================================== */
+  function avatarSrc(hero) {
+    if (!hero) return '';
+    if (hero.avatar) return hero.avatar;
+    var id = String(hero.id || '').toLowerCase();
+    if (!id) return '';
+    return CONFIG.avatarDir + id + '.png';
+  }
+
+  function monogram(hero) {
+    var name = (hero && hero.name) || '♞';
+    var initials = String(name).split(/\s+/).filter(Boolean)
+      .map(function (w) { return w.charAt(0); }).slice(0, 2).join('');
+    var color = (hero && hero.color) || '#d4b475';
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">' +
+      '<rect width="96" height="96" fill="#0a1018"/>' +
+      '<circle cx="48" cy="48" r="41" fill="none" stroke="' + color + '" stroke-opacity="0.55" stroke-width="1.5"/>' +
+      '<text x="48" y="46" text-anchor="middle" font-family="Georgia,serif" font-size="30" fill="' + color + '" fill-opacity="0.9">♞</text>' +
+      '<text x="48" y="74" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="17" font-weight="700" fill="#e9f1f8">' + initials + '</text>' +
+      '</svg>';
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+
+  function avatarHtml(hero, cls) {
+    var src = avatarSrc(hero);
+    var name = esc((hero && hero.name) || 'Чемпион');
+    if (!src) {
+      return '<span class="tmq-ava ' + (cls || '') + '"><img src="' + esc(monogram(hero)) + '" alt="Портрет: ' + name + '"></span>';
+    }
+    return '<span class="tmq-ava ' + (cls || '') + '">' +
+      '<img src="' + esc(src) + '" alt="Портрет: ' + name + '" loading="lazy" data-fallback="' + esc(monogram(hero)) + '">' +
+      '</span>';
+  }
+
+  function bindAvatars(root) {
+    if (!root || !root.querySelectorAll) return;
+    var imgs = root.querySelectorAll('img[data-fallback]');
+    Array.prototype.forEach.call(imgs, function (img) {
+      function fallback() {
+        if (img.getAttribute('data-failed') === '1') return;
+        img.setAttribute('data-failed', '1');
+        img.src = img.getAttribute('data-fallback');
+        img.classList.add('is-mono');
+      }
+      img.addEventListener('error', fallback);
+      if (img.complete && img.naturalWidth === 0) fallback();
+    });
+  }
+
+  /* ==========================================================
+     РЕПЛИКИ
+     ========================================================== */
+  function beatText(key) {
+    var list = BEATS[key];
+    if (!list || !list.length) list = BEATS.generic;
+    var q = state.quest || {};
+    var hero = state.hero || {};
+    var name = q.name || hero.name || 'Чемпион';
+    return String(pick(list))
+      .replace(/\{name\}/g, name)
+      .replace(/\{short\}/g, q.shortName || name);
+  }
+
+  function say(text) {
+    if (!dom || !dom.beat || !text) return;
+    lastBeatAt = Date.now();
+    dom.beat.textContent = text;
+    dom.beat.classList.remove('is-in');
+    void dom.beat.offsetWidth;
+    dom.beat.classList.add('is-in');
+  }
+
+  function beat(key) { say(beatText(key)); }
+
+  /* ==========================================================
+     ШАХМАТНЫЙ ДВИЖОК (резерв, если нет js/chess-lite.js)
+     ========================================================== */
+  var MiniChess = (function () {
+    var FILES = 'abcdefgh';
+
+    function parse(fen) {
+      var board = {};
+      var rows = String(fen).split(' ')[0].split('/');
+      for (var r = 0; r < 8; r++) {
+        var rank = 8 - r;
+        var file = 0;
+        var row = rows[r] || '8';
+        for (var i = 0; i < row.length; i++) {
+          var ch = row[i];
+          if (ch >= '1' && ch <= '8') {
+            file += Number(ch);
+          } else {
+            if (file < 8) board[FILES.charAt(file) + rank] = ch;
+            file++;
+          }
+        }
+      }
+      var parts = String(fen).split(' ');
+      return { board: board, turn: parts[1] === 'b' ? 'b' : 'w' };
+    }
+
+    function colorOf(p) { return p === p.toUpperCase() ? 'w' : 'b'; }
+    function inside(f, r) { return f >= 0 && f < 8 && r >= 1 && r <= 8; }
+    function sq(f, r) { return FILES.charAt(f) + r; }
+
+    function push(out, from, f, r, board, me) {
+      if (!inside(f, r)) return;
+      var target = board[sq(f, r)];
+      if (target && colorOf(target) === me) return;
+      out.push({ from: from, to: sq(f, r), capture: !!target });
+    }
+
+    function moves(fen, from) {
+      var pos = parse(fen);
+      var board = pos.board;
+      var piece = board[from];
+      var out = [];
+      if (!piece) return out;
+      var me = colorOf(piece);
+      var t = piece.toLowerCase();
+      var f = FILES.indexOf(from.charAt(0));
+      var r = Number(from.charAt(1));
+
+      if (t === 'p') {
+        var dir = me === 'w' ? 1 : -1;
+        var startRank = me === 'w' ? 2 : 7;
+        if (inside(f, r + dir) && !board[sq(f, r + dir)]) {
+          out.push({ from: from, to: sq(f, r + dir), capture: false });
+          if (r === startRank && !board[sq(f, r + 2 * dir)]) {
+            out.push({ from: from, to: sq(f, r + 2 * dir), capture: false });
+          }
+        }
+        [-1, 1].forEach(function (d) {
+          var ff = f + d, rr = r + dir;
+          if (!inside(ff, rr)) return;
+          var target = board[sq(ff, rr)];
+          if (target && colorOf(target) !== me) out.push({ from: from, to: sq(ff, rr), capture: true });
+        });
+        return out;
+      }
+
+      if (t === 'n') {
+        [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]]
+          .forEach(function (d) { push(out, from, f + d[0], r + d[1], board, me); });
+        return out;
+      }
+
+      if (t === 'k') {
+        [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]]
+          .forEach(function (d) { push(out, from, f + d[0], r + d[1], board, me); });
+        return out;
+      }
+
+      var dirs = [];
+      if (t === 'r' || t === 'q') dirs = dirs.concat([[1, 0], [-1, 0], [0, 1], [0, -1]]);
+      if (t === 'b' || t === 'q') dirs = dirs.concat([[1, 1], [1, -1], [-1, 1], [-1, -1]]);
+
+      dirs.forEach(function (d) {
+        var ff = f + d[0], rr = r + d[1];
+        while (inside(ff, rr)) {
+          var target = board[sq(ff, rr)];
+          if (!target) {
+            out.push({ from: from, to: sq(ff, rr), capture: false });
+          } else {
+            if (colorOf(target) !== me) out.push({ from: from, to: sq(ff, rr), capture: true });
+            break;
+          }
+          ff += d[0];
+          rr += d[1];
+        }
+      });
+      return out;
+    }
+
+    function apply(fen, from, to) {
+      var parts = String(fen).split(' ');
+      var pos = parse(fen);
+      var board = pos.board;
+      var piece = board[from];
+      if (!piece) return fen;
+      delete board[from];
+      board[to] = piece;
+      if (piece === 'P' && to.charAt(1) === '8') board[to] = 'Q';
+      if (piece === 'p' && to.charAt(1) === '1') board[to] = 'q';
+
+      var rows = [];
+      for (var r = 8; r >= 1; r--) {
+        var row = '';
+        var empty = 0;
+        for (var f = 0; f < 8; f++) {
+          var p = board[FILES.charAt(f) + r];
+          if (p) {
+            if (empty) { row += empty; empty = 0; }
+            row += p;
+          } else {
+            empty++;
+          }
+        }
+        if (empty) row += empty;
+        rows.push(row);
+      }
+      parts[0] = rows.join('/');
+      parts[1] = pos.turn === 'w' ? 'b' : 'w';
+      return parts.join(' ');
+    }
+
+    return { parse: parse, moves: moves, apply: apply, colorOf: colorOf };
+  })();
+
+  var Chess = (typeof ChessLite !== 'undefined' && ChessLite && ChessLite.parse) ? ChessLite : MiniChess;
+
+  /* ==========================================================
+     ДАННЫЕ
+     ========================================================== */
+  var DEFAULT_ATTACK = [
+    {
+      task: 'Мат в один ход. Найдите удар по последней горизонтали.',
+      fen: '6k1/5ppp/8/8/8/8/5PPP/1R4K1 w - - 0 1',
+      from: 'b1', to: 'b8',
+      hint: 'Ладья любит открытые линии. Восьмая горизонталь — прямая дорога к королю.',
+      why: 'Лb8# — мат по последней горизонтали: пешки f7, g7 и h7 запирают собственного короля.'
+    },
+    {
+      task: 'Мат в один ход. Накажите соперника за слабость поля f7.',
+      fen: 'r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 4 4',
+      from: 'f3', to: 'f7',
+      hint: 'Поле f7 защищает только король. А вашего ферзя прикрывает слон с c4.',
+      why: 'Фxf7# — мат: ферзя защищает слон c4, а королю некуда уйти.'
+    }
+  ];
+
+  var DEFAULT_DEFENSE = [
+    {
+      task: 'Белые грозят матом на b8. Найдите защиту — сделайте «форточку» для короля.',
+      fen: '6k1/5ppp/8/8/8/8/5PPP/1R4K1 b - - 0 1',
+      from: 'h7', to: 'h6',
+      hint: 'Королю нужен воздух. Какая пешка может освободить поле h7?',
+      why: '1...h6! — у короля появляется поле h7, и мат по последней горизонтали больше не страшен.'
+    },
+    {
+      task: 'Чёрный конь объявил шах. Найдите лучшую защиту.',
+      fen: '6k1/5ppp/8/8/8/5n2/5PPP/6K1 w - - 0 1',
+      from: 'g2', to: 'f3',
+      hint: 'Конь на f3 дерзок, но у пешки g2 есть чем ответить.',
+      why: 'gxf3 — вы уничтожаете атакующего коня и остаётесь с лишней фигурой.'
+    }
+  ];
+
+  function findHero(heroId) {
+    if (typeof HEROES === 'undefined' || !HEROES) return null;
+    if (HEROES[heroId]) return HEROES[heroId];
+    if (HEROES[String(heroId)]) return HEROES[String(heroId)];
+    var keys = Object.keys(HEROES);
+    for (var i = 0; i < keys.length; i++) {
+      var h = HEROES[keys[i]];
+      if (h && String(h.id) === String(heroId)) return h;
+    }
+    return null;
+  }
+
   function fromHeroPuzzles(hero) {
     if (!hero || !hero.puzzles || !hero.puzzles.length) return [];
     return hero.puzzles.map(function (p) {
@@ -385,15 +777,23 @@
     var pool = kind === 'defense'
       ? (typeof DUEL_DEFENSE_PUZZLES !== 'undefined' ? DUEL_DEFENSE_PUZZLES : null)
       : (typeof DUEL_STRIKE_PUZZLES !== 'undefined' ? DUEL_STRIKE_PUZZLES : null);
-    if (!pool || !pool.length) return [];
-    return pool.slice(0, 2).map(function (p) {
+
+    if (pool && pool.length) {
+      return pool.slice(0, 2).map(function (p) {
+        return {
+          task: p.desc || (kind === 'defense' ? 'Найдите лучшую защиту.' : 'Найдите лучший ход.'),
+          fen: p.fen,
+          from: p.move.from,
+          to: p.move.to,
+          hint: 'Ищите форсированный ход: шах, взятие или мат.',
+          why: 'Точный тактический удар решает исход партии.'
+        };
+      });
+    }
+
+    return (kind === 'defense' ? DEFAULT_DEFENSE : DEFAULT_ATTACK).map(function (p) {
       return {
-        task: p.desc || (kind === 'defense' ? 'Найдите лучшую защиту.' : 'Найдите лучший ход.'),
-        fen: p.fen,
-        from: p.move.from,
-        to: p.move.to,
-        hint: 'Ищите форсированный ход: шах, взятие или мат.',
-        why: 'Точный тактический удар решает исход партии.'
+        task: p.task, fen: p.fen, from: p.from, to: p.to, hint: p.hint, why: p.why
       };
     });
   }
@@ -405,19 +805,69 @@
         return { enemyId: r.enemyId, name: r.n, years: r.y, style: r.s };
       });
     }
-    if (typeof HERO_STATS_DATA === 'undefined' || typeof HEROES === 'undefined') return [];
-    var ids = Object.keys(HERO_STATS_DATA)
-      .map(Number)
-      .filter(function (id) { return !isNaN(id) && id < 100 && HEROES[id] && HEROES[id].id !== hero.id; })
-      .slice(0, 5);
-    return ids.map(function (id, i) {
-      return { enemyId: id, name: HEROES[id].name, years: 'Рубеж ' + (i + 1), style: 'Хранитель эпохи' };
-    });
+
+    if (typeof HEROES === 'undefined' || !HEROES) return [];
+    var keys = Object.keys(HEROES);
+    var out = [];
+    for (var i = 0; i < keys.length && out.length < 5; i++) {
+      var h = HEROES[keys[i]];
+      if (!h || !h.id || String(h.id) === String(hero.id)) continue;
+      if (String(h.id).indexOf('rival-') === 0) continue;
+      var era = (window.QUEST_ERAS && window.QUEST_ERAS[h.id] && window.QUEST_ERAS[h.id].era) || '';
+      var numeric = Number(keys[i]);
+      out.push({
+        enemyId: isNaN(numeric) ? h.id : numeric,
+        name: h.name,
+        years: era,
+        style: h.title || 'Хранитель эпохи'
+      });
+    }
+    return out;
+  }
+
+  function fallbackQuiz(hero, q) {
+    var shortName = String(hero.name || 'чемпион').split(' ').pop();
+    var era = String(q.era || '');
+    var city = (era.split(',')[0] || '').trim();
+    var year = (era.split(',')[1] || '').trim();
+    var pool = [];
+
+    if (window.QUEST_ERAS) {
+      Object.keys(window.QUEST_ERAS).forEach(function (k) {
+        if (k === hero.id) return;
+        var c = String(window.QUEST_ERAS[k].era || '').split(',')[0].trim();
+        if (c && c !== city && pool.indexOf(c) === -1) pool.push(c);
+      });
+    }
+    while (pool.length < 2) pool.push(pool.length ? 'Москва' : 'Вена');
+
+    var yNum = parseInt(year, 10);
+    var years = isNaN(yNum)
+      ? ['1900', '1950', '2000']
+      : [String(yNum), String(yNum - 12), String(yNum + 9)];
+
+    return [
+      {
+        q: 'В каком городе разворачивается эпоха ' + shortName + '?',
+        options: [
+          { text: city || 'Вена', correct: true, comment: 'Верно: ' + (era || 'эта эпоха') + '.' },
+          { text: pool[0], correct: false, comment: 'Нет. Этот город принадлежит другой карточке.' },
+          { text: pool[1], correct: false, comment: 'Мимо. Время не любит спешки.' }
+        ]
+      },
+      {
+        q: 'В каком году начинается действие квеста?',
+        options: [
+          { text: years[0], correct: true, comment: 'Точно: ' + (era || years[0]) + '.' },
+          { text: years[1], correct: false, comment: 'Не то. Посмотрите на шапку квеста.' },
+          { text: years[2], correct: false, comment: 'Слишком поздно для этой эпохи.' }
+        ]
+      }
+    ];
   }
 
   function resolveQuest(heroId) {
-    if (typeof HEROES === 'undefined' || !HEROES) return null;
-    var hero = HEROES[heroId] || HEROES[String(heroId)];
+    var hero = findHero(heroId);
     if (!hero) return null;
 
     var data = (window.QUEST_DATA && window.QUEST_DATA[hero.id]) || {};
@@ -427,11 +877,11 @@
     var attack = (data.attack && data.attack.length) ? data.attack : fromDuelPuzzles('attack');
     var defense = (data.defense && data.defense.length) ? data.defense : fromDuelPuzzles('defense');
 
-    if (!quiz.length) return null;
-
-    var story = (window.QUEST_STORY && window.QUEST_STORY[hero.id]) || {};
     var heroName = hero.name || 'Чемпион';
     var eraLabel = eras.era || hero.title || 'эпоха чемпиона';
+    if (!quiz.length) quiz = fallbackQuiz(hero, { era: eraLabel });
+
+    var story = (window.QUEST_STORY && window.QUEST_STORY[hero.id]) || {};
 
     var welcome = (story.welcome && story.welcome.length) ? story.welcome : [
       'Ты оживил карточку — и она стала билетом в прошлое. Теперь это не портрет, а дверь в эпоху, где жил и побеждал ' + heroName + '.',
@@ -461,6 +911,16 @@
     };
   }
 
+  function bioFor(hero) {
+    if (hero && hero.bio && hero.bio.length) return hero.bio;
+    var p = prologueFor();
+    return [
+      { title: 'Эпоха', text: p.scene },
+      { title: 'Ставка', text: p.hook },
+      { title: 'Путь', text: p.stakes }
+    ];
+  }
+
   /* ==========================================================
      DOM
      ========================================================== */
@@ -487,6 +947,7 @@
             '<button class="tmq-close" type="button" id="tmq-close" aria-label="Закрыть квест">✕</button>' +
           '</div>' +
         '</header>' +
+        '<div class="tmq-beat" id="tmq-beat" aria-live="polite"></div>' +
         '<div class="tmq-body" id="tmq-body"></div>' +
       '</div>';
 
@@ -496,6 +957,7 @@
       overlay: overlay,
       card: overlay.querySelector('.tmq-card'),
       body: overlay.querySelector('#tmq-body'),
+      beat: overlay.querySelector('#tmq-beat'),
       lives: overlay.querySelector('#tmq-lives'),
       city: overlay.querySelector('#tmq-city'),
       year: overlay.querySelector('#tmq-year'),
@@ -505,11 +967,23 @@
 
     dom.closeBtn.addEventListener('click', close);
     overlay.addEventListener('click', function (e) {
-      if (e.target === overlay) close();
+      if (e.target === overlay && !state.inBattle) close();
     });
+
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && isOpen()) close();
+      if (e.key === 'Escape' && isOpen() && !state.inBattle) close();
     });
+
+    /* Страховка «после каждого нажатия»: если у кнопки нет своей
+       реплики, через миг звучит атмосферная строка. */
+    dom.card.addEventListener('click', function (e) {
+      var btn = e.target && e.target.closest ? e.target.closest('button') : null;
+      if (!btn) return;
+      var before = lastBeatAt;
+      setTimeout(function () {
+        if (isOpen() && lastBeatAt === before) say(beatText('generic'));
+      }, 0);
+    }, true);
 
     return dom;
   }
@@ -523,11 +997,8 @@
     dom.city.textContent = (parts[0] || '—').trim();
     dom.year.textContent = (parts[1] || '').trim() || '—';
 
-    var label;
-    if (state.stage >= CONFIG.route.length) label = 'финал пройден';
-    else label = 'этап ' + CONFIG.route[state.stage].num + ' из V · ' + CONFIG.route[state.stage].title;
-
-    dom.headSub.textContent = (q.name || 'Чемпион') + ' · ' + label;
+    /* Только имя чемпиона: служебная подпись «этап I из V» убрана */
+    dom.headSub.textContent = q.name || 'Чемпион';
 
     var out = '';
     for (var i = 1; i <= CONFIG.maxLives; i++) {
@@ -572,19 +1043,20 @@
     clearWarp();
     renderHead();
     dom.body.innerHTML = html;
+    bindAvatars(dom.body);
     dom.body.scrollTop = 0;
   }
 
   function clearWarp() {
     if (!dom) return;
-    var node = dom.overlay.querySelector('.tmq-warp') || dom.overlay.querySelector('.tmq-warpfull');
+    var node = dom.overlay.querySelector('.tmq-warp');
     if (node && node.parentNode) node.parentNode.removeChild(node);
     dom.overlay.classList.remove('tmq-warping');
-    if (typeof stopWarpFx === 'function') stopWarpFx();
+    stopWarpFx();
   }
 
   /* ==========================================================
-     ДОСКА — общий компонент (квест + дуэль)
+     ДОСКА
      ========================================================== */
   var GLYPH = {
     K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙',
@@ -595,7 +1067,7 @@
     opts = opts || {};
     var files = 'abcdefgh';
     var curFen = fen;
-    var pos = ChessLite.parse(curFen);
+    var pos = Chess.parse(curFen);
     var selected = null;
     var locked = false;
     var cells = {};
@@ -617,7 +1089,7 @@
       cells = {};
       for (var rank = 8; rank >= 1; rank--) {
         for (var f = 0; f < 8; f++) {
-          var sq = files[f] + rank;
+          var sq = files.charAt(f) + rank;
           var cell = document.createElement('button');
           cell.type = 'button';
           cell.className = 'tmq-sq ' + (((f + rank) % 2 === 1) ? 'is-dark' : 'is-light');
@@ -632,7 +1104,7 @@
             cell.appendChild(span);
           }
           if (f === 0) cell.appendChild(mkLabel('tmq-lbl-rank', String(rank)));
-          if (rank === 1) cell.appendChild(mkLabel('tmq-lbl-file', files[f]));
+          if (rank === 1) cell.appendChild(mkLabel('tmq-lbl-file', files.charAt(f)));
 
           cells[sq] = cell;
           grid.appendChild(cell);
@@ -642,6 +1114,7 @@
 
     function clearMarks() {
       for (var sq in cells) {
+        if (!Object.prototype.hasOwnProperty.call(cells, sq)) continue;
         cells[sq].classList.remove('is-sel');
         var dots = cells[sq].querySelectorAll('.tmq-dot, .tmq-ring');
         for (var i = 0; i < dots.length; i++) dots[i].parentNode.removeChild(dots[i]);
@@ -654,7 +1127,7 @@
       selected = sq;
       cells[sq].classList.add('is-sel');
 
-      var list = ChessLite.moves(curFen, sq);
+      var list = Chess.moves(curFen, sq);
       for (var i = 0; i < list.length; i++) {
         var target = cells[list[i].to];
         if (!target) continue;
@@ -675,10 +1148,10 @@
         if (cells[from]) cells[from].classList.add('is-ok-from');
         if (cells[to]) cells[to].classList.add('is-ok-to');
 
-        var next = ChessLite.apply(curFen, from, to);
+        var next = Chess.apply(curFen, from, to);
         setTimeout(function () {
           curFen = next;
-          pos = ChessLite.parse(curFen);
+          pos = Chess.parse(curFen);
           paint();
           if (cells[from]) cells[from].classList.add('is-ok-from');
           if (cells[to]) cells[to].classList.add('is-ok-to');
@@ -692,7 +1165,10 @@
         host.classList.add('is-shake');
         if (opts.onResult) opts.onResult(false, from, to);
         setTimeout(function () {
-          for (var sq in cells) cells[sq].classList.remove('is-bad-from', 'is-bad-to');
+          for (var sq in cells) {
+            if (!Object.prototype.hasOwnProperty.call(cells, sq)) continue;
+            cells[sq].classList.remove('is-bad-from', 'is-bad-to');
+          }
           locked = false;
         }, 780);
       }
@@ -707,22 +1183,17 @@
       if (selected && sq === selected) { clearMarks(); return; }
 
       if (selected) {
-        var list = ChessLite.moves(curFen, selected);
+        var list = Chess.moves(curFen, selected);
         for (var i = 0; i < list.length; i++) {
           if (list[i].to === sq) { commit(selected, sq); return; }
         }
       }
 
-      if (piece && ChessLite.colorOf(piece) === pos.turn) { select(sq); return; }
+      if (piece && Chess.colorOf(piece) === pos.turn) { select(sq); return; }
       clearMarks();
     });
 
-    /* [FIX] Доска получает явную высоту по ширине контейнера.
-       Раньше высоту задавал только aspect-ratio, и в мобильном Safari
-       внутри flex-колонки с overflow она схлопывалась в 0 — доска
-       «исчезала» именно в этапах II и III. */
     var sizeTries = 0;
-
     function syncSize() {
       var w = host.clientWidth || grid.getBoundingClientRect().width;
       if (!w) {
@@ -749,7 +1220,7 @@
       getFen: function () { return curFen; },
       setFen: function (f) {
         curFen = f;
-        pos = ChessLite.parse(f);
+        pos = Chess.parse(f);
         locked = false;
         clearMarks();
         paint();
@@ -761,20 +1232,12 @@
   }
 
   /* ==========================================================
-     I. ПРИВЕТСТВИЕ — визитная карточка приключения
-     Художественный пролог берётся из js/quest-prologue.js:
-       lead   — завязка турнира
-       hook   — драма чемпиона
-       scene  — погружение в эпоху
-       stakes — ставка пути
+     ПРОЛОГ
      ========================================================== */
   function prologueFor() {
     var q = state.quest || {};
     var hero = state.hero || {};
 
-    /* Тексты живут в PROLOGUE внутри этого файла. Если снаружи
-       положили window.QUEST_PROLOGUE (например, свой набор для
-       турнира) — он имеет приоритет, файл переписывать не нужно. */
     var ext = window.QUEST_PROLOGUE || null;
     var src = (ext && ext.heroes) || PROLOGUE.heroes;
     var common = (ext && ext.common) || PROLOGUE.common;
@@ -789,20 +1252,28 @@
     };
   }
 
+  /* ==========================================================
+     I. ПРИВЕТСТВИЕ
+     ========================================================== */
   function renderGreet() {
     state.screen = 'greet';
     var q = state.quest;
     var p = prologueFor();
     var hero = state.hero || {};
     var accent = hero.color || '#d4b475';
-    var glyph = hero.glyph || (q.piece === 'queen' ? '♛' : '♚');
+    var saved = state.stage;
+
+    var primary = saved > 0
+      ? '<button class="tmq-cta" type="button" id="tmq-continue">Продолжить путь · этап ' + esc(CONFIG.route[saved] ? CONFIG.route[saved].num : 'V') + '</button>' +
+        '<button class="tmq-link" type="button" id="tmq-restart">Начать заново</button>'
+      : '<button class="tmq-cta" type="button" id="tmq-jump">Прыжок во времени <span aria-hidden="true">→</span></button>' +
+        '<button class="tmq-link" type="button" id="tmq-bio">Биография чемпиона</button>';
 
     setBody(
       '<div class="tmq-welcome">' +
-        '<div class="tmq-kicker">Турнир · ' + esc(CONFIG.dates) + '</div>' +
         '<h2 class="tmq-welcome-title">Добро пожаловать<br>на турнир «Машина времени»</h2>' +
-        '<div class="tmq-cover" style="--tmq-accent: ' + esc(accent) + ';">' +
-          '<div class="tmq-cover-glyph" aria-hidden="true">' + glyph + '</div>' +
+        '<div class="tmq-cover" style="border-color: ' + esc(accent) + '44;">' +
+          avatarHtml(hero, 'is-lg') +
           '<div class="tmq-cover-meta">' +
             '<span class="tmq-cover-era">' + esc(q.era) + '</span>' +
             '<span class="tmq-cover-name">' + esc(q.name) + '</span>' +
@@ -820,28 +1291,70 @@
           '<span><b>' + CONFIG.maxLives + '</b> жизней</span>' +
           '<span><b>' + q.duels.length + '</b> дуэлей</span>' +
         '</div>' +
-        '<button class="tmq-cta" type="button" id="tmq-jump">Прыжок во времени <span aria-hidden="true">→</span></button>' +
-        '<button class="tmq-link" type="button" id="tmq-bio">Биография чемпиона</button>' +
+        primary +
       '</div>'
     );
 
-    dom.body.querySelector('#tmq-bio').addEventListener('click', function () {
-      play('click');
-      renderBio();
-    });
-    dom.body.querySelector('#tmq-jump').addEventListener('click', function () {
-      play('warp');
-      renderWarp();
-    });
+    var jump = dom.body.querySelector('#tmq-jump');
+    if (jump) {
+      jump.addEventListener('click', function () {
+        play('warp');
+        beat('jump');
+        renderWarp();
+      });
+    }
+
+    var bio = dom.body.querySelector('#tmq-bio');
+    if (bio) {
+      bio.addEventListener('click', function () {
+        play('click');
+        beat('bio');
+        renderBio();
+      });
+    }
+
+    var cont = dom.body.querySelector('#tmq-continue');
+    if (cont) {
+      cont.addEventListener('click', function () {
+        play('click');
+        beat('resume');
+        renderMap();
+      });
+    }
+
+    var restart = dom.body.querySelector('#tmq-restart');
+    if (restart) {
+      restart.addEventListener('click', function () {
+        state.stage = 0;
+        state.step = 0;
+        state.duelIdx = 0;
+        state.lives = CONFIG.maxLives;
+        clearSaved();
+        play('click');
+        beat('restart');
+        renderGreet();
+      });
+    }
   }
 
   function renderBio() {
-    var bio = (state.hero && state.hero.bio) ? state.hero.bio : [];
+    state.screen = 'bio';
+    var hero = state.hero || {};
+    var bio = bioFor(hero);
+
     setBody(
       '<div class="tmq-stage-head">' +
         '<span class="tmq-badge">Хроники · ' + esc(state.quest.name) + '</span>' +
         '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-bio-back">Назад</button>' +
       '</div>' +
+      '<div class="tmq-bio-head">' +
+        avatarHtml(hero, 'is-md') +
+        '<div>' +
+          '<div class="tmq-cover-name">' + esc(hero.name || '') + '</div>' +
+          '<div class="tmq-cover-title">' + esc(hero.title || '') + '</div>' +
+        '</div>' +
+      '</div>' +
+      (hero.quote ? '<div class="tmq-quote">' + esc(hero.quote) + '</div>' : '') +
       '<div class="tmq-copy">' +
         (bio.length
           ? bio.map(function (s) {
@@ -852,22 +1365,21 @@
       '<button class="tmq-cta" type="button" id="tmq-bio-next">Прыжок во времени <span aria-hidden="true">→</span></button>'
     );
 
-    dom.body.querySelector('#tmq-bio-back').addEventListener('click', renderGreet);
+    dom.body.querySelector('#tmq-bio-back').addEventListener('click', function () {
+      play('click');
+      renderGreet();
+    });
     dom.body.querySelector('#tmq-bio-next').addEventListener('click', function () {
       play('warp');
+      beat('jump');
       renderWarp();
     });
   }
 
   /* ==========================================================
-     II. ВАРП-ПРЫЖОК — зрелищная последовательность
-
-     Слои: canvas-звёзды (разгон из центра), световое ядро,
-     три расходящихся кольца, диагональные лучи, панель с
-     названием эпохи, шкала перехода и вспышка на выходе.
-     Всё рисуется 2,6 секунды, затем экран «Вы проснулись».
+     II. ВАРП
      ========================================================== */
-  var WarpFx = { raf: 0, alive: false, skipped: false };
+  var WarpFx = { raf: 0, alive: false, done: false };
 
   function stopWarpFx() {
     WarpFx.alive = false;
@@ -877,9 +1389,6 @@
     }
   }
 
-  /* [FIX] Качество варпа подбирается под устройство.
-     Слабые телефоны получают меньше частиц, DPR 1 и потолок
-     разрешения canvas — иначе браузер подвисает на старте. */
   function warpQuality() {
     var dpr = window.devicePixelRatio || 1;
     var cores = navigator.hardwareConcurrency || 4;
@@ -985,20 +1494,16 @@
     dom.overlay.appendChild(warp);
     dom.overlay.classList.add('tmq-warping');
 
-    WarpFx.skipped = false;
+    WarpFx.done = false;
     startWarpStars(warp.querySelector('#tmq-warp-stars'));
 
     var status = warp.querySelector('#tmq-warp-status');
 
-    /* Выход из варпа в одном месте: и по таймеру, и по касанию.
-       Даже если canvas на слабом устройстве не отрисуется,
-       сцена гарантированно закончится за 2,2 секунды. */
     function finishWarp() {
-      if (WarpFx.skipped) return;
-      WarpFx.skipped = true;
+      if (WarpFx.done) return;
+      WarpFx.done = true;
       clearTimers();
       stopWarpFx();
-      state.stage = Math.max(state.stage, 0);
       renderAwake();
       play('arrival');
     }
@@ -1021,15 +1526,13 @@
   }
 
   /* ==========================================================
-     III. «ВЫ ПРОСНУЛИСЬ» И КАРТА ПУТИ
+     III. ПРОБУЖДЕНИЕ
      ========================================================== */
   function renderAwake() {
     state.screen = 'awake';
     var q = state.quest;
     var p = prologueFor();
 
-    /* Если для карточки нет готового «пробуждения» — собираем из пролога,
-       чтобы у всех 19 чемпионов была полноценная сцена, а не заглушка. */
     var lines = (q.awake && q.awake.length) ? q.awake : [
       p.scene,
       'Ты делаешь вдох — и понимаешь, что дышишь чужими лёгкими. Это тело чемпиона, и оно помнит вес фигур лучше, чем ты помнишь собственное имя.',
@@ -1047,12 +1550,18 @@
       '</div>'
     );
 
+    beat('awake');
+
     dom.body.querySelector('#tmq-map').addEventListener('click', function () {
       play('click');
-      renderMap(false);
+      beat('map');
+      renderMap();
     });
   }
 
+  /* ==========================================================
+     IV. КАРТА
+     ========================================================== */
   function renderMap() {
     state.screen = 'map';
     var q = state.quest;
@@ -1094,13 +1603,14 @@
     Array.prototype.forEach.call(buttons, function (btn) {
       btn.addEventListener('click', function () {
         play('playMove');
+        beat('briefing');
         renderBriefing(Number(btn.getAttribute('data-enter')));
       });
     });
   }
 
   /* ==========================================================
-     IV. БРИФИНГ ПЕРЕД ЭТАПОМ
+     V. БРИФИНГ
      ========================================================== */
   function renderBriefing(index) {
     state.screen = 'briefing';
@@ -1117,7 +1627,6 @@
         '</div>';
     }).join('');
 
-    /* Художественная рамка этапа: одна строка настроения перед правилами */
     var opening = [
       'Память — единственное, что нельзя отнять. Но её можно потерять.',
       'Сила просыпается не в мышцах, а в точном расчёте.',
@@ -1162,7 +1671,7 @@
   }
 
   /* ==========================================================
-     V. ВОПРОСЫ
+     VI. ВОПРОСЫ
      ========================================================== */
   function renderQuiz() {
     state.screen = 'quiz';
@@ -1214,8 +1723,13 @@
         var idx = Number(btn.getAttribute('data-opt'));
         state.chosen = idx;
         state.answered = true;
-        if (item.options[idx].correct) play('playCorrect');
-        else loseLife('Ошибка в факте биографии чемпиона');
+        if (item.options[idx].correct) {
+          play('playCorrect');
+          beat('quizRight');
+        } else {
+          beat('quizWrong');
+          loseLife('Ошибка в факте биографии чемпиона');
+        }
         if (state.lives > 0) renderQuiz();
       });
     });
@@ -1245,7 +1759,7 @@
   }
 
   /* ==========================================================
-     VI. ЗАДАЧИ НА ДОСКЕ
+     VII. ЗАДАЧИ
      ========================================================== */
   function renderPuzzle(kind) {
     state.screen = kind;
@@ -1255,7 +1769,7 @@
     if (!item) { finishStage(); return; }
 
     var route = kind === 'attack' ? CONFIG.route[1] : CONFIG.route[2];
-    var turnLabel = item.fen.split(' ')[1] === 'b' ? 'Ход чёрных' : 'Ход белых';
+    var turnLabel = String(item.fen).split(' ')[1] === 'b' ? 'Ход чёрных' : 'Ход белых';
 
     setBody(
       chapter(route.num, route.title, (state.step + 1) + ' / ' + list.length) +
@@ -1275,6 +1789,7 @@
       onResult: function (ok) {
         if (ok) {
           play('playCorrect');
+          beat('puzzleOk');
           var fb = dom.body.querySelector('#tmq-puzzle-fb');
           if (!fb) return;
           fb.innerHTML = '<div class="tmq-feedback is-ok"><b>Точный ход!</b> ' + esc(item.why) +
@@ -1293,6 +1808,7 @@
           });
         } else {
           state.missed = true;
+          beat('puzzleNo');
           loseLife('Неверный ход в тактической задаче');
           if (state.lives <= 0) return;
           var hint = dom.body.querySelector('#tmq-hint');
@@ -1308,15 +1824,17 @@
         if (hint) hint.hidden = false;
         state.missed = true;
         play('playMove');
+        beat('hint');
       });
     }
   }
 
   /* ==========================================================
-     VII. ДУЭЛИ ЧЕРЕЗ NetDuel
+     VIII. ДУЭЛИ
      ========================================================== */
   function renderDuel() {
     state.screen = 'duels';
+    state.battle = null;
     var q = state.quest;
     var duel = q.duels[state.duelIdx];
     if (!duel) { finishStage(); return; }
@@ -1332,57 +1850,70 @@
         '<span class="tmq-pips">' + dots + '</span>' +
       '</div>' +
       '<div class="tmq-opp">' +
-        '<div class="tmq-opp-ava">♟</div>' +
+        avatarHtml({ name: duel.name, color: '#e0655f' }, 'is-sm') +
         '<div><div class="tmq-opp-name">' + esc(duel.name) + '</div>' +
         '<div class="tmq-opp-title">' + esc(duel.years || '') + '</div>' +
         '<div class="tmq-quote">' + esc(duel.style || '') + '</div></div>' +
       '</div>' +
-      '<div class="tmq-copy"><p>Дуэль идёт на настоящей арене: 50 HP, атака, защита, коронный ход и тактическая доска. Победа открывает следующий рубеж.</p></div>' +
+      '<div class="tmq-copy"><p>50 HP у каждого. Атака, защита и коронный ход, который копится зарядами.</p></div>' +
       '<div class="tmq-log" id="tmq-duel-log">Готовы выйти на арену?</div>' +
       '<button class="tmq-cta" type="button" id="tmq-duel-start">Выйти на арену <span aria-hidden="true">→</span></button>' +
       '<div class="tmq-warn">Поражение −1 ♥ и повтор рубежа</div>'
     );
 
-    dom.body.querySelector('#tmq-duel-start').addEventListener('click', startQuestDuel);
+    dom.body.querySelector('#tmq-duel-start').addEventListener('click', beginDuel);
   }
 
-  function startQuestDuel() {
+  function statVal(hero, label, dflt) {
+    if (!hero || !hero.stats || !hero.stats.length) return dflt;
+    for (var i = 0; i < hero.stats.length; i++) {
+      if (String(hero.stats[i].name).toLowerCase() === String(label).toLowerCase()) {
+        var v = Number(hero.stats[i].val);
+        return isNaN(v) ? dflt : v;
+      }
+    }
+    return dflt;
+  }
+
+  function beginDuel() {
     if (state.busy || state.inBattle) return;
 
-    if (typeof NetDuel === 'undefined' || typeof NetDuel.startQuestDuel !== 'function') {
-      var log = dom.body.querySelector('#tmq-duel-log');
-      if (log) log.textContent = 'NetDuel не найден: подключите js/net-duel.js с методом startQuestDuel().';
-      return;
-    }
-
     var duel = state.quest.duels[state.duelIdx];
-    state.busy = true;
-    state.inBattle = true;
+    if (!duel) return;
 
-    var btn = dom.body.querySelector('#tmq-duel-start');
-    if (btn) { btn.disabled = true; btn.textContent = 'Бой идёт...'; }
+    if (typeof NetDuel !== 'undefined' && NetDuel && typeof NetDuel.startQuestDuel === 'function') {
+      state.busy = true;
+      state.inBattle = true;
 
-    hideQuestForBattle();
+      var btn = dom.body.querySelector('#tmq-duel-start');
+      if (btn) { btn.disabled = true; btn.textContent = 'Бой идёт...'; }
 
-    var started = NetDuel.startQuestDuel({
-      playerId: state.quest.id,
-      enemyId: duel.enemyId,
-      onEnd: function (outcome) {
+      hideQuestForBattle();
+
+      var started = NetDuel.startQuestDuel({
+        playerId: state.quest.id,
+        enemyId: duel.enemyId,
+        onEnd: function (outcome) {
+          state.inBattle = false;
+          state.busy = false;
+          restoreQuestAfterBattle();
+          handleDuelResult(outcome);
+        }
+      });
+
+      if (!started) {
         state.inBattle = false;
         state.busy = false;
         restoreQuestAfterBattle();
-        handleDuelResult(outcome);
+        if (btn) { btn.disabled = false; btn.textContent = 'Выйти на арену'; }
+        var logEl = dom.body.querySelector('#tmq-duel-log');
+        if (logEl) logEl.textContent = 'NetDuel не принял карточку. Играем на встроенной арене.';
+        startMiniDuel(duel);
       }
-    });
-
-    if (!started) {
-      state.inBattle = false;
-      state.busy = false;
-      restoreQuestAfterBattle();
-      if (btn) { btn.disabled = false; btn.textContent = 'Выйти на арену'; }
-      var logEl = dom.body.querySelector('#tmq-duel-log');
-      if (logEl) logEl.textContent = 'Не удалось начать дуэль: карточка чемпиона не определена.';
+      return;
     }
+
+    startMiniDuel(duel);
   }
 
   function hideQuestForBattle() {
@@ -1398,15 +1929,153 @@
     if (typeof HpFx !== 'undefined' && HpFx.refresh) HpFx.refresh();
   }
 
+  /* ---------- Встроенная арена (если NetDuel недоступен) ---------- */
+  function startMiniDuel(duel) {
+    state.inBattle = true;
+    state.busy = true;
+    state.battle = {
+      php: 50, ehp: 50, maxHp: 50,
+      charge: 1, guard: false, over: false, busy: false,
+      pAtk: statVal(state.hero, 'Атака', 7),
+      pDef: statVal(state.hero, 'Защита', 7),
+      eAtk: 6 + state.duelIdx,
+      log: ['Арена вспыхивает. ' + duel.name + ' выходит навстречу.']
+    };
+    renderBattle();
+    beat('duelStart');
+  }
+
+  function battleHpBar(value, max, cls) {
+    var pct = Math.max(0, Math.min(100, Math.round((value / max) * 100)));
+    return '<div class="tmq-hpbar"><i class="' + cls + '" style="width:' + pct + '%"></i></div>';
+  }
+
+  function renderBattle() {
+    var b = state.battle;
+    if (!b) return;
+    var duel = state.quest.duels[state.duelIdx] || {};
+    var hero = state.hero || {};
+
+    var tail = b.log.slice(-3).map(function (l) { return '<div>' + esc(l) + '</div>'; }).join('');
+
+    setBody(
+      chapter(CONFIG.route[3].num, CONFIG.route[3].title, 'Рубеж ' + (state.duelIdx + 1) + ' / ' + state.quest.duels.length) +
+      '<div class="tmq-fighter">' +
+        avatarHtml({ name: duel.name, color: '#e0655f' }, 'is-sm') +
+        '<div class="tmq-fighter-body">' +
+          '<div class="tmq-fighter-top"><span>' + esc(duel.name) + '</span><b>' + b.ehp + '/50</b></div>' +
+          battleHpBar(b.ehp, b.maxHp, 'is-enemy') +
+        '</div>' +
+      '</div>' +
+      '<div class="tmq-fighter">' +
+        avatarHtml(hero, 'is-sm') +
+        '<div class="tmq-fighter-body">' +
+          '<div class="tmq-fighter-top"><span>' + esc(hero.name || 'Вы') + '</span><b>' + b.php + '/50</b></div>' +
+          battleHpBar(b.php, b.maxHp, 'is-player') +
+        '</div>' +
+      '</div>' +
+      '<div class="tmq-log">' + tail + '</div>' +
+      '<div class="tmq-deck">' +
+        '<button class="tmq-btn" type="button" data-act="attack"' + (b.busy || b.over ? ' disabled' : '') + '>Атака</button>' +
+        '<button class="tmq-btn tmq-btn-ghost" type="button" data-act="defend"' + (b.busy || b.over ? ' disabled' : '') + '>Защита</button>' +
+        '<button class="tmq-btn tmq-btn-cyan" type="button" data-act="skill"' + (b.busy || b.over || b.charge < 2 ? ' disabled' : '') + '>Коронный ход · ' + b.charge + '/2</button>' +
+      '</div>'
+    );
+
+    Array.prototype.forEach.call(dom.body.querySelectorAll('[data-act]'), function (btn) {
+      btn.addEventListener('click', function () {
+        battleAct(btn.getAttribute('data-act'));
+      });
+    });
+  }
+
+  function battleAct(kind) {
+    var b = state.battle;
+    if (!b || b.over || b.busy) return;
+
+    b.busy = true;
+    var dmg;
+
+    if (kind === 'attack') {
+      dmg = 6 + Math.round(b.pAtk / 2) + rand(0, 2);
+      b.ehp = Math.max(0, b.ehp - dmg);
+      b.charge = Math.min(2, b.charge + 1);
+      b.log.push('Вы атакуете: −' + dmg + ' HP.');
+      play('playMove');
+    } else if (kind === 'defend') {
+      b.guard = true;
+      b.charge = Math.min(2, b.charge + 1);
+      b.log.push('Вы закрываетесь: следующий удар слабее, заряд +1.');
+      play('click');
+    } else {
+      if (b.charge < 2) {
+        b.log.push('Коронный ход ещё не готов: нужно два заряда.');
+        b.busy = false;
+        renderBattle();
+        return;
+      }
+      b.charge = 0;
+      dmg = 14 + b.pAtk;
+      b.ehp = Math.max(0, b.ehp - dmg);
+      b.log.push('КОРОННЫЙ ХОД: −' + dmg + ' HP!');
+      play('playCorrect');
+    }
+
+    if (b.ehp <= 0) {
+      b.over = true;
+      b.log.push('Соперник повержен.');
+      renderBattle();
+      setTimeout(function () { finishBattle('win'); }, 420);
+      return;
+    }
+
+    renderBattle();
+    setTimeout(enemyTurn, 620);
+  }
+
+  function enemyTurn() {
+    var b = state.battle;
+    if (!b || b.over) return;
+
+    var dmg = 5 + Math.round(b.eAtk / 2) + rand(0, 2);
+    if (b.guard) {
+      dmg = Math.max(2, Math.round(dmg / 2));
+      b.guard = false;
+    }
+    b.php = Math.max(0, b.php - dmg);
+    b.log.push('Соперник отвечает: −' + dmg + ' HP.');
+    play('playWrong');
+
+    if (b.php <= 0) {
+      b.over = true;
+      b.log.push('Вы не удержались.');
+      renderBattle();
+      setTimeout(function () { finishBattle('lose'); }, 420);
+      return;
+    }
+
+    b.busy = false;
+    renderBattle();
+  }
+
+  function finishBattle(outcome) {
+    var b = state.battle;
+    if (b) b.over = true;
+    state.inBattle = false;
+    state.busy = false;
+    handleDuelResult(outcome);
+  }
+
   function handleDuelResult(outcome) {
-    var duel = state.quest.duels[state.duelIdx];
+    var duel = state.quest.duels[state.duelIdx] || {};
     var log = dom.body.querySelector('#tmq-duel-log');
     var btn = dom.body.querySelector('#tmq-duel-start');
 
     if (outcome === 'win' || outcome === true) {
       if (log) log.textContent = 'Рубеж взят.';
       play('playCorrect');
-      after(800, function () {
+      beat('duelWin');
+      after(700, function () {
         if (state.screen !== 'duels') return;
         var won = state.duelIdx;
         var total = state.quest.duels.length;
@@ -1428,16 +2097,21 @@
       return;
     }
 
-    var alive = loseLife('Поражение в дуэли против ' + duel.name);
+    beat('duelLose');
+    var alive = loseLife('Поражение в дуэли против ' + (duel.name || 'соперника'));
     if (log) log.textContent = outcome === 'draw' ? 'Ничья. Рубеж не зачтён.' : 'Поражение. Рубеж не зачтён.';
     if (alive && btn) {
       btn.disabled = false;
       btn.textContent = 'Повторить дуэль';
     }
+    if (alive && state.battle) {
+      state.battle = null;
+      renderDuel();
+    }
   }
 
   /* ==========================================================
-     VIII. ФИНАЛ
+     IX. ФИНАЛ
      ========================================================== */
   function renderFinal() {
     state.screen = 'final';
@@ -1456,7 +2130,7 @@
         esc(CONFIG.botName) + ' · lichess.org</button>' +
         '<div class="tmq-bot-addr" id="tmq-bot-panel" hidden>' +
           '<span class="tmq-bot-url">' + esc(String(CONFIG.botUrl).replace(/^https?:\/\//, '')) + '</span>' +
-          '<span class="tmq-bot-hint">Адрес показан только для чтения: откройте его на судейском устройстве или в отдельном окне. Из приложения переход не выполняется.</span>' +
+          '<span class="tmq-bot-hint">Адрес только для чтения: откройте его на судейском устройстве. Из приложения переход не выполняется.</span>' +
         '</div></div>' +
       '<div class="tmq-step"><div class="tmq-step-title">Шаг 2 · контроль времени</div>' +
         '<select class="tmq-select" id="tmq-tc">' +
@@ -1470,6 +2144,8 @@
         '<button class="tmq-btn" type="button" id="tmq-verify">Получить грамоту</button></div>' +
       '<div class="tmq-hintline">Первые три участника, завершившие партию и показавшие грамоту судье, получают суперприз.</div>'
     );
+
+    beat('final');
 
     var input = dom.body.querySelector('#tmq-nick');
     var err = dom.body.querySelector('#tmq-nick-err');
@@ -1491,7 +2167,6 @@
     dom.body.querySelector('#tmq-verify').addEventListener('click', verify);
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') verify(); });
 
-    /* Адрес бота показывается внутри приложения, без перехода наружу */
     var botBtn = dom.body.querySelector('#tmq-bot-addr');
     var botPanel = dom.body.querySelector('#tmq-bot-panel');
     if (botBtn && botPanel) {
@@ -1499,9 +2174,7 @@
         play('click');
         botPanel.hidden = !botPanel.hidden;
         if (!botPanel.hidden && navigator.clipboard && navigator.clipboard.writeText) {
-          try {
-            navigator.clipboard.writeText(CONFIG.botUrl).catch(function () {});
-          } catch (e) {}
+          try { navigator.clipboard.writeText(CONFIG.botUrl).catch(function () {}); } catch (e) {}
         }
       });
     }
@@ -1510,6 +2183,7 @@
   function renderVictory() {
     state.screen = 'victory';
     play('playFanfare');
+    beat('victory');
 
     var q = state.quest;
     var time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -1531,6 +2205,7 @@
       '<div class="tmq-title">' + esc(q.name) + ' пройден</div>' +
       '<div class="tmq-sub">Пять этапов и партия с Хранителем</div>' +
       '<div class="tmq-seal">' +
+        avatarHtml(state.hero || { name: q.name }, 'is-md') +
         '<div class="tmq-seal-title">Грамота финалиста · топ-3</div>' +
         '<div class="tmq-seal-name">' + esc(q.name) + '</div>' +
         '<div class="tmq-seal-line">Игрок: ' + esc(state.nick) + '<br>Контроль: ' + esc(state.tc) +
@@ -1545,7 +2220,6 @@
       '<button class="tmq-cta" type="button" id="tmq-finish">К карточке <span aria-hidden="true">→</span></button>'
     );
 
-    /* Грамота всегда доступна текстом — выгрузка файла лишь дополнение */
     var certToggle = dom.body.querySelector('#tmq-cert-toggle');
     var certNode = dom.body.querySelector('#tmq-cert');
     if (certToggle && certNode) {
@@ -1586,15 +2260,8 @@
   }
 
   /* ==========================================================
-     IX. ЗАВЕРШЕНИЕ ЭТАПА / ВЫБЫВАНИЕ
+     X. ЗАВЕРШЕНИЕ ЭТАПА / ВЫБЫВАНИЕ
      ========================================================== */
-  var STAGE_LINES = [
-    'Память чемпиона восстановлена. Теперь вы знаете, откуда он пришёл.',
-    'Сила проснулась. Атака стала инструментом, а не загадкой.',
-    'Вы увидели угрозу раньше, чем она появилась.',
-    'Пять соперников позади. Путь героя пройден.'
-  ];
-
   function renderCongrats(kind, opts) {
     state.screen = 'congrats';
     var o = opts || {};
@@ -1640,8 +2307,10 @@
     state.answered = false;
     state.chosen = null;
     state.missed = false;
+    state.battle = null;
     saveProgress();
     play('playFanfare');
+    if (STAGE_LINES[passed]) say(STAGE_LINES[passed]);
     renderCongrats('stage', {
       index: passed,
       line: STAGE_LINES[passed] || 'Идём дальше.',
@@ -1652,6 +2321,7 @@
   function renderGameOver(reason) {
     state.screen = 'gameover';
     play('playDamageTaken');
+    beat('gameover');
 
     setBody(
       '<div class="tmq-crown tmq-crown-red">ПУТЬ ПРЕРВАН</div>' +
@@ -1676,7 +2346,7 @@
         return;
       }
       err.hidden = true;
-      try { localStorage.removeItem(storageKey()); } catch (e) {}
+      clearSaved();
       state.lives = CONFIG.maxLives;
       state.stage = 0;
       state.step = 0;
@@ -1691,7 +2361,7 @@
   /* ==========================================================
      API
      ========================================================== */
-  function open(heroId) {
+  function open(heroId, opts) {
     ensureDOM();
 
     var quest = resolveQuest(heroId);
@@ -1702,7 +2372,7 @@
     }
 
     state.heroId = quest.id;
-    state.hero = (typeof HEROES !== 'undefined' && HEROES) ? (HEROES[heroId] || HEROES[String(heroId)]) : null;
+    state.hero = findHero(heroId);
     state.quest = quest;
     state.stage = 0;
     state.step = 0;
@@ -1712,11 +2382,15 @@
     state.tc = '10+5';
     state.busy = false;
     state.inBattle = false;
+    state.battle = null;
     state.answered = false;
     state.chosen = null;
     state.missed = false;
     state.pending = null;
     clearTimers();
+
+    var fresh = !!(opts && opts.fresh);
+    if (fresh) clearSaved();
 
     var saved = loadProgress();
     if (saved) {
@@ -1728,17 +2402,25 @@
 
     dom.overlay.classList.add('tmq-open');
     dom.overlay.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('tmq-running');
 
     unlockAudio();
 
     if (state.lives <= 0) {
       renderGameOver('Лимит ошибок исчерпан в предыдущей попытке');
-    } else if (state.stage > 0) {
-      renderMap();
     } else {
       renderGreet();
       play('choir');
+      beat(state.stage > 0 ? 'resume' : 'open');
     }
+    return true;
+  }
+
+  function openBio(heroId) {
+    var ok = open(heroId);
+    if (!ok) return false;
+    renderBio();
+    beat('bio');
     return true;
   }
 
@@ -1748,17 +2430,21 @@
     clearWarp();
     dom.overlay.classList.remove('tmq-open');
     dom.overlay.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('tmq-running');
     state.inBattle = false;
+    state.battle = null;
     if (typeof stopAllTargetVideosImmediate === 'function') stopAllTargetVideosImmediate();
   }
 
   window.TimeMachineQuest = {
     open: open,
     start: open,
+    openBio: openBio,
     close: close,
     createBoard: createBoard,
     config: CONFIG,
     prologue: PROLOGUE,
+    beats: BEATS,
     state: state
   };
 
