@@ -62,6 +62,8 @@
     /* Слово хранителя — пропуск к финалу без партии.
        Меняется здесь: судья называет его участнику лично. */
     winPhrase: 'вечный шах',
+    /* Портрет Хранителя времени для финального экрана */
+    timekeeperAvatar: './assets/avatars/timekeeper.png',
     avatarDir: './assets/avatars/',
     pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
     synopsis: 'Карточка ожила — и время треснуло. Чтобы вернуть корону, ты пройдёшь пять кругов: вспомнишь, кем был чемпион до славы; разбудишь его удар; научишься видеть угрозу раньше, чем она родится; сойдёшься с пятью хранителями эпох; и сядешь за доску с тем, кто считает время своим. Каждый круг — не экзамен, а дорога, которую чемпион прошёл сам. Пройдёшь её ты — и корона признает нового хозяина.',
@@ -3516,12 +3518,9 @@
 
     setBody(
       chapter(CONFIG.route[4].num, CONFIG.route[4].title, 'Последний рубеж') +
-      '<div class="tmq-boss">' +
-        '<div class="tmq-boss-orb">♚</div>' +
-        '<div><div class="tmq-title">Хранитель времени</div>' +
-        '<div class="tmq-sub">бот ' + esc(CONFIG.botName) + ' · Lichess</div></div>' +
+      '<div class="tmq-keeper">' +
+        avatarHtml({ name: 'Хранитель времени', avatar: CONFIG.timekeeperAvatar }, 'is-keeper') +
       '</div>' +
-      '<div class="tmq-copy"><p>«Ты прошёл память, атаку, защиту и пятерых хранителей эпох. Осталась партия. Садись — часы уже идут».</p></div>' +
       '<a class="tmq-bot-link is-epic" href="' + esc(CONFIG.botUrl) + '" target="_blank" rel="noopener noreferrer">' +
         '<span class="tmq-bot-link-halo" aria-hidden="true"></span>' +
         '<span class="tmq-bot-link-crest" aria-hidden="true">♚</span>' +

@@ -2620,6 +2620,32 @@
 
 .tmq-bot-link.is-epic:active { transform: translateY(1px); }
 
+/* ---------- Портрет Хранителя на финальном экране ---------- */
+.tmq-keeper {
+  display: flex;
+  justify-content: center;
+  padding: 2px 0 0;
+}
+
+.tmq-ava.is-keeper {
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  border: 1px solid rgba(184, 158, 201, 0.55);
+  background:
+    radial-gradient(circle at 50% 40%, #1a1226 0%, #0c0812 68%, #06040a 100%);
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.tmq-ava.is-keeper img {
+  object-fit: cover;
+  object-position: center 18%;
+}
+
+/* монограмма-фолбэк вписывается целиком */
+.tmq-ava.is-keeper img.is-mono { object-fit: contain; }
+
 /* ---------- Блок «после победы — к судье» ---------- */
 .tmq-judge {
   display: grid;
