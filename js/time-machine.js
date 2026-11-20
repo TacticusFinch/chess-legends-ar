@@ -57,6 +57,9 @@
     botName: 'Watson-bot',
     botUrl: 'https://lichess.org/@/Watson-bot',
     maxLives: 10,
+    /* Сколько вопросов брать на уровень I и задач на уровни II–III */
+    quizCount: 10,
+    puzzleCount: 5,
     storagePrefix: 'tmq_v8_',
     judgeCode: '2026',
     /* Слово хранителя — пропуск к финалу без партии.
@@ -288,9 +291,14 @@
       'Соперник выходит навстречу. Он не торопится — он уже видел твой страх.'
     ],
     duelWin: [
-      'Рубеж взят. Ты слышишь, как трещит время, отпуская ещё одну эпоху.',
+      'Поединок взят. Ты слышишь, как трещит время, отпуская ещё одну эпоху.',
       'Соперник отводит взгляд. Это и есть победа — не только в фигурах.',
       'Зал выдыхает. Ты — нет. Впереди ещё есть кто-то сильнее.'
+    ],
+    duelWinLast: [
+      'Пятый отступает — и круг замыкается. Ты слышишь, как где-то очень далеко открывается дверь.',
+      'Пять соперников, пять эпох. Последний откладывает фигуру и молча кланяется.',
+      'Тишина. Такая бывает только перед самым важным ходом в жизни.'
     ],
     duelLose: [
       'Ты падаешь на одно колено. Жизнь уходит — но не всё потеряно.',
@@ -420,6 +428,19 @@
       fanfare: function () {
         [392, 523.25, 659.25, 783.99].forEach(function (f, i) { tone(f, i * 0.14, 0.9, 0.09); });
         [523.25, 659.25, 783.99].forEach(function (f) { tone(f, 0.7, 1.5, 0.07); });
+      },
+      /* Торжественный финал: восходящая тема, аккорд и долгий хвост */
+      fanfareBig: function () {
+        init();
+        if (!ctx) return;
+        [261.63, 329.63, 392, 523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) {
+          tone(f, i * 0.12, 1.1, 0.1, i % 2 ? 'triangle' : 'sine');
+        });
+        [261.63, 329.63, 392, 523.25].forEach(function (f) {
+          tone(f, 1.0, 2.6, 0.075, 'sine');
+        });
+        tone(1567.98, 1.9, 1.8, 0.05);
+        tone(1046.5, 2.4, 2.4, 0.045);
       },
       warp: function () {
         init();
@@ -911,7 +932,18 @@
 
   /* Две разные задачи из пула, стабильные для конкретной карточки:
      у каждого чемпиона свой набор, при перезапуске — тот же. */
-  function pickPair(pool, seed) {
+  function shuffle(list) {
+    var out = list.slice();
+    for (var i = out.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = out[i]; out[i] = out[j]; out[j] = t;
+    }
+    return out;
+  }
+
+  /* N случайных задач из пула. Берём только те, где ход вообще
+     возможен по правилам, иначе ребёнок тапает и не получает ответа. */
+  function pickPuzzles(pool, count) {
     var valid = [];
     for (var i = 0; i < pool.length; i++) {
       var p = pool[i];
@@ -920,12 +952,47 @@
       if (isSolvable(p.fen, mv.from, mv.to)) valid.push(p);
     }
     if (!valid.length) return [];
-    if (valid.length === 1) return [valid[0]];
+    return shuffle(valid).slice(0, count || CONFIG.puzzleCount);
+  }
 
-    var start = hashStr(seed) % valid.length;
-    var step = 1 + (hashStr(seed + '-b') % (valid.length - 1));
-    var second = valid[(start + step) % valid.length];
-    return second === valid[start] ? [valid[start]] : [valid[start], second];
+  /* ==========================================================
+     ВОПРОСЫ УРОВНЯ I
+     Только биография: никаких ходов, диаграмм и тактики.
+     Порядок источников:
+       1. window.QUEST_QUIZ[heroId] — свой пакет на 10 вопросов;
+       2. QUEST_DATA[hero].bioQuiz — старый формат (quest-data.js);
+       3. hero.puzzles без диаграмм и тактики;
+       4. автогенерация про город и год (последний резерв).
+     ========================================================== */
+  function isBiographyQuestion(item) {
+    if (!item || !item.q || !item.options) return false;
+    if (item.image) return false;
+    var d = String(item.difficulty || '').toLowerCase();
+    if (d.indexOf('тактик') !== -1) return false;
+    var correct = 0;
+    for (var i = 0; i < item.options.length; i++) {
+      if (item.options[i] && item.options[i].correct) correct++;
+    }
+    return correct === 1;
+  }
+
+  function resolveQuiz(hero, data) {
+    var custom = (window.QUEST_QUIZ && window.QUEST_QUIZ[hero.id]) || null;
+    var pool = [];
+
+    if (custom && custom.length) pool = custom.slice();
+    else if (data.bioQuiz && data.bioQuiz.length) pool = data.bioQuiz.slice();
+    else if (hero.puzzles && hero.puzzles.length) pool = hero.puzzles.slice();
+
+    pool = pool.filter(isBiographyQuestion);
+
+    if (!pool.length) {
+      pool = fallbackQuiz(hero, {
+        era: (window.QUEST_ERAS && window.QUEST_ERAS[hero.id] && window.QUEST_ERAS[hero.id].era) || ''
+      });
+    }
+
+    return shuffle(pool).slice(0, CONFIG.quizCount);
   }
 
   function normalizePuzzle(p, kind) {
@@ -961,9 +1028,9 @@
       : (typeof DUEL_STRIKE_PUZZLES !== 'undefined' ? DUEL_STRIKE_PUZZLES : null);
 
     if (pool && pool.length) {
-      var pair = pickPair(pool, kind + ':' + seed);
-      if (pair.length) {
-        return pair.map(function (p) { return normalizePuzzle(p, kind); });
+      var picked = pickPuzzles(pool, CONFIG.puzzleCount);
+      if (picked.length) {
+        return picked.map(function (p) { return normalizePuzzle(p, kind); });
       }
     }
 
@@ -1644,17 +1711,17 @@
     var data = (window.QUEST_DATA && window.QUEST_DATA[hero.id]) || {};
     var eras = (window.QUEST_ERAS && window.QUEST_ERAS[hero.id]) || {};
 
-    var quiz = (data.bioQuiz && data.bioQuiz.length) ? data.bioQuiz : fromHeroPuzzles(hero);
+    var quiz = resolveQuiz(hero, data);
 
     /* Свои задачи карточки берём, только если решение проходят проверку.
        Иначе — пул дуэли, иначе встроенный набор. */
     var attack = (data.attack && data.attack.length)
-      ? data.attack.filter(function (p) { return isSolvable(p.fen, p.from, p.to); })
+      ? pickPuzzles(data.attack, CONFIG.puzzleCount)
       : [];
     if (!attack.length) attack = fromDuelPuzzles('attack', hero.id);
 
     var defense = (data.defense && data.defense.length)
-      ? data.defense.filter(function (p) { return isSolvable(p.fen, p.from, p.to); })
+      ? pickPuzzles(data.defense, CONFIG.puzzleCount)
       : [];
     if (!defense.length) defense = fromDuelPuzzles('defense', hero.id);
 
@@ -3345,7 +3412,7 @@
 
     setBody(
       chapter(CONFIG.route[3].num, CONFIG.route[3].title, 'Рубеж ' + (state.duelIdx + 1) + ' / ' + state.quest.duels.length) +
-      '<div class="tmq-fighter">' +
+      '<div class="tmq-fighter" id="tmq-foe">' +
         avatarHtml({ name: duel.name, avatar: duel.avatar, color: '#8fb8d8' }, 'is-opp') +
         '<div class="tmq-fighter-body">' +
           '<div class="tmq-fighter-top"><span>' + esc(duel.name) + '</span><b>' + b.ehp + '/50</b></div>' +
@@ -3353,7 +3420,7 @@
           (duel.quote ? '<div class="tmq-fighter-quote">' + esc(duel.quote) + '</div>' : '') +
         '</div>' +
       '</div>' +
-      '<div class="tmq-fighter">' +
+      '<div class="tmq-fighter" id="tmq-me">' +
         avatarHtml(hero, 'is-sm') +
         '<div class="tmq-fighter-body">' +
           '<div class="tmq-fighter-top"><span>' + esc(hero.name || 'Вы') + '</span><b>' + b.php + '/50</b></div>' +
@@ -3419,16 +3486,36 @@
       play('playCorrect');
     }
 
+    renderBattle();
+    if (typeof dmg === 'number' && dmg > 0) spawnDmg('foe', dmg, kind === 'skill');
+
     if (b.ehp <= 0) {
       b.over = true;
       b.log.push('Соперник повержен.');
-      renderBattle();
-      setTimeout(function () { finishBattle('win'); }, 420);
+      setTimeout(function () { finishBattle('win'); }, 520);
       return;
     }
 
-    renderBattle();
     setTimeout(enemyTurn, 620);
+  }
+
+  /* Всплывающее число урона над бойцом: у скилла — крупнее и золотое */
+  function spawnDmg(side, amount, isCrit) {
+    if (!dom || !dom.body) return;
+    var host = dom.body.querySelector(side === 'foe' ? '#tmq-foe' : '#tmq-me');
+    if (!host) return;
+
+    var rect = host.getBoundingClientRect();
+    var box = dom.body.getBoundingClientRect();
+
+    var el = document.createElement('div');
+    el.className = 'tmq-dmg' + (isCrit ? ' is-crit' : '') + (side === 'me' ? ' is-hurt' : '');
+    el.textContent = (isCrit ? '' : '−') + amount;
+    el.style.left = Math.round(rect.left - box.left + rect.width * 0.62) + 'px';
+    el.style.top = Math.round(rect.top - box.top + rect.height * 0.35) + 'px';
+
+    dom.body.appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1150);
   }
 
   function enemyTurn() {
@@ -3444,16 +3531,16 @@
     b.log.push('Соперник отвечает: −' + dmg + ' HP.');
     play('playWrong');
 
+    b.busy = false;
+    renderBattle();
+    spawnDmg('me', dmg, false);
+
     if (b.php <= 0) {
       b.over = true;
       b.log.push('Вы не удержались.');
-      renderBattle();
-      setTimeout(function () { finishBattle('lose'); }, 420);
+      setTimeout(function () { finishBattle('lose'); }, 520);
       return;
     }
-
-    b.busy = false;
-    renderBattle();
   }
 
   function finishBattle(outcome) {
@@ -3470,14 +3557,23 @@
     var btn = dom.body.querySelector('#tmq-duel-start');
 
     if (outcome === 'win' || outcome === true) {
-      if (log) log.textContent = 'Рубеж взят.';
-      play('playCorrect');
-      beat('duelWin');
-      after(700, function () {
+      var wonNow = state.duelIdx;
+      var totalNow = state.quest.duels.length;
+      var isLast = wonNow >= totalNow - 1;
+
+      if (log) log.textContent = isLast ? 'Круг пройден.' : 'Поединок взят.';
+
+      /* За пятерых — торжественная мелодия, а не короткий сигнал */
+      if (isLast) play('fanfareBig');
+      else play('playCorrect');
+
+      beat(isLast ? 'duelWinLast' : 'duelWin');
+
+      after(isLast ? 1100 : 700, function () {
         if (state.screen !== 'duels') return;
-        var won = state.duelIdx;
-        var total = state.quest.duels.length;
-        var last = won >= total - 1;
+        var won = wonNow;
+        var total = totalNow;
+        var last = isLast;
         if (!last) {
           state.duelIdx = won + 1;
           saveProgress();
@@ -3486,6 +3582,7 @@
           name: duel.name,
           idx: won,
           total: total,
+          last: last,
           next: function () {
             if (last) finishStage();
             else renderDuel();
@@ -3655,12 +3752,18 @@
 
     if (isStage) {
       kicker = o.kicker || ('Уровень ' + (route.num || '') + ' из V');
-      title = o.title || (esc(route.title || 'Уровень') + ' пройден');
+      /* «Уровень «Пробуждение силы» пройден» — название в кавычках */
+      title = o.title || ('Уровень «' + esc(route.title || '') + '» пройден');
       line = o.line || 'Идём дальше.';
+    } else if (o.last) {
+      /* Пятый соперник: путь по кругу завершён, впереди финал */
+      kicker = 'Поединок ' + (o.total || 5) + ' из ' + (o.total || 5);
+      title = 'Круг замкнулся';
+      line = esc(o.name || 'Соперник') + ' повержен. Пять соперников — пять эпох — остались позади.';
     } else {
-      kicker = 'Дуэль ' + ((o.idx || 0) + 1) + ' из ' + (o.total || 5);
+      kicker = 'Поединок ' + ((o.idx || 0) + 1) + ' из ' + (o.total || 5);
       title = esc(o.name || 'Соперник') + ' повержен';
-      line = 'Рубеж взят. Следующий соперник уже за доской.';
+      line = 'Соперник отступил. Следующий уже ждёт за доской.';
     }
 
     state.pending = o.next || null;
