@@ -117,7 +117,10 @@
     crystal: 'crystal',
     fanfareBig: 'questVictory',
     questVictory: 'questVictory',
-    heroic: 'heroic'
+    heroic: 'heroic',
+    crown: 'crown',
+    applause: 'applause',
+    grandFinale: 'grandFinale'
   };
 
   function unlockAudio() {
@@ -2741,10 +2744,49 @@
     }
   }
 
+  /* ==========================================================
+     КОНФЕТТИ
+     Семьдесят бумажек падают сверху с разбросом по цвету,
+     размеру, задержке и сносу. Рисуются DOM-элементами:
+     transform анимируется на GPU, узел сам удаляется через
+     шесть секунд. При «уменьшить движение» не запускаются.
+     ========================================================== */
+  var CONFETTI_COLORS = ['#d4b475', '#f0d8a6', '#8ef0c0', '#35d6f0', '#e0655f', '#f7eeda'];
+
+  function launchConfetti(host) {
+    if (!host) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var layer = document.createElement('div');
+    layer.className = 'tmq-confetti';
+    layer.setAttribute('aria-hidden', 'true');
+
+    for (var i = 0; i < 70; i++) {
+      var p = document.createElement('i');
+      var w = 5 + Math.random() * 7;
+      var drift = (Math.random() * 2 - 1) * 70;
+
+      p.style.left = (Math.random() * 100).toFixed(1) + '%';
+      p.style.width = w.toFixed(1) + 'px';
+      p.style.height = (w * 0.55).toFixed(1) + 'px';
+      p.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+      p.style.animationDelay = (Math.random() * 1.4).toFixed(2) + 's';
+      p.style.animationDuration = (2.4 + Math.random() * 1.8).toFixed(2) + 's';
+      p.style.setProperty('--drift', drift.toFixed(0) + 'px');
+      layer.appendChild(p);
+    }
+
+    host.appendChild(layer);
+    setTimeout(function () {
+      if (layer.parentNode) layer.parentNode.removeChild(layer);
+    }, 7000);
+  }
+
   function renderVictory() {
     state.screen = 'victory';
     resetNav([{ s: 'greet' }, { s: 'map' }]);
-    play('fanfareBig');
+    /* Финальный звук: триумф + аплодисменты + аккорд поверх */
+    play('grandFinale');
     beat('victory');
 
     var q = state.quest;
@@ -2769,6 +2811,13 @@
       '<button class="tmq-cta" type="button" id="tmq-finish">К карточке</button>' +
       '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-again">К карте уровней</button>'
     );
+
+    /* Конфетти запускаем после отрисовки: слой ложится поверх
+       лучей и искр, но под кнопками */
+    var triumph = dom.body.querySelector('.tmq-triumph');
+    if (triumph) {
+      setTimeout(function () { launchConfetti(triumph); }, 220);
+    }
 
     var again = dom.body.querySelector('#tmq-again');
     if (again) {
@@ -2859,9 +2908,9 @@
     saveProgress();
 
     /* [FIX] Большой триумф уже прозвучал на экране «Круг замкнулся».
-       Здесь для IV уровня даём тёплый хор — он не повторяет
-       фанфары и лучше подходит к «Ты вернул ему корону». */
-    if (passed === 3) play('choir');
+       Для IV уровня — отдельный короткий перезвон колоколов (crown),
+       а не фанфары и не хор: звук не должен повторяться. */
+    if (passed === 3) play('crown');
     else play('playFanfare');
 
     if (passed === 3) {

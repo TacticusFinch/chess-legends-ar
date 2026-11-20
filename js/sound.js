@@ -854,6 +854,110 @@ class SoundController {
   }
 
   // ==========================================================
+  // 20c. АПЛОДИСМЕНТЫ ЗАЛА
+  // Гул толпы + десятки коротких хлопков со случайной
+  // задержкой, тембром и громкостью. Никаких файлов.
+  // ==========================================================
+  applause() {
+    this.init();
+    if (!this.enabled || !this.ctx || !this.bus) return;
+
+    const dur = 3.4;
+    const t0 = this.ctx.currentTime;
+
+    // 1. Гул зала — шум через lowpass, медленно поднимается
+    const bed = this._noise(dur);
+    if (bed) {
+      const src = this.ctx.createBufferSource();
+      src.buffer = bed;
+      const lp = this.ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 850;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(0.055, t0 + 0.5);
+      g.gain.linearRampToValueAtTime(0.045, t0 + dur * 0.7);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      src.connect(lp);
+      lp.connect(g);
+      g.connect(this.bus);
+      src.start(t0);
+    }
+
+    // 2. Хлопки: 64 всплеска шума с полосовым фильтром
+    for (let i = 0; i < 64; i++) {
+      const t = t0 + 0.12 + Math.random() * (dur - 0.7);
+      const buf = this._noise(0.045);
+      if (!buf) break;
+
+      const src = this.ctx.createBufferSource();
+      src.buffer = buf;
+
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1100 + Math.random() * 1900;
+      bp.Q.value = 1.1;
+
+      const g = this.ctx.createGain();
+      const peak = 0.035 + Math.random() * 0.075;
+      g.gain.setValueAtTime(peak, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
+
+      src.connect(bp);
+      bp.connect(g);
+      g.connect(this.bus);
+      src.start(t);
+    }
+  }
+
+  // ==========================================================
+  // 20d. БОЛЬШОЙ ФИНАЛ
+  // Победа после слова хранителя: триумф + аплодисменты.
+  // Аплодисменты входят с задержкой — сначала удар, потом зал.
+  // ==========================================================
+  grandFinale() {
+    this.init();
+    if (!this.enabled || !this.ctx || !this.bus) return;
+
+    this.questVictory();
+
+    const self = this;
+    setTimeout(function () { self.applause(); }, 620);
+    setTimeout(function () {
+      if (!self.enabled || !self.ctx || !self.bus) return;
+      // финальный аккорд поверх аплодисментов
+      [523.25, 659.25, 783.99, 1046.50].forEach(function (f, i) {
+        self._tone(f, i * 0.04, 2.6, { gain: 0.045, type: 'sine' });
+      });
+    }, 1500);
+  }
+
+  // ==========================================================
+  // 20b. КОРОНА ВОЗВРАЩЕНА — короткий тёплый перезвон
+  // Специально НЕ фанфары: они уже отзвучали после пятого
+  // соперника. Здесь только три колокола в высоком регистре,
+  // полторы секунды, без литавр и труб.
+  // ==========================================================
+  crown() {
+    this.init();
+    if (!this.enabled || !this.ctx || !this.bus) return;
+
+    const bells = [
+      { f: 783.99, t: 0.00, d: 1.5 },
+      { f: 1046.50, t: 0.16, d: 1.4 },
+      { f: 1318.51, t: 0.32, d: 1.2 }
+    ];
+
+    bells.forEach(b => {
+      this._tone(b.f, b.t, b.d, { gain: 0.09, type: 'sine' });
+      this._tone(b.f * 2.01, b.t, b.d * 0.6, { gain: 0.022 });
+    });
+
+    // мягкая опора внизу — чтобы перезвон не висел в воздухе
+    this._tone(261.63, 0, 1.2, { gain: 0.05, type: 'triangle' });
+  }
+
+  // ==========================================================
   // 21. ГЕРОИЧЕСКИЙ ХОР ПЕРЕД ФИНАЛЬНОЙ ПАРТИЕЙ
   // Низкий гул, хоровые голоса с вибрато, трубы.
   // Ощущение: «сейчас начнётся то, к чему ты шёл весь путь».
