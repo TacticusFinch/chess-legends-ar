@@ -124,7 +124,7 @@ const RANK_CONFIGS = {
     ]
   },
   'secrets': {
-    name: 'Секретные',
+    name: 'Феномены',
     file: './targets/secrets.mind',
     targets: [
       { id: 'stockfish', globalIndex: 15, videoId: 'vid-stockfish', name: 'Стокфиш' },
