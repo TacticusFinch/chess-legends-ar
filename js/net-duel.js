@@ -133,7 +133,7 @@ const InteractiveBoardEngine = {
 
     const descEl = document.getElementById("tactical-task-title");
     if (descEl) {
-      descEl.textContent = "ВРЕМЯ ВЫШЛО! Ход не засчитан";
+      descEl.textContent = "Время вышло";
       descEl.style.color = "#ff8f85";
     }
 
@@ -237,17 +237,16 @@ const InteractiveBoardEngine = {
     });
   },
 
-  onSuccess() {
+    onSuccess() {
     this.stopTimer();
     if (typeof sfx !== "undefined" && sfx.playCorrect) sfx.playCorrect();
 
     const descEl = document.getElementById("tactical-task-title");
-    const isDefense = this.mode === "defense";
     if (descEl) {
       descEl.style.color = "#8ef0c0";
-      descEl.textContent = isDefense
-        ? "ВЕРНО! ЗАЩИТА УДЕРЖАНА · +1⚡ · удар ослаблен"
-        : "ВЕРНО! КРИТИЧЕСКИЙ УРОН ЗАСЧИТАН";
+      descEl.textContent = this.mode === "defense"
+        ? "Верно · +1⚡"
+        : "Верно · крит";
     }
 
     setTimeout(() => {
@@ -258,8 +257,9 @@ const InteractiveBoardEngine = {
       if (skillTooltip) skillTooltip.style.display = "flex";
 
       NetDuel.resolveTacticalStrike(true);
-    }, 1500);
+    }, 1300);
   },
+
 
 
   onError(originalSquare) {
@@ -267,17 +267,16 @@ const InteractiveBoardEngine = {
     if (typeof sfx !== "undefined" && sfx.playWrong) sfx.playWrong();
 
     const descEl = document.getElementById("tactical-task-title");
-    const isDefense = this.mode === "defense";
     if (descEl) {
       descEl.style.color = "#ff8f85";
-      descEl.textContent = isDefense
-        ? "НЕВЕРНО. ЗАЩИТА ПРОБИТА: половина урона, без энергии"
-        : "НЕВЕРНО. УДАР НЕ ЗАСЧИТАН";
+      descEl.textContent = this.mode === "defense"
+        ? "Мимо · блок слабее"
+        : "Мимо · доп. урона нет";
     }
 
     setTimeout(() => {
       if (this.board && this.currentPuzzle) this.board.position(this.currentPuzzle.fen);
-    }, 800);
+    }, 700);
 
     setTimeout(() => {
       const modal = document.getElementById("tactical-board-modal");
@@ -287,8 +286,9 @@ const InteractiveBoardEngine = {
       if (skillTooltip) skillTooltip.style.display = "flex";
 
       NetDuel.resolveTacticalStrike(false);
-    }, 1900);
+    }, 1700);
   }
+
 
 };
 
