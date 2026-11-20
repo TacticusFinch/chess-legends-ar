@@ -103,7 +103,7 @@ const RANK_CONFIGS = {
       { id: 'steinitz',   globalIndex: 0,  videoId: 'vid-steinitz',   name: 'Вильгельм Стейниц' },
       { id: 'lasker',     globalIndex: 1,  videoId: 'vid-lasker',     name: 'Эммануил Ласкер' },
       { id: 'capablanca', globalIndex: 2,  videoId: 'vid-capablanca', name: 'Хосе Рауль Капабланка' },
-      { id: 'alekhine',   globalIndex: 3,  videoId: 'vid-alekhin',    name: 'Александр Алехин' },
+      { id: 'alekhine',   globalIndex: 3,  videoId: 'vid-alekhine',   name: 'Александр Алехин' },
       { id: 'euwe',       globalIndex: 4,  videoId: 'vid-euwe',       name: 'Макс Эйве' },
       { id: 'botvinnik',  globalIndex: 5,  videoId: 'vid-botvinnik',  name: 'Михаил Ботвинник' },
       { id: 'smyslov',    globalIndex: 6,  videoId: 'vid-smyslov',    name: 'Василий Смыслов' },
