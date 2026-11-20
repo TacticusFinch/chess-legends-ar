@@ -775,7 +775,7 @@ const HEROES = {
   13: {
     id: "liren",
     name: "Дин Лижэнь",
-    avatar: "./assets/avatars/ding.png",
+    avatar: "./assets/avatars/liren.png",
     title: "XVII Чемпион мира по шахматам (2023—2024)",
     color: "#ff006e",
     colorGlow: "rgba(255, 0, 110, 0.4)",

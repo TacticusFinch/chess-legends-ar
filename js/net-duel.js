@@ -239,14 +239,18 @@ const InteractiveBoardEngine = {
 
     onSuccess() {
     this.stopTimer();
-    if (typeof sfx !== "undefined" && sfx.playCorrect) sfx.playCorrect();
+    if (typeof sfx !== "undefined") {
+      if (this.mode === "defense" && sfx.shieldHold) sfx.shieldHold();
+      else if (sfx.tacticWin) sfx.tacticWin();
+    }
+
 
     const descEl = document.getElementById("tactical-task-title");
     if (descEl) {
       descEl.style.color = "#8ef0c0";
       descEl.textContent = this.mode === "defense"
         ? "Верно · +1⚡"
-        : "Верно · крит";
+        : "Верно · +5 к урону";
     }
 
     setTimeout(() => {
@@ -1025,11 +1029,6 @@ window.NetDuel = {
     if (this.playerBuffs.guaranteedCrit) {
       solved = true;
       this.playerBuffs.guaranteedCrit = false;
-    }
-
-    if (typeof sfx !== "undefined") {
-      if (solved && sfx.playCritHit) sfx.playCritHit();
-      else if (sfx.playAttackHit) sfx.playAttackHit();
     }
 
     if (solved) {
