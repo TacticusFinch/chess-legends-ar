@@ -133,8 +133,8 @@ const InteractiveBoardEngine = {
 
     const descEl = document.getElementById("tactical-task-title");
     if (descEl) {
-      descEl.textContent = "ВРЕМЯ ВЫШЛО!";
-      descEl.style.color = "#ff4d6d";
+      descEl.textContent = "ВРЕМЯ ВЫШЛО! Ход не засчитан";
+      descEl.style.color = "#ff8f85";
     }
 
     if (typeof sfx !== "undefined" && sfx.playWrong) sfx.playWrong();
@@ -148,7 +148,8 @@ const InteractiveBoardEngine = {
       if (skillTooltip) skillTooltip.style.display = "flex";
 
       NetDuel.resolveTacticalStrike(false);
-    }, 700);
+    }, 1500);
+
   },
 
   initBoard() {
@@ -240,6 +241,15 @@ const InteractiveBoardEngine = {
     this.stopTimer();
     if (typeof sfx !== "undefined" && sfx.playCorrect) sfx.playCorrect();
 
+    const descEl = document.getElementById("tactical-task-title");
+    const isDefense = this.mode === "defense";
+    if (descEl) {
+      descEl.style.color = "#8ef0c0";
+      descEl.textContent = isDefense
+        ? "ВЕРНО! ЗАЩИТА УДЕРЖАНА · +1⚡ · удар ослаблен"
+        : "ВЕРНО! КРИТИЧЕСКИЙ УРОН ЗАСЧИТАН";
+    }
+
     setTimeout(() => {
       const modal = document.getElementById("tactical-board-modal");
       if (modal) modal.style.display = "none";
@@ -248,16 +258,26 @@ const InteractiveBoardEngine = {
       if (skillTooltip) skillTooltip.style.display = "flex";
 
       NetDuel.resolveTacticalStrike(true);
-    }, 450);
+    }, 1500);
   },
+
 
   onError(originalSquare) {
     this.stopTimer();
     if (typeof sfx !== "undefined" && sfx.playWrong) sfx.playWrong();
 
+    const descEl = document.getElementById("tactical-task-title");
+    const isDefense = this.mode === "defense";
+    if (descEl) {
+      descEl.style.color = "#ff8f85";
+      descEl.textContent = isDefense
+        ? "НЕВЕРНО. ЗАЩИТА ПРОБИТА: половина урона, без энергии"
+        : "НЕВЕРНО. УДАР НЕ ЗАСЧИТАН";
+    }
+
     setTimeout(() => {
       if (this.board && this.currentPuzzle) this.board.position(this.currentPuzzle.fen);
-    }, 300);
+    }, 800);
 
     setTimeout(() => {
       const modal = document.getElementById("tactical-board-modal");
@@ -267,8 +287,9 @@ const InteractiveBoardEngine = {
       if (skillTooltip) skillTooltip.style.display = "flex";
 
       NetDuel.resolveTacticalStrike(false);
-    }, 550);
+    }, 1900);
   }
+
 };
 
 

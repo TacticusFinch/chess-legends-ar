@@ -3038,7 +3038,6 @@
             avatarHtml({ name: o.duel.name, avatar: o.duel.avatar, color: '#8fb8d8' }, 'is-vanquish') +
             '<i class="tmq-vanquish-slash" aria-hidden="true"></i>' +
           '</span>' +
-          '<span class="tmq-vanquish-mark" aria-hidden="true">✓</span>' +
         '</div>';
     } else if (o.crownHero) {
       badge =
