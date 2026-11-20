@@ -730,23 +730,68 @@
 }
 
 /* ---------- Брифинг ---------- */
+/* ==========================================================
+   БРИФИНГ: «Что будет» и «Как играть»
+   Две карточки с цветной засечкой слева, надзаголовком
+   и читаемым телом. Без рамок-таблиц.
+   ========================================================== */
 .tmq-brief {
   display: grid;
-  gap: 1px;
-  border: 1px solid var(--tmq-line-soft);
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--tmq-line-soft);
+  gap: 9px;
 }
-.tmq-brief-row { display: grid; gap: 3px; padding: 12px 14px; background: #080d13; }
+
+.tmq-brief-row {
+  position: relative;
+  display: grid;
+  gap: 7px;
+  padding: 13px 15px 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-left: 2px solid rgba(53, 214, 240, 0.55);
+  border-radius: 2px 10px 10px 2px;
+  background:
+    linear-gradient(135deg, rgba(53, 214, 240, 0.055), rgba(53, 214, 240, 0.008)),
+    #080d13;
+}
+
+/* Вторая карточка — золотая: правила против вводной */
+.tmq-brief-row:last-child {
+  border-left-color: rgba(212, 180, 117, 0.7);
+  background:
+    linear-gradient(135deg, rgba(212, 180, 117, 0.06), rgba(212, 180, 117, 0.008)),
+    #080d13;
+}
+
 .tmq-brief-key {
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 2.2px;
   text-transform: uppercase;
   color: var(--tmq-cy);
 }
-.tmq-brief-val { font-size: 13px; line-height: 1.6; color: var(--tmq-text-2); }
+.tmq-brief-row:last-child .tmq-brief-key { color: #d9c191; }
+
+.tmq-brief-val {
+  font-size: 13px;
+  line-height: 1.68;
+  color: #c6d4e0;
+}
+
+/* Строки инструкции: каждая с новой строки, с воздухом */
+.tmq-brief-line {
+  display: block;
+  margin-top: 7px;
+}
+.tmq-brief-line:first-child { margin-top: 0; }
+
+.tmq-brief-val b {
+  color: #f4ead2;
+  font-weight: 700;
+}
+.tmq-brief-val i {
+  font-style: normal;
+  color: #8fb8d8;
+  font-weight: 600;
+}
 
 .tmq-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 
@@ -2256,21 +2301,10 @@
   50% { opacity: 1; transform: scale(1.12); }
 }
 
-.tmq-boss-brief-orb {
-  position: relative;
-  z-index: 2;
-  width: 62px;
-  height: 62px;
-  margin: 0 auto 2px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  border: 1px solid rgba(184, 158, 201, 0.65);
-  background: radial-gradient(circle at 35% 28%, rgba(200, 180, 255, 0.45), rgba(48, 30, 82, 0.95));
-  font-size: 27px;
-  color: #efe6ff;
-  box-shadow: 0 0 26px rgba(184, 158, 201, 0.5);
-}
+/* Орб с королём убран: в брифинге достаточно свечения и текста */
+.tmq-boss-brief-orb { display: none; }
+
+.tmq-boss-brief { padding-top: 22px; }
 
 .tmq-boss-brief-title {
   position: relative;

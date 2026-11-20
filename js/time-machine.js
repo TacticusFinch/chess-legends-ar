@@ -2936,12 +2936,35 @@
     /* Финальный уровень — особый брифинг: это босс, а не задача. */
     if (index === 4) { renderFinalBriefing(route); return; }
 
-    var rows = (route.brief || []).map(function (row) {
-      return '<div class="tmq-brief-row">' +
-        '<span class="tmq-brief-key">' + esc(row[0]) + '</span>' +
-        '<span class="tmq-brief-val">' + esc(row[1]) + '</span>' +
-        '</div>';
-    }).join('');
+    /* Уровень IV — только правила боя, без пересказа сюжета:
+       здесь важна механика, а не атмосфера. */
+    var isDuels = index === 3;
+
+    var rows = isDuels
+      ? '<div class="tmq-brief-row">' +
+          '<span class="tmq-brief-key">Что будет</span>' +
+          '<span class="tmq-brief-val">Пять поединков подряд. У каждого соперника свой характер, ' +
+            'своя фраза и своя история. Проигрыш отнимает одну жизнь и открывает рубеж заново — ' +
+            'соперник остаётся тем же.</span>' +
+        '</div>' +
+        '<div class="tmq-brief-row">' +
+          '<span class="tmq-brief-key">Как играть</span>' +
+          '<span class="tmq-brief-val">' +
+            '<span class="tmq-brief-line"><b>Атака</b> — вы решаете тактическую задачу на доске. ' +
+              'Верный ход наносит критический удар: <i>+5 к урону</i> и <i>+1 заряд энергии</i>.</span>' +
+            '<span class="tmq-brief-line"><b>Защита</b> — задача на защиту. Верное решение поглощает ' +
+              'часть урона соперника и даёт <i>+1 заряд энергии</i>. Неверное — удар проходит полностью.</span>' +
+            '<span class="tmq-brief-line"><b>Коронный ход</b> — особый навык чемпиона. Требует ' +
+              '<i>два заряда</i>: копите их защитой, а затем бейте — это самый сильный удар в бою.</span>' +
+            '<span class="tmq-brief-line">У обоих по <i>50 HP</i>. Побеждает тот, кто первым отнимет их все.</span>' +
+          '</span>' +
+        '</div>'
+      : (route.brief || []).map(function (row) {
+          return '<div class="tmq-brief-row">' +
+            '<span class="tmq-brief-key">' + esc(row[0]) + '</span>' +
+            '<span class="tmq-brief-val">' + esc(row[1]) + '</span>' +
+            '</div>';
+        }).join('');
 
     var opening = [
       'Память — единственное, что нельзя отнять. Но её можно потерять.',
@@ -2952,13 +2975,14 @@
     ][index] || '';
 
     setBody(
-      chapter(route.num, route.title, 'перед стартом') +
-      '<div class="tmq-title">' + esc(route.title) + '</div>' +
-      '<div class="tmq-sub">' + esc(route.sub) + '</div>' +
-      '<div class="tmq-copy">' +
-        '<p class="is-lead">' + esc(opening) + '</p>' +
-        '<p>' + esc(route.text) + '</p>' +
-      '</div>' +
+      (isDuels
+        ? '<div class="tmq-title">' + esc(route.title) + '</div>'
+        : '<div class="tmq-title">' + esc(route.title) + '</div>' +
+          '<div class="tmq-sub">' + esc(route.sub) + '</div>' +
+          '<div class="tmq-copy">' +
+            '<p class="is-lead">' + esc(opening) + '</p>' +
+            '<p>' + esc(route.text) + '</p>' +
+          '</div>') +
       '<div class="tmq-brief">' + rows + '</div>' +
       '<button class="tmq-cta" type="button" id="tmq-start">Начать уровень</button>' +
       '<button class="tmq-btn tmq-btn-ghost tmq-btn-sm" type="button" id="tmq-back">К карте уровней</button>'
@@ -2999,7 +3023,6 @@
     setBody(
       '<div class="tmq-boss-brief">' +
         '<div class="tmq-boss-brief-glow" aria-hidden="true"></div>' +
-        '<div class="tmq-boss-brief-orb" aria-hidden="true">♚</div>' +
         '<div class="tmq-kicker">Уровень V · последний рубеж</div>' +
         '<h2 class="tmq-boss-brief-title">Хранитель времени</h2>' +
         '<p class="tmq-boss-brief-lead">Он не играет в шахматы. Он играет со временем.</p>' +
@@ -4202,7 +4225,13 @@
     config: CONFIG,
     prologue: PROLOGUE,
     beats: BEATS,
-    state: state
+    state: state,
+    taunts: RIVAL_TAUNTS,
+    /* Реплика соперника по имени — для дуэли вне квеста */
+    tauntFor: function (name) {
+      var list = RIVAL_TAUNTS[name];
+      return (list && list.length) ? pick(list) : pick(TAUNTS_GENERIC);
+    }
   };
 
   if (typeof window.startTimeMachine !== 'function') {
