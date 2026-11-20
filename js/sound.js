@@ -933,6 +933,54 @@ class SoundController {
   }
 
   // ==========================================================
+  // 21b. ТАЙНА ПЕРЕД ФИНАЛОМ
+  // Не героика, а предчувствие: низкий гул, тритон (интервал
+  // тревоги), редкие далёкие колокола и тихий подъём воздуха.
+  // Ощущение: дверь открыта, за ней что-то очень старое.
+  // ==========================================================
+  mystery() {
+    this.init();
+    if (!this.enabled || !this.ctx || !this.bus) return;
+
+    // 1. Низкий гул — ми первой октавы, медленное вибрато
+    this._voice(82.41, 0, 5.2, 0.085, 0.9);
+    this._voice(123.47, 0.15, 4.8, 0.045, 1.1);
+
+    // 2. Тритон — си-бемоль над ми: интервал, который всегда
+    //    звучит как вопрос без ответа
+    this._voice(116.54, 0.5, 4.2, 0.032, 0.8);
+
+    // 3. Воздух: шум сквозь узкий фильтр, поднимается и уходит
+    const air = this._noise(4.6);
+    if (air) {
+      const src = this.ctx.createBufferSource();
+      src.buffer = air;
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(420, this.ctx.currentTime);
+      bp.frequency.exponentialRampToValueAtTime(1900, this.ctx.currentTime + 4.2);
+      bp.Q.value = 1.4;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0.03, this.ctx.currentTime + 1.6);
+      g.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 4.6);
+      src.connect(bp);
+      bp.connect(g);
+      g.connect(this.bus);
+      src.start(this.ctx.currentTime);
+    }
+
+    // 4. Далёкие колокола — редкие, с длинным хвостом
+    this._tone(659.25, 0.9, 2.6, { gain: 0.045, type: 'sine' });
+    this._tone(987.77, 2.1, 2.2, { gain: 0.03, type: 'sine' });
+    this._tone(493.88, 3.0, 2.4, { gain: 0.035, type: 'sine' });
+
+    // 5. Два мягких удара в глубине — как шаги
+    this._timpani(0.05, 0.22);
+    this._timpani(2.35, 0.16);
+  }
+
+  // ==========================================================
   // 20b. КОРОНА ВОЗВРАЩЕНА — короткий тёплый перезвон
   // Специально НЕ фанфары: они уже отзвучали после пятого
   // соперника. Здесь только три колокола в высоком регистре,

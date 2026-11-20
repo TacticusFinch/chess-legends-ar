@@ -120,7 +120,8 @@
     heroic: 'heroic',
     crown: 'crown',
     applause: 'applause',
-    grandFinale: 'grandFinale'
+    grandFinale: 'grandFinale',
+    mystery: 'mystery'
   };
 
   function unlockAudio() {
@@ -752,17 +753,72 @@
 
   var rivalSkillsApplied = false;
 
+  /* ==========================================================
+     ПОИСК КАРТОЧКИ ЧЕМПИОНА ПО ИМЕНИ СОПЕРНИКА
+     [FIX] Раньше индекс строился только по точному имени, поэтому
+     «Роберт Фишер» не находил карточку «Роберт Джеймс Фишер»,
+     а «Стокфиш» — карточку «Stockfish». Такой соперник получал
+     тень: чужой аватар, средние статы и случайный скилл.
+     Теперь сравнение идёт по нормализованному имени, по фамилии
+     и по явным псевдонимам.
+     ========================================================== */
+  var CHAMPION_ALIASES = {
+    'робертфишер': 'fischer',
+    'фишер': 'fischer',
+    'стокфиш': 'stockfish',
+    'stockfish': 'stockfish',
+    'карпов': 'karpov',
+    'каспаров': 'kasparov',
+    'карлсен': 'carlsen',
+    'ананд': 'anand',
+    'лижэнь': 'liren',
+    'динлижэнь': 'liren',
+    'гукеш': 'gukesh'
+  };
+
+  function normalizeName(value) {
+    return String(value == null ? '' : value)
+      .toLowerCase()
+      .replace(/ё/g, 'е')
+      .replace(/[^a-zа-я0-9]/g, '');
+  }
+
+  function surnameOf(value) {
+    var parts = String(value == null ? '' : value).trim().split(/\s+/);
+    return parts.length ? normalizeName(parts[parts.length - 1]) : '';
+  }
+
   function championIndex() {
     var map = {};
     if (typeof HEROES === 'undefined' || !HEROES) return map;
+
     Object.keys(HEROES).forEach(function (key) {
       var n = Number(key);
       var h = HEROES[key];
       if (!h || isNaN(n) || n >= 100) return;
       if (String(h.id || '').indexOf('rival-') === 0) return;
-      if (h.name) map[h.name] = n;
+      if (!h.name) return;
+
+      map[normalizeName(h.name)] = n;         /* полное имя */
+      map[surnameOf(h.name)] = n;             /* фамилия */
+      map[normalizeName(h.id)] = n;           /* латинский id */
     });
     return map;
+  }
+
+  /* Номер карточки чемпиона по имени соперника или undefined */
+  function championIdByName(name) {
+    var champs = championIndex();
+    var full = normalizeName(name);
+    var surname = surnameOf(name);
+
+    if (champs[full] !== undefined) return champs[full];
+    if (champs[surname] !== undefined) return champs[surname];
+
+    var alias = CHAMPION_ALIASES[full] || CHAMPION_ALIASES[surname];
+    if (alias && champs[alias] !== undefined) return champs[alias];
+
+    return undefined;
   }
 
   function applyRivalSkills() {
@@ -792,10 +848,9 @@
   function buildDuels(hero) {
     var rivals = (window.QUEST_RIVALS && window.QUEST_RIVALS[hero.id]) || null;
     if (rivals && rivals.length) {
-      var champs = championIndex();
       return rivals.map(function (r) {
         var lore = rivalLore(r.n);
-        var realId = champs[r.n];
+        var realId = championIdByName(r.n);
         var enemyId = (realId !== undefined) ? realId : r.enemyId;
         var enemyHero = (typeof HEROES !== 'undefined' && HEROES && HEROES[enemyId])
           ? HEROES[enemyId] : null;
@@ -2014,7 +2069,10 @@
     );
 
     dom.body.querySelector('#tmq-start').addEventListener('click', function () {
-      play('heroic');
+      /* Перед финалом — не героика, а тайна: низкий гул, тритон,
+         далёкие колокола. Героический хор звучал здесь раньше,
+         но он «побеждал» до боя. */
+      play('mystery');
       state.step = 0;
       state.answered = false;
       state.chosen = null;
@@ -2864,9 +2922,33 @@
     state.pending = o.next || null;
     pushNav({ s: 'congrats' });
 
+    /* Верхний знак зависит от события:
+       • повержен соперник — его портрет с золотым разрезом и печатью;
+       • возвращена корона — портрет героя с короной над ним;
+       • обычный уровень — печать с галочкой. */
+    var badge;
+    if (!isStage && o.duel) {
+      badge =
+        '<div class="tmq-vanquish">' +
+          '<span class="tmq-vanquish-frame">' +
+            avatarHtml({ name: o.duel.name, avatar: o.duel.avatar, color: '#8fb8d8' }, 'is-vanquish') +
+            '<i class="tmq-vanquish-slash" aria-hidden="true"></i>' +
+          '</span>' +
+          '<span class="tmq-vanquish-mark" aria-hidden="true">✓</span>' +
+        '</div>';
+    } else if (o.crownHero) {
+      badge =
+        '<div class="tmq-hero-seal">' +
+          '<span class="tmq-hero-seal-crown" aria-hidden="true">♛</span>' +
+          avatarHtml(state.hero || { name: 'Чемпион' }, 'is-hero-seal') +
+        '</div>';
+    } else {
+      badge = '<div class="tmq-done-badge"><i class="tmq-check" aria-hidden="true"></i></div>';
+    }
+
     setBody(
       '<div class="tmq-done">' +
-        '<div class="tmq-done-badge"><i class="tmq-check" aria-hidden="true"></i></div>' +
+        badge +
         '<div class="tmq-kicker">' + kicker + '</div>' +
         '<h2 class="tmq-title">' + title + '</h2>' +
         (line ? '<p class="tmq-done-text">' + line + '</p>' : '') +
@@ -2917,6 +2999,7 @@
       var heroName = (state.hero && state.hero.name) || (state.quest && state.quest.name) || 'Чемпион';
       renderCongrats('stage', {
         index: passed,
+        crownHero: true,
         kicker: 'Уровень IV из V',
         title: 'Ты вернул ему корону',
         line: 'Пять соперников позади. ' + esc(heroName) + ' снова тот, кем был, — и это сделал ты.',
