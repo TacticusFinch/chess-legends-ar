@@ -2369,6 +2369,34 @@
 .tmq-done-note b { color: #fbf0d6; }
 
 /* ==========================================================
+   РЕПЛИКА СОПЕРНИКА ПОСЛЕ ЕГО ПОРАЖЕНИЯ
+   На экране победы: он признаёт поражение — по-своему.
+   ========================================================== */
+.tmq-concede {
+  position: relative;
+  margin: 2px 0 0;
+  width: 100%;
+  padding: 13px 14px 12px 15px;
+  border-left: 2px solid rgba(143, 184, 216, 0.6);
+  background: linear-gradient(90deg, rgba(143, 184, 216, 0.09), rgba(143, 184, 216, 0.01));
+  font-size: 13px;
+  line-height: 1.66;
+  color: #d5e2ec;
+  text-align: left;
+}
+
+.tmq-concede cite {
+  display: block;
+  margin-top: 7px;
+  font-size: 8.5px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: #7f93a3;
+}
+
+/* ==========================================================
    СЛОВО ХРАНИТЕЛЯ — пропуск финального босса
    ========================================================== */
 .tmq-secret {
