@@ -622,13 +622,20 @@
      • пул расширен новым пакетом защиты (58 задач);
      • при каждом заходе на уровень набор пересобирается.
      ========================================================== */
-  var recentPuzzles = [];
+  /* ==========================================================
+     ВЫБОР ЗАДАЧ: КОЛОДА
+     Раньше выбор был случайным с «памятью» о последних показах.
+     Если валидных задач остаётся мало, такая память не помогает:
+     пул из десяти позиций всё равно возвращает те же десять.
 
-  function puzzleKey(p) {
-    return String((p && p.fen) || '') + '|' + String(p && p.from);
-  }
+     Теперь для каждого вида задач держится колода: весь валидный
+     пул тасуется один раз и выдаётся по порядку. Следующая
+     тасовка — только когда колода исчерпана. Значит ни одна
+     задача не повторится, пока не покажутся все остальные.
+     ========================================================== */
+  var puzzleDecks = {};
 
-  function pickPuzzles(pool, count) {
+  function validPuzzles(pool) {
     var valid = [];
     for (var i = 0; i < pool.length; i++) {
       var p = pool[i];
@@ -636,32 +643,51 @@
       var mv = p.move || p;
       if (isSolvable(p.fen, mv.from, mv.to)) valid.push(p);
     }
+    return valid;
+  }
+
+  function pickPuzzles(pool, count, kind) {
+    var valid = validPuzzles(pool);
     if (!valid.length) return [];
 
     var need = count || CONFIG.puzzleCount;
+    var key = kind || 'default';
+    var deck = puzzleDecks[key];
 
-    /* Сначала те, которых не было в последних показах */
-    var fresh = [];
-    var used = [];
-    for (var j = 0; j < valid.length; j++) {
-      var key = puzzleKey(normalizePuzzle(valid[j], 'attack'));
-      if (recentPuzzles.indexOf(key) === -1) fresh.push(valid[j]);
-      else used.push(valid[j]);
+    if (!deck || deck.size !== valid.length) {
+      deck = { size: valid.length, items: shuffle(valid) };
+      puzzleDecks[key] = deck;
+    }
+    if (!deck.items.length) deck.items = shuffle(valid);
+
+    return deck.items.splice(0, need);
+  }
+
+  /* Диагностика: сколько задач в базе и сколько из них решаемы.
+     Вызов из консоли: TimeMachineQuest.puzzleStats() */
+  function puzzleStats() {
+    var attackPool = (typeof DUEL_STRIKE_PUZZLES !== 'undefined') ? DUEL_STRIKE_PUZZLES : [];
+    var defensePool = (typeof DUEL_DEFENSE_PUZZLES !== 'undefined') ? DUEL_DEFENSE_PUZZLES : [];
+
+    function report(name, pool) {
+      var valid = validPuzzles(pool);
+      var bad = pool.filter(function (p) {
+        var mv = p && (p.move || p);
+        return !p || !p.fen || !isSolvable(p.fen, mv.from, mv.to);
+      });
+      return {
+        kind: name,
+        total: pool.length,
+        valid: valid.length,
+        broken: bad.length,
+        brokenFens: bad.map(function (p) { return p && p.fen; })
+      };
     }
 
-    var ordered = shuffle(fresh).concat(shuffle(used));
-    var chosen = ordered.slice(0, need);
-
-    /* Обновляем память: храним последние 40 ключей */
-    chosen.forEach(function (item) {
-      var k = puzzleKey(normalizePuzzle(item, 'attack'));
-      var at = recentPuzzles.indexOf(k);
-      if (at !== -1) recentPuzzles.splice(at, 1);
-      recentPuzzles.push(k);
-    });
-    while (recentPuzzles.length > 40) recentPuzzles.shift();
-
-    return chosen;
+    return {
+      attack: report('attack', attackPool),
+      defense: report('defense', defensePool)
+    };
   }
 
   function normalizePuzzle(p, kind) {
@@ -684,7 +710,7 @@
   function fromDuelPuzzles(kind, seed) {
     var custom = window.QUEST_PUZZLES && window.QUEST_PUZZLES[kind];
     if (custom && custom.length) {
-      var chosen = pickPuzzles(custom, CONFIG.puzzleCount);
+      var chosen = pickPuzzles(custom, CONFIG.puzzleCount, kind);
       if (chosen.length) {
         return chosen.map(function (p) { return normalizePuzzle(p, kind); });
       }
@@ -695,7 +721,7 @@
       : (typeof DUEL_STRIKE_PUZZLES !== 'undefined' ? DUEL_STRIKE_PUZZLES : null);
 
     if (pool && pool.length) {
-      var picked = pickPuzzles(pool, CONFIG.puzzleCount);
+      var picked = pickPuzzles(pool, CONFIG.puzzleCount, kind);
       if (picked.length) {
         return picked.map(function (p) { return normalizePuzzle(p, kind); });
       }
@@ -965,12 +991,12 @@
     var quiz = resolveQuiz(hero, data);
 
     var attack = (data.attack && data.attack.length)
-      ? pickPuzzles(data.attack, CONFIG.puzzleCount)
+      ? pickPuzzles(data.attack, CONFIG.puzzleCount, 'attack')
       : [];
     if (!attack.length) attack = fromDuelPuzzles('attack', hero.id);
 
     var defense = (data.defense && data.defense.length)
-      ? pickPuzzles(data.defense, CONFIG.puzzleCount)
+      ? pickPuzzles(data.defense, CONFIG.puzzleCount, 'defense')
       : [];
     if (!defense.length) defense = fromDuelPuzzles('defense', hero.id);
 
@@ -1326,6 +1352,8 @@
         position: fen,
         draggable: false,
         showNotation: true,
+        /* Доска повёрнута к игроку той стороной, которая делает ход */
+        orientation: game.turn() === 'w' ? 'white' : 'black',
         pieceTheme: theme
       });
     } catch (e) {
@@ -1460,12 +1488,20 @@
     function paint() {
       grid.innerHTML = '';
       cells = {};
-      for (var rank = 8; rank >= 1; rank--) {
-        for (var f = 0; f < 8; f++) {
-          var sq = files.charAt(f) + rank;
+
+      /* Доска повёрнута к игроку той стороной, которая делает ход:
+         при ходе чёрных первая горизонталь снизу — восьмая. */
+      var flipped = pos.turn === 'b';
+
+      for (var row = 0; row < 8; row++) {
+        for (var col = 0; col < 8; col++) {
+          var rank = flipped ? (row + 1) : (8 - row);
+          var fileIdx = flipped ? (7 - col) : col;
+          var sq = files.charAt(fileIdx) + rank;
+
           var cell = document.createElement('button');
           cell.type = 'button';
-          cell.className = 'tmq-sq ' + (((f + rank) % 2 === 1) ? 'is-dark' : 'is-light');
+          cell.className = 'tmq-sq ' + (((fileIdx + rank) % 2 === 1) ? 'is-dark' : 'is-light');
           cell.setAttribute('data-sq', sq);
           cell.setAttribute('aria-label', 'Поле ' + sq);
 
@@ -1476,8 +1512,8 @@
             span.textContent = GLYPH[piece] || '';
             cell.appendChild(span);
           }
-          if (f === 0) cell.appendChild(mkLabel('tmq-lbl-rank', String(rank)));
-          if (rank === 1) cell.appendChild(mkLabel('tmq-lbl-file', files.charAt(f)));
+          if (col === 0) cell.appendChild(mkLabel('tmq-lbl-rank', String(rank)));
+          if (row === 7) cell.appendChild(mkLabel('tmq-lbl-file', files.charAt(fileIdx)));
 
           cells[sq] = cell;
           grid.appendChild(cell);
@@ -2141,7 +2177,7 @@
     var data = (window.QUEST_DATA && window.QUEST_DATA[hero.id]) || {};
 
     var set = (data[kind] && data[kind].length)
-      ? pickPuzzles(data[kind], CONFIG.puzzleCount)
+      ? pickPuzzles(data[kind], CONFIG.puzzleCount, kind)
       : [];
 
     if (!set.length) set = fromDuelPuzzles(kind, hero.id);
@@ -3007,7 +3043,6 @@
     } else if (o.crownHero) {
       badge =
         '<div class="tmq-hero-seal">' +
-          '<span class="tmq-hero-seal-crown" aria-hidden="true">♛</span>' +
           avatarHtml(state.hero || { name: 'Чемпион' }, 'is-hero-seal') +
         '</div>';
     } else {
@@ -3234,6 +3269,7 @@
     beats: BEATS,
     state: state,
     taunts: TAUNTS,
+    puzzleStats: puzzleStats,
     tauntFor: function (name) {
       var list = TAUNTS[name];
       return (list && list.length) ? pick(list) : pick(TAUNTS_GENERIC);

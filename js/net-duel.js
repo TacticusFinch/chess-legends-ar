@@ -23,8 +23,12 @@ const InteractiveBoardEngine = {
   timerInterval: null,
   timeLeftMs: 30000,
   TOTAL_TIME_MS: 30000,
+  mode: "attack",            // 'attack' | 'defense' — что сейчас решаем
 
-  start() {
+
+    start(mode) {
+    this.mode = (mode === "defense") ? "defense" : "attack";
+
     const modal = document.getElementById("tactical-board-modal");
     const descEl = document.getElementById("tactical-task-title");
     const skillTooltip = document.getElementById("battle-skill-tooltip");
@@ -36,19 +40,27 @@ const InteractiveBoardEngine = {
     this.active = true;
     this.selectedSquare = null;
 
-    this.currentPuzzle = (typeof getRandomDuelPuzzle === "function")
-      ? getRandomDuelPuzzle()
-      : {
-          fen: "6k1/5ppp/8/8/8/8/8/1R4K1 w - - 0 1",
-          move: { from: "b1", to: "b8" },
-          desc: "Найдите лучший ход"
-        };
+    const isDefense = this.mode === "defense";
+
+    this.currentPuzzle = (isDefense && typeof getRandomDefensePuzzle === "function")
+      ? getRandomDefensePuzzle()
+      : ((typeof getRandomDuelPuzzle === "function")
+          ? getRandomDuelPuzzle()
+          : {
+              fen: "6k1/5ppp/8/8/8/8/8/1R4K1 w - - 0 1",
+              move: { from: "b1", to: "b8" },
+              desc: "Найдите лучший ход"
+            });
 
     if (typeof Chess !== "undefined") {
       this.game = new Chess(this.currentPuzzle.fen);
     }
 
-    if (descEl) descEl.textContent = this.currentPuzzle.desc || "Найдите лучший ход";
+    if (descEl) {
+      descEl.style.color = "";   // сбрасываем красный от «ВРЕМЯ ВЫШЛО!»
+      descEl.textContent = this.currentPuzzle.desc
+        || (isDefense ? "Найдите защитный ход" : "Найдите лучший ход");
+    }
 
     this.startTimer();
 
@@ -56,6 +68,7 @@ const InteractiveBoardEngine = {
       this.initBoard();
     }, 60);
   },
+
 
   startTimer() {
     this.stopTimer();
@@ -275,6 +288,7 @@ window.NetDuel = {
   enemyHero: null,
   mySide: "white",
   isWaitingOpponent: false,
+  shieldPower: undefined,    // 1 — задача решена, 0.5 — провал
 
   // [QUEST] мост в квест «Машина времени»
   questHook: null,
@@ -786,6 +800,8 @@ window.NetDuel = {
     this.enemyShield = false;
     this.isWaitingOpponent = false;
     this.lastOutcome = null;
+    this.shieldPower = undefined;
+
 
     this.playerBuffs = { invulnerable: false, guaranteedCrit: false, tempoBoost: false, openBreachTurns: 0, energyLocked: false, stunned: false };
     this.enemyBuffs = { invulnerable: false, guaranteedCrit: false, tempoBoost: false, openBreachTurns: 0, energyLocked: false, stunned: false };
@@ -911,36 +927,19 @@ window.NetDuel = {
     if (type === "attack") {
       this.lockActions(true);
       this.setLog("РЕШИТЕ ТАКТИЧЕСКУЮ ЗАДАЧУ...");
-      InteractiveBoardEngine.start();
+      InteractiveBoardEngine.start("attack");
+
       return;
     }
 
     if (type === "defend") {
       this.lockActions(true);
-      if (typeof sfx !== "undefined" && sfx.playShield) sfx.playShield();
       this.vibrate(35);
-
-      if (this.isNet) {
-        this.myShield = true;
-        this.updateHUD();
-        this.ws.send(JSON.stringify({ type: "MOVE", action: "defend" }));
-        this.setLog("ЗАЩИТА! ЖДЕМ ОППОНЕНТА...");
-      } else {
-        this.myShield = true;
-        if (!this.playerBuffs.energyLocked) {
-          const energyGain = this.playerBuffs.tempoBoost ? 2 : 1;
-          this.myEnergy = Math.min(2, this.myEnergy + energyGain);
-          if (this.playerBuffs.tempoBoost) this.playerBuffs.tempoBoost = false;
-        } else {
-          this.setLog("ЭНЕРГИЯ ЗАБЛОКИРОВАНА АРХИТЕКТОРОМ МЫСЛИ!");
-          this.playerBuffs.energyLocked = false;
-        }
-        this.fx("cyan");
-        this.updateHUD();
-        this.runAiTurn("defend", false);
-      }
+      this.setLog("НАЙДИТЕ ЛУЧШУЮ ЗАЩИТУ...");
+      InteractiveBoardEngine.start("defense");
       return;
     }
+
 
     if (type === "skill") {
       if (this.myEnergy < 2) return this.setLog("НЕДОСТАТОЧНО ЭНЕРГИИ!");
@@ -960,20 +959,59 @@ window.NetDuel = {
     }
   },
 
-  resolveTacticalStrike(isCrit) {
+    resolveTacticalStrike(solved) {
     this.lockActions(true);
 
+    const isDefense = (typeof InteractiveBoardEngine !== "undefined"
+      && InteractiveBoardEngine.mode === "defense");
+
+    // ---------- ЗАЩИТА ----------
+    if (isDefense) {
+      this.myShield = true;
+      this.shieldPower = solved ? 1 : 0.5;
+
+      if (typeof sfx !== "undefined") {
+        if (solved && sfx.playShield) sfx.playShield();
+        else if (!solved && sfx.playWrong) sfx.playWrong();
+      }
+
+      if (solved) {
+        if (!this.playerBuffs.energyLocked) {
+          const gain = this.playerBuffs.tempoBoost ? 2 : 1;
+          this.myEnergy = Math.min(2, this.myEnergy + gain);
+          if (this.playerBuffs.tempoBoost) this.playerBuffs.tempoBoost = false;
+          this.setLog("ЗАЩИТА УДЕРЖАНА: удар ослаблен, +" + gain + "⚡");
+        } else {
+          this.playerBuffs.energyLocked = false;
+          this.setLog("ЭНЕРГИЯ ЗАБЛОКИРОВАНА АРХИТЕКТОРОМ МЫСЛИ!");
+        }
+      } else {
+        this.setLog("ЗАЩИТА ПРОБИТА: поглощена половина удара, энергия не начислена.");
+      }
+
+      this.fx(solved ? "cyan" : "red");
+      this.updateHUD();
+
+      if (this.isNet) {
+        this.ws.send(JSON.stringify({ type: "MOVE", action: "defend", solved: !!solved }));
+      } else {
+        this.runAiTurn("defend", false);
+      }
+      return;
+    }
+
+    // ---------- АТАКА (прежняя логика) ----------
     if (this.playerBuffs.guaranteedCrit) {
-      isCrit = true;
+      solved = true;
       this.playerBuffs.guaranteedCrit = false;
     }
 
     if (typeof sfx !== "undefined") {
-      if (isCrit && sfx.playCritHit) sfx.playCritHit();
+      if (solved && sfx.playCritHit) sfx.playCritHit();
       else if (sfx.playAttackHit) sfx.playAttackHit();
     }
 
-    if (isCrit) {
+    if (solved) {
       this.screenShake(true);
       this.vibrate([50, 40, 80]);
     } else {
@@ -981,12 +1019,13 @@ window.NetDuel = {
     }
 
     if (this.isNet) {
-      this.ws.send(JSON.stringify({ type: "MOVE", action: "attack", crit: isCrit }));
-      this.setLog(isCrit ? "ТОЧНЫЙ ХОД! • КРИТИЧЕСКИЙ УРОН" : "АТАКА • ОЖИДАНИЕ ХОДА");
+      this.ws.send(JSON.stringify({ type: "MOVE", action: "attack", crit: solved }));
+      this.setLog(solved ? "ТОЧНЫЙ ХОД! • КРИТИЧЕСКИЙ УРОН" : "АТАКА • ОЖИДАНИЕ ХОДА");
     } else {
-      this.runAiTurn("attack", isCrit);
+      this.runAiTurn("attack", solved);
     }
   },
+
 
   applyRoundResult(res) {
     const eCard = document.getElementById("enemy-card-anchor");
@@ -1496,8 +1535,11 @@ window.NetDuel = {
       this.playerBuffs.invulnerable = false;
       this.setLog("НЕУЯЗВИМОСТЬ: ВЫ АБСОЛЮТНО ПАРИРОВАЛИ ВЕСЬ УРОН ВРАГА!");
     } else if (this.myShield && !ignorePlayerDef && eDmg > 0) {
-      eDmg = Math.max(1, eDmg - this.myHero.def);
+      const power = (this.shieldPower === undefined) ? 1 : this.shieldPower;
+      eDmg = Math.max(1, Math.round(eDmg - this.myHero.def * power));
+      this.shieldPower = undefined;
     }
+
 
     if (pDmg > 0) this.spawnDamageNumber("enemy-card-anchor", pDmg, isCrit || playerAct === "skill");
     if (eDmg > 0) this.spawnDamageNumber("player-card-anchor", eDmg, false);
