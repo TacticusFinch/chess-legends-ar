@@ -25,15 +25,57 @@ class SoundController {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return null;
       this.ctx = new AudioContext();
+
+      // Шина: сюда приходит всё, что синтезируется
       this.bus = this.ctx.createGain();
       this.bus.gain.value = 0.42;
-      this.bus.connect(this.ctx.destination);
+
+      // Компрессор-лимитер. Без него десять одновременных голосов
+      // складываются в перегрузку, и на телефоне вместо аккорда
+      // слышен треск и «кваканье».
+      const comp = this.ctx.createDynamicsCompressor();
+      comp.threshold.value = -16;
+      comp.knee.value = 12;
+      comp.ratio.value = 6;
+      comp.attack.value = 0.003;
+      comp.release.value = 0.25;
+      this.comp = comp;
+
+      // Короткий зал. Сухой синтез всегда звучит дёшево —
+      // реверберация даёт объём и «дорогой» тембр.
+      const reverb = this.ctx.createConvolver();
+      reverb.buffer = this._makeReverb(2.0, 2.8);
+      this.reverb = reverb;
+
+      const wet = this.ctx.createGain();
+      wet.gain.value = 0.26;
+      this.wet = wet;
+
+      this.bus.connect(comp);       // сухой сигнал
+      this.bus.connect(reverb);     // посыл в зал
+      reverb.connect(wet);
+      wet.connect(comp);
+      comp.connect(this.ctx.destination);
     }
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
     this.enabled = true;
     return this.ctx;
+  }
+
+  // Импульсный отклик зала: шум с экспоненциальным затуханием
+  _makeReverb(dur, decay) {
+    const rate = this.ctx.sampleRate;
+    const len = Math.floor(rate * dur);
+    const buffer = this.ctx.createBuffer(2, len, rate);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = buffer.getChannelData(ch);
+      for (let i = 0; i < len; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+      }
+    }
+    return buffer;
   }
 
   toggle() {
@@ -96,7 +138,9 @@ class SoundController {
     const lfo = this.ctx.createOscillator();
     const lfoGain = this.ctx.createGain();
 
-    osc.type = 'sawtooth';
+    // Треугольник вместо пилы: пила даёт резкие гармоники,
+    // которые на маленьком динамике превращаются в треск.
+    osc.type = 'triangle';
     osc.frequency.setValueAtTime(freq, t0);
 
     lfo.frequency.value = vibratoHz || 4.6;
@@ -104,10 +148,9 @@ class SoundController {
     lfo.connect(lfoGain);
     lfoGain.connect(osc.frequency);
 
-    // мягкий фильтр, чтобы пила не резала слух
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(1500, t0);
+    filter.frequency.setValueAtTime(2200, t0);
     filter.Q.value = 0.7;
 
     gain.gain.setValueAtTime(0.0001, t0);
@@ -124,7 +167,44 @@ class SoundController {
     lfo.stop(t0 + dur + 0.1);
   }
 
-  // Удар литавры: низкий тон с быстрой атакой и шумовым щелчком.
+  // Медный голос: треугольник + тихая октава, мягкая атака,
+  // спад фильтра. Так фанфара звучит как труба, а не как писк.
+  _brass(freq, delay, dur, peak) {
+    if (!this.enabled || !this.ctx || !this.bus) return;
+    const t0 = this.ctx.currentTime + (delay || 0);
+    const level = peak || 0.12;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(level, t0 + 0.05);
+    gain.gain.exponentialRampToValueAtTime(level * 0.55, t0 + dur * 0.5);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(2600, t0);
+    filter.frequency.exponentialRampToValueAtTime(1400, t0 + dur);
+    filter.Q.value = 0.6;
+
+    [1, 2.002].forEach((mult, i) => {
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq * mult, t0);
+      g.gain.value = i === 0 ? 1 : 0.18;
+      osc.connect(g);
+      g.connect(filter);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.05);
+    });
+
+    filter.connect(gain);
+    gain.connect(this.bus);
+  }
+
+  // Удар литавры: тон в слышимом диапазоне + шумовой щелчок.
+  // Раньше уходил ниже 50 Гц — телефон это не воспроизводит,
+  // и вместо удара слышался хрип.
   _timpani(delay, gainVal) {
     if (!this.enabled || !this.ctx || !this.bus) return;
     const t0 = this.ctx.currentTime + (delay || 0);
@@ -132,8 +212,8 @@ class SoundController {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(120, t0);
-    osc.frequency.exponentialRampToValueAtTime(46, t0 + 0.45);
+    osc.frequency.setValueAtTime(110, t0);
+    osc.frequency.exponentialRampToValueAtTime(62, t0 + 0.4);
 
     gain.gain.setValueAtTime(0.0001, t0);
     gain.gain.exponentialRampToValueAtTime(gainVal || 0.5, t0 + 0.012);
@@ -742,93 +822,71 @@ class SoundController {
 
   // ==========================================================
   // 20. БОЛЬШОЙ ТРИУМФ
-  // Пятый соперник повержен / корона возвращена.
-  // Низкий подъём, фанфары, широкий аккорд, литавры, колокола.
-  // Длится около пяти секунд — это главный звук квеста.
+  // Пятый соперник повержен. Длится около четырёх секунд.
   // ==========================================================
   questVictory() {
     this.init();
     if (!this.enabled || !this.ctx || !this.bus) return;
 
     // 1. Литавры: три удара, как перед выходом на сцену
-    this._timpani(0.00, 0.55);
-    this._timpani(0.42, 0.42);
-    this._timpani(0.84, 0.6);
+    this._timpani(0.00, 0.5);
+    this._timpani(0.44, 0.34);
+    this._timpani(0.88, 0.55);
 
-    // 2. Низкий подъём — «земля дрожит»
-    this._tone(65.41, 0, 3.4, { gain: 0.16, type: 'sawtooth', to: 98 });
-    this._tone(98, 0.2, 3.0, { gain: 0.1, type: 'triangle' });
-
-    // 3. Восходящие фанфары: до — ми — соль — до — ми
+    // 2. Фанфары: до — ми — соль — до — ми
     const fanfare = [
-      { f: 261.63, t: 0.15, d: 0.45 },
-      { f: 329.63, t: 0.42, d: 0.45 },
-      { f: 392.00, t: 0.69, d: 0.45 },
-      { f: 523.25, t: 0.96, d: 0.7 },
-      { f: 659.25, t: 1.36, d: 1.5 }
+      { f: 261.63, t: 0.10, d: 0.40 },
+      { f: 329.63, t: 0.36, d: 0.40 },
+      { f: 392.00, t: 0.62, d: 0.40 },
+      { f: 523.25, t: 0.88, d: 0.65 },
+      { f: 659.25, t: 1.30, d: 1.30 }
     ];
-    fanfare.forEach(n => {
-      this._tone(n.f, n.t, n.d, { gain: 0.13, type: 'triangle' });
-      this._tone(n.f * 2, n.t + 0.01, n.d * 0.9, { gain: 0.05 });
+    fanfare.forEach(n => this._brass(n.f, n.t, n.d, 0.12));
+
+    // 3. Аккорд на пике — мягко, синусами
+    [261.63, 329.63, 392.00, 523.25].forEach((f, i) => {
+      this._tone(f, 1.42 + i * 0.03, 2.4, { gain: 0.05, type: 'sine' });
     });
 
-    // 4. Широкий аккорд на пике — до мажор с секстой и октавой
-    [261.63, 329.63, 392.00, 523.25, 659.25, 783.99].forEach((f, i) => {
-      this._tone(f, 1.5 + i * 0.02, 3.2, { gain: 0.075, type: 'sine' });
-    });
-
-    // 5. Колокольчики поверх — «искры»
-    this._tone(1567.98, 1.7, 1.4, { gain: 0.055 });
-    this._tone(2093.00, 1.9, 1.3, { gain: 0.04 });
-    this._tone(2637.02, 2.1, 1.2, { gain: 0.03 });
-    this._tone(1046.50, 3.1, 2.2, { gain: 0.045 });
+    // 4. Колокольчики — «искры»
+    this._tone(1046.50, 1.65, 1.4, { gain: 0.045 });
+    this._tone(1567.98, 1.85, 1.1, { gain: 0.028 });
   }
 
   // ==========================================================
   // 21. ГЕРОИЧЕСКИЙ ХОР ПЕРЕД ФИНАЛЬНОЙ ПАРТИЕЙ
-  // Низкий гул, хоровые голоса с вибрато, литавры, сияние.
+  // Низкий гул, хоровые голоса с вибрато, трубы.
   // Ощущение: «сейчас начнётся то, к чему ты шёл весь путь».
   // ==========================================================
   heroic() {
     this.init();
     if (!this.enabled || !this.ctx || !this.bus) return;
 
-    // 1. Земля: два низких удара и гул
-    this._timpani(0.00, 0.5);
-    this._timpani(0.55, 0.38);
-    this._tone(55, 0, 4.6, { gain: 0.14, type: 'sawtooth', to: 82.41 });
-    this._tone(82.41, 0.1, 4.2, { gain: 0.09, type: 'triangle' });
+    // 1. Земля: два удара и низкий гул в слышимом диапазоне
+    this._timpani(0.00, 0.45);
+    this._timpani(0.55, 0.32);
+    this._tone(110.00, 0, 3.8, { gain: 0.10, type: 'triangle' });
+    this._tone(164.81, 0.12, 3.4, { gain: 0.06, type: 'triangle' });
 
     // 2. Хор: ля минор, четыре голоса входят по очереди
     const choir = [
-      { f: 220.00, t: 0.30, d: 4.2 },
-      { f: 261.63, t: 0.55, d: 4.0 },
-      { f: 329.63, t: 0.80, d: 3.8 },
-      { f: 440.00, t: 1.05, d: 3.6 }
+      { f: 220.00, t: 0.30, d: 3.8 },
+      { f: 261.63, t: 0.55, d: 3.6 },
+      { f: 329.63, t: 0.80, d: 3.4 },
+      { f: 440.00, t: 1.05, d: 3.2 }
     ];
-    choir.forEach((v, i) => {
-      this._voice(v.f, v.t, v.d, 0.075, 4.2 + i * 0.35);
-    });
+    choir.forEach((v, i) => this._voice(v.f, v.t, v.d, 0.07, 4.2 + i * 0.3));
 
-    // 3. Второй слой — квартой выше, тише: «эхо в сводах»
-    choir.forEach((v, i) => {
-      this._voice(v.f * 1.5, v.t + 0.25, v.d * 0.8, 0.03, 5.0 + i * 0.2);
-    });
+    // 3. Второй слой — квартой выше и тише: «эхо в сводах»
+    choir.forEach((v, i) => this._voice(v.f * 1.5, v.t + 0.28, v.d * 0.75, 0.026, 5.0 + i * 0.2));
 
-    // 4. Трубы: короткий героический мотив поверх хора
-    const motif = [
-      { f: 440.00, t: 1.30, d: 0.35 },
-      { f: 523.25, t: 1.62, d: 0.35 },
-      { f: 659.25, t: 1.94, d: 0.9 }
-    ];
-    motif.forEach(n => {
-      this._tone(n.f, n.t, n.d, { gain: 0.11, type: 'triangle' });
-      this._tone(n.f * 2, n.t, n.d * 0.8, { gain: 0.04 });
-    });
+    // 4. Трубы: короткий мотив поверх хора
+    this._brass(440.00, 1.30, 0.35, 0.10);
+    this._brass(523.25, 1.62, 0.35, 0.10);
+    this._brass(659.25, 1.94, 0.90, 0.11);
 
     // 5. Сияние на выходе
-    this._tone(1046.50, 2.6, 2.0, { gain: 0.05 });
-    this._tone(1318.51, 2.8, 1.8, { gain: 0.035 });
+    this._tone(1046.50, 2.6, 1.8, { gain: 0.04 });
   }
 }
 
