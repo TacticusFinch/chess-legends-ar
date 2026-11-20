@@ -2715,7 +2715,7 @@
       var raw = wordInput ? wordInput.value : '';
       if (checkWinWord(raw)) {
         if (wordErr) wordErr.hidden = true;
-        play('fanfareBig');
+        /* Звук играет внутри renderVictory — здесь не дублируем */
         renderVictory();
         return;
       }
@@ -2858,7 +2858,10 @@
     state.battle = null;
     saveProgress();
 
-    if (passed === 3) play('fanfareBig');
+    /* [FIX] Большой триумф уже прозвучал на экране «Круг замкнулся».
+       Здесь для IV уровня даём тёплый хор — он не повторяет
+       фанфары и лучше подходит к «Ты вернул ему корону». */
+    if (passed === 3) play('choir');
     else play('playFanfare');
 
     if (passed === 3) {
