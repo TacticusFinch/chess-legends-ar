@@ -364,39 +364,72 @@ function getRandomDuelPuzzle() {
 
 
 // --- БАЗА ЗАДАЧ ДЛЯ ЗАЩИТЫ (DEFENSE / PARRY) ---
+// 58 позиций из реальных партий: нужно найти ход,
+// который снимает угрозу. Используется и в дуэли
+// (кнопка «Защита»), и в квесте (уровень III).
 const DUEL_DEFENSE_PUZZLES = [
-  {
-    id: "def_1_block_bishop",
-    fen: "rnb1k1nr/pppp1ppp/8/4p3/1b2P3/2N5/PPPP1PPP/R1BQKBNR w KQkq - 0 1",
-    move: { from: "c1", to: "d2" },
-    desc: "Связка слоном! Перекройте диагональ слоном c1-d2"
-  },
-  {
-    id: "def_2_backrank_air",
-    fen: "6k1/5ppp/8/8/8/8/4rPPP/5RK1 w - - 0 1",
-    move: { from: "g2", to: "g3" }
-  },
-  {
-    id: "def_3_trade_rook",
-    fen: "4r1k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1",
-    move: { from: "e1", to: "e8" },
-    desc: "Разменяйте атакующую ладью, сняв напряжение"
-  },
-  {
-    id: "def_4_save_queen",
-    fen: "r1b1k2r/pppp1ppp/2n5/4p1q1/2B1P1n1/3P4/PPP2PPP/RN1QK2R w KQkq - 0 8",
-    move: { from: "d1", to: "d2" },
-    desc: "Укрепите позицию под атакой"
-  },
-  {
-    id: "def_5_interpose",
-    fen: "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2",
-    move: { from: "g1", to: "f3" },
-    desc: "Защитите центр развивающим ходом"
-  }
+  { id: 'def_01', fen: '2k3r1/p3B2p/8/2p5/8/P4q2/5PPP/1R1R2K1 w - - 0 25', move: { from: 'd1', to: 'd8' } },
+  { id: 'def_02', fen: '4r1k1/p1p2p1p/1n4pB/8/4P1q1/1PN2b2/P2Q1PP1/2R3K1 w - - 0 27', move: { from: 'd2', to: 'g5' } },
+  { id: 'def_03', fen: '2r4k/6p1/4p3/6Pp/4Q2P/pPq5/K1P1R3/8 w - - 0 41', move: { from: 'e4', to: 'e5' } },
+  { id: 'def_04', fen: '2R1n1k1/5pp1/8/1P3Q1P/5P2/3P4/4q1rP/7K w - - 0 45', move: { from: 'c8', to: 'e8' } },
+  { id: 'def_05', fen: '3r2k1/4b1pp/8/N1p5/p5P1/8/qPP1QP1P/2K4R w - - 0 25', move: { from: 'e2', to: 'c4' } },
+  { id: 'def_06', fen: '3rr3/R6p/1kp5/1p3p2/1Pp5/5P2/1P4PP/R4K2 b - - 0 32', move: { from: 'd8', to: 'd1' } },
+  { id: 'def_07', fen: '2r3k1/pp2pp1p/3p3Q/q1r3PN/4PP2/2Nb4/PPP5/2K5 b - - 0 25', move: { from: 'c5', to: 'g5' } },
+  { id: 'def_08', fen: '8/5pk1/1B1pr1p1/R6p/r4b2/2P4P/1P1R1PP1/6K1 w - - 0 43', move: { from: 'd2', to: 'd1' } },
+  { id: 'def_09', fen: '6k1/1p2p2p/3p2p1/N2P1p2/3q4/6P1/2r3BP/RQ3K2 w - - 0 31', move: { from: 'b1', to: 'e1' } },
+  { id: 'def_10', fen: '2rq1k1r/pp1bbp2/6p1/3QP1Np/2nP1P2/P2B4/1P4PP/R4RK1 b - - 0 19', move: { from: 'd7', to: 'e6' } },
+  { id: 'def_11', fen: '1rq1bQ2/4R1pk/7p/7P/2np2P1/5P2/6K1/5N2 b - - 0 48', move: { from: 'c8', to: 'g4' } },
+  { id: 'def_12', fen: '8/5rpk/4p2p/2PpP3/R7/3R2P1/P6P/4n2K w - - 0 49', move: { from: 'a4', to: 'f4' } },
+  { id: 'def_13', fen: '5Q2/5p1k/2p3pp/3qp3/6P1/1P2n2P/5N1K/B7 w - - 0 40', move: { from: 'f2', to: 'e4' } },
+  { id: 'def_14', fen: '2r3k1/5pp1/p3pb1P/1p1b4/1P3P1P/r2B2R1/2P5/1K2Q3 w - - 0 30', move: { from: 'd3', to: 'h7' } },
+  { id: 'def_15', fen: '6k1/5ppp/p7/1p1p4/3P4/P2q1PR1/BQ3PKP/4r3 w - - 0 31', move: { from: 'g2', to: 'h3' } },
+  { id: 'def_16', fen: 'rnb2rk1/1p2qpp1/4p3/3pP1NQ/1p6/2P5/1p3PPP/1R2K2R b K - 0 16', move: { from: 'e7', to: 'g5' } },
+  { id: 'def_17', fen: '8/kp2b1R1/p7/2p5/5Q2/PBP3P1/KP1r1P2/2q5 w - - 0 45', move: { from: 'f4', to: 'd2' } },
+  { id: 'def_18', fen: 'r1q2rk1/4R2p/p2p1Bp1/3p1p2/5P2/1P5Q/P1P3PP/7K b - - 0 27', move: { from: 'f8', to: 'f7' } },
+  { id: 'def_19', fen: 'r1b2Qnk/1pp3pp/pb4q1/3Bp3/P2N4/2P5/1P4PP/R5BK b - - 0 21', move: { from: 'c8', to: 'e6' } },
+  { id: 'def_20', fen: 'r1bq2rk/pp3pRp/2pp1P2/4nP2/4P2Q/8/PPP4P/2KR1B2 b - - 0 20', move: { from: 'c8', to: 'f5' } },
+  { id: 'def_21', fen: 'r3knR1/3q1p2/7R/2Qp4/p2P1P2/4r3/PP6/2K5 b - - 0 28', move: { from: 'e3', to: 'e7' } },
+  { id: 'def_22', fen: '5rk1/pp1b1p1p/2r2PpQ/3p4/P2p4/2qB3P/2P3PK/R4R2 b - - 0 23', move: { from: 'c6', to: 'f6' } },
+  { id: 'def_23', fen: 'r3r1k1/1Q3p2/p4qp1/1ppP2Np/2n4P/8/PPB2PP1/1K1R3R w - - 0 24', move: { from: 'b7', to: 'f7' } },
+  { id: 'def_24', fen: '8/8/8/3p1bpp/5N1k/5P2/2q2P1K/4Q3 b - - 0 65', move: { from: 'c2', to: 'c7' } },
+  { id: 'def_25', fen: '3r1rk1/pb4pp/1p2p3/2np2R1/3Q1Pq1/2N3P1/PPP4P/2KR4 b - - 0 20', move: { from: 'e6', to: 'e5' } },
+  { id: 'def_26', fen: '4qrk1/2R3pp/1p2p3/3bppQ1/1P1P4/8/r4PPP/2R1N1K1 b - - 0 24', move: { from: 'e8', to: 'g6' } },
+  { id: 'def_27', fen: 'N1b4r/1p2kppp/p7/4p3/4n2q/8/PPP1B1PP/R2Q1K1R w - - 0 18', move: { from: 'd1', to: 'e1' } },
+  { id: 'def_28', fen: 'b4r1k/4Q2p/6p1/p3P3/P2p2B1/7P/1P3qN1/2R4K w - - 0 39', move: { from: 'e7', to: 'f8' } },
+  { id: 'def_29', fen: '6k1/p3b1p1/1q2p2p/5r1N/6Q1/4P3/b3rPPP/R4RK1 b - - 0 25', move: { from: 'b6', to: 'b2' } },
+  { id: 'def_30', fen: '4r1k1/2pq1pp1/p3r3/4B3/4p1Q1/2P4P/1P1R1PP1/6K1 b - - 0 28', move: { from: 'f7', to: 'f5' } },
+  { id: 'def_31', fen: '3r2k1/1p3p1p/1b4p1/8/4R3/PPN2p2/3r1P1P/4KB1R w K - 0 24', move: { from: 'e4', to: 'e8' } },
+  { id: 'def_32', fen: '8/1p3b1k/7p/1P2B3/3q4/6Q1/5PPK/r7 b - - 0 33', move: { from: 'a1', to: 'h1' } },
+  { id: 'def_33', fen: '8/7P/7R/5k1K/8/8/8/6r1 w - - 0 72', move: { from: 'h6', to: 'f6' } },
+  { id: 'def_34', fen: 'r2r2k1/1b3ppp/1p2p3/2p1n1q1/P2P4/P3P3/1B1QBPPP/2RR2K1 w - - 0 19', move: { from: 'e3', to: 'e4' } },
+  { id: 'def_35', fen: '6k1/5p1p/r2p1Bp1/3P4/p3R3/P5P1/5P1P/2b3K1 b - - 0 24', move: { from: 'a6', to: 'a8' } },
+  { id: 'def_36', fen: '5R2/8/8/8/2p1p3/3k2P1/r4P2/3K4 w - - 0 53', move: { from: 'f8', to: 'd8' } },
+  { id: 'def_37', fen: '4bk2/1p3n1p/p2p4/3P1N2/3Q1P2/1P6/P3q1BP/7K b - - 0 35', move: { from: 'e2', to: 'e1' } },
+  { id: 'def_38', fen: '3r1r2/ppp2p1k/3p1Q2/7q/2P1P3/2N4P/PPP5/2K3R1 b - - 0 22', move: { from: 'h5', to: 'h6' } },
+  { id: 'def_39', fen: '5rk1/5ppp/p7/q2p3P/6R1/2pB1P2/PrP3P1/K1Q1R3 w - - 0 27', move: { from: 'g4', to: 'g7' } },
+  { id: 'def_40', fen: '2r2rk1/pp3ppp/3q4/3P1b2/1P1Qp1n1/2N1P3/PB3PPP/R4RK1 w - - 0 18', move: { from: 'd4', to: 'g7' } },
+  { id: 'def_41', fen: 'r1b2rk1/1pq1bppp/p6B/4P3/4p3/1N4Q1/nPP1B1PP/2R2RK1 b - - 0 16', move: { from: 'c7', to: 'b6' } },
+  { id: 'def_42', fen: '8/8/7R/Np3p2/5k1K/PP3P2/8/4r3 w - - 0 65', move: { from: 'h4', to: 'h5' } },
+  { id: 'def_43', fen: 'R7/5p2/P7/6pp/8/6kP/r7/6K1 w - - 0 51', move: { from: 'g1', to: 'f1' } },
+  { id: 'def_44', fen: '8/2B5/6p1/5p2/3b4/1k3P2/r4PR1/1K6 w - - 0 40', move: { from: 'b1', to: 'c1' } },
+  { id: 'def_45', fen: '1k6/1p6/pK5B/P1P3p1/5nP1/7P/8/8 w - - 0 49', move: { from: 'c5', to: 'c6' } },
+  { id: 'def_46', fen: '6rk/5Q1p/4pp2/8/5P2/6RP/6PK/2q5 b - - 0 36', move: { from: 'g8', to: 'g3' } },
+  { id: 'def_47', fen: '3q3k/pp3Qp1/2p3PB/8/8/P2r4/4K2P/8 b - - 0 42', move: { from: 'd8', to: 'g8' } },
+  { id: 'def_48', fen: '8/4b3/6pk/3pB1R1/3P1P2/5R2/1rr3P1/6K1 b - - 0 40', move: { from: 'h6', to: 'h7' } },
+  { id: 'def_49', fen: '3qr2k/R6p/8/8/5PQ1/P1P3bK/1P5P/8 b - - 0 46', move: { from: 'e8', to: 'g8' } },
+  { id: 'def_50', fen: '4k3/3bP3/3P2p1/7p/pB5P/2p5/PbB3K1/8 b - - 0 60', move: { from: 'e8', to: 'f7' } },
+  { id: 'def_51', fen: '6k1/3R2p1/4ppBp/P7/1Pb3P1/4P2P/r7/6K1 b - - 0 45', move: { from: 'g8', to: 'f8' } },
+  { id: 'def_52', fen: '4Q3/2p2Npk/3q2bp/3n4/2BP4/7P/5PP1/6K1 b - - 0 34', move: { from: 'g6', to: 'f7' } },
+  { id: 'def_53', fen: '5r1k/1r3p1p/5P1Q/6P1/1p2R3/8/1Pq4P/5RK1 b - - 0 34', move: { from: 'f8', to: 'g8' } },
+  { id: 'def_54', fen: '4n1k1/1p3ppb/8/3PQPq1/4B1P1/P7/1B6/6K1 b - - 0 40', move: { from: 'g5', to: 'g4' } },
+  { id: 'def_55', fen: '8/1R4pk/p4n2/7p/3bP3/P4P2/B5PP/3r2NK w - - 0 33', move: { from: 'b7', to: 'b1' } },
+  { id: 'def_56', fen: '1Q6/p4pkp/4bpr1/3P4/2p5/5R2/PPq3P1/4R1K1 w - - 0 34', move: { from: 'f3', to: 'f2' } },
+  { id: 'def_57', fen: '4r1k1/PR1R1p1p/5np1/2b5/8/5P2/3Q2PP/q5BK w - - 0 32', move: { from: 'd2', to: 'd1' } },
+  { id: 'def_58', fen: '5rk1/1b4pp/8/1B1pq3/1P4n1/2P5/1N1Q2PP/5RK1 w - - 0 26', move: { from: 'g2', to: 'g3' } }
 ];
 
 function getRandomDefensePuzzle() {
   const idx = Math.floor(Math.random() * DUEL_DEFENSE_PUZZLES.length);
   return DUEL_DEFENSE_PUZZLES[idx];
 }
+

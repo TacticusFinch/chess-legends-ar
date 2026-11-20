@@ -17,9 +17,10 @@
    Звук — js/sound.js (sfx). Здесь только обёртка play().
 
    Задачи уровней II–III берутся из QUEST_DATA[hero].attack/.defense,
-   затем из window.QUEST_PUZZLES, затем из DUEL_STRIKE_PUZZLES /
-   DUEL_DEFENSE_PUZZLES (js/duel-puzzles.js). Каждая проверяется
-   на легальность хода, поэтому битые позиции отсеиваются.
+   затем из DUEL_STRIKE_PUZZLES / DUEL_DEFENSE_PUZZLES
+   (js/duel-puzzles.js). Один источник задач для квеста и для
+   сетевых дуэлей. Каждая позиция проверяется на легальность хода,
+   поэтому битые FEN отсеиваются до показа.
 
    Доска — chessboard.js + chess.js. Если их нет, включается
    встроенная CSS-доска, поэтому квест не ломается.
@@ -607,6 +608,26 @@
     return false;
   }
 
+  /* ==========================================================
+     ВЫБОР ЗАДАЧ
+     [FIX] Раньше казалось, что задачи повторяются, хотя их много.
+     Причина: из пула брались только те позиции, где решение
+     легально, и если таких оставалось 10–12, то случайный выбор
+     из них быстро возвращал те же самые. Плюс внутри одного
+     прохождения набор фиксировался.
+
+     Теперь:
+     • запоминаем последние показанные позиции и отдаём приоритет
+       тем, которых давно не было;
+     • пул расширен новым пакетом защиты (58 задач);
+     • при каждом заходе на уровень набор пересобирается.
+     ========================================================== */
+  var recentPuzzles = [];
+
+  function puzzleKey(p) {
+    return String((p && p.fen) || '') + '|' + String(p && p.from);
+  }
+
   function pickPuzzles(pool, count) {
     var valid = [];
     for (var i = 0; i < pool.length; i++) {
@@ -616,14 +637,41 @@
       if (isSolvable(p.fen, mv.from, mv.to)) valid.push(p);
     }
     if (!valid.length) return [];
-    return shuffle(valid).slice(0, count || CONFIG.puzzleCount);
+
+    var need = count || CONFIG.puzzleCount;
+
+    /* Сначала те, которых не было в последних показах */
+    var fresh = [];
+    var used = [];
+    for (var j = 0; j < valid.length; j++) {
+      var key = puzzleKey(normalizePuzzle(valid[j], 'attack'));
+      if (recentPuzzles.indexOf(key) === -1) fresh.push(valid[j]);
+      else used.push(valid[j]);
+    }
+
+    var ordered = shuffle(fresh).concat(shuffle(used));
+    var chosen = ordered.slice(0, need);
+
+    /* Обновляем память: храним последние 40 ключей */
+    chosen.forEach(function (item) {
+      var k = puzzleKey(normalizePuzzle(item, 'attack'));
+      var at = recentPuzzles.indexOf(k);
+      if (at !== -1) recentPuzzles.splice(at, 1);
+      recentPuzzles.push(k);
+    });
+    while (recentPuzzles.length > 40) recentPuzzles.shift();
+
+    return chosen;
   }
 
   function normalizePuzzle(p, kind) {
     var mv = p.move || p;
     var turn = String(p.fen).split(' ')[1] === 'b' ? 'чёрных' : 'белых';
+    var fallback = kind === 'defense'
+      ? ('Ход ' + turn + '. Соперник грозит — найдите защиту.')
+      : ('Ход ' + turn + '. Найдите сильнейший ход.');
     return {
-      task: p.task || p.desc || ('Ход ' + turn + ': найдите сильнейший ход.'),
+      task: p.task || p.desc || fallback,
       fen: p.fen,
       from: mv.from,
       to: mv.to,
@@ -2023,6 +2071,7 @@
       state.step = 0;
       state.answered = false;
       state.chosen = null;
+      rebuildPuzzles(route.key);
       enterStage(route.key);
     });
     dom.body.querySelector('#tmq-back').addEventListener('click', function () {
@@ -2082,6 +2131,21 @@
       play('click');
       renderMap();
     });
+  }
+
+  /* Пересобрать набор задач перед входом на уровень:
+     каждый заход — новый случайный выбор из пула. */
+  function rebuildPuzzles(kind) {
+    if (kind !== 'attack' && kind !== 'defense') return;
+    var hero = state.hero || {};
+    var data = (window.QUEST_DATA && window.QUEST_DATA[hero.id]) || {};
+
+    var set = (data[kind] && data[kind].length)
+      ? pickPuzzles(data[kind], CONFIG.puzzleCount)
+      : [];
+
+    if (!set.length) set = fromDuelPuzzles(kind, hero.id);
+    state.quest[kind] = set;
   }
 
   function enterStage(key) {
@@ -2545,15 +2609,17 @@
     var dmg;
 
     if (kind === 'attack') {
+      /* Атака бьёт сильно, но заряда не даёт: коронный ход
+         копится только защитой. */
       dmg = 6 + Math.round(b.pAtk / 2) + rand(0, 2);
       b.ehp = Math.max(0, b.ehp - dmg);
-      b.charge = Math.min(2, b.charge + 1);
       b.log.push('Вы атакуете: −' + dmg + ' HP.');
       play('playMove');
     } else if (kind === 'defend') {
+      /* Защита: гасит часть удара и даёт заряд */
       b.guard = true;
       b.charge = Math.min(2, b.charge + 1);
-      b.log.push('Вы закрываетесь: следующий удар слабее, заряд +1.');
+      b.log.push('Вы в защите: удар ослаблен, заряд ' + b.charge + '/2.');
       play('click');
     } else {
       if (b.charge < 2) {
@@ -2588,7 +2654,9 @@
 
     var dmg = 5 + Math.round(b.eAtk / 2) + rand(0, 2);
     if (b.guard) {
-      dmg = Math.max(2, Math.round(dmg / 2));
+      /* Защита снимает половину удара и ещё защиту героя:
+         сильный защитник (Карпов, Петросян) гасит заметно больше. */
+      dmg = Math.max(2, Math.round(dmg / 2) - Math.round(b.pDef / 2));
       b.guard = false;
     }
     b.php = Math.max(0, b.php - dmg);

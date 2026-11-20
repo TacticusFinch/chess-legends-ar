@@ -2089,6 +2089,10 @@
     'Deep Blue': ['«Расчёт завершён. Результат не соответствует прогнозу»']
   };
 
+  /* ЗАДАЧИ НА ЗАЩИТУ ЖИВУТ В js/duel-puzzles.js
+     (DUEL_DEFENSE_PUZZLES). Там они доступны и квесту,
+     и сетевым дуэлям между игроками — один источник для обоих. */
+
   window.QUEST_ERAS = QUEST_ERAS;
   window.QUEST_DATA = QUEST_DATA;
   window.QUEST_RIVALS = QUEST_RIVALS;
