@@ -729,6 +729,37 @@
   color: var(--tmq-text-3);
 }
 
+/* Коронный ход соперника: название и что он делает */
+.tmq-opp-skill {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid rgba(234, 179, 8, 0.22);
+  border-radius: 8px;
+  background: linear-gradient(120deg, rgba(234, 179, 8, 0.08), rgba(234, 179, 8, 0.01));
+}
+
+.tmq-opp-skill-label {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.9px;
+  text-transform: uppercase;
+  color: #b9a06a;
+}
+
+.tmq-opp-skill-name {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #f4e6c2;
+}
+
+.tmq-opp-skill-tip {
+  font-size: 11px;
+  line-height: 1.55;
+  color: #cbbfa4;
+}
+
 /* ---------- Брифинг ---------- */
 /* ==========================================================
    БРИФИНГ: «Что будет» и «Как играть»

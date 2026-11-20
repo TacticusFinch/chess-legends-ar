@@ -429,6 +429,22 @@
         [392, 523.25, 659.25, 783.99].forEach(function (f, i) { tone(f, i * 0.14, 0.9, 0.09); });
         [523.25, 659.25, 783.99].forEach(function (f) { tone(f, 0.7, 1.5, 0.07); });
       },
+      /* Героическая тема: низкий гул, восходящие фанфары, удар литавр */
+      heroic: function () {
+        init();
+        if (!ctx) return;
+        /* низкая подложка */
+        tone(65.41, 0, 2.4, 0.13, 'sawtooth', 49);
+        tone(98, 0.15, 2.2, 0.09, 'triangle');
+        /* восходящие фанфары */
+        [196, 261.63, 329.63, 392, 523.25].forEach(function (f, i) {
+          tone(f, 0.25 + i * 0.16, 1.5, 0.1, 'triangle');
+        });
+        /* удар и хвост */
+        tone(392, 1.15, 2.8, 0.085, 'sine');
+        tone(587.33, 1.15, 2.6, 0.06, 'sine');
+        tone(1046.5, 1.6, 2.0, 0.05);
+      },
       /* Торжественный финал: восходящая тема, аккорд и долгий хвост */
       fanfareBig: function () {
         init();
@@ -3023,7 +3039,6 @@
     setBody(
       '<div class="tmq-boss-brief">' +
         '<div class="tmq-boss-brief-glow" aria-hidden="true"></div>' +
-        '<div class="tmq-kicker">Уровень V · последний рубеж</div>' +
         '<h2 class="tmq-boss-brief-title">Хранитель времени</h2>' +
         '<p class="tmq-boss-brief-lead">Он не играет в шахматы. Он играет со временем.</p>' +
         '<p class="tmq-boss-brief-text">' +
@@ -3046,7 +3061,8 @@
     );
 
     dom.body.querySelector('#tmq-start').addEventListener('click', function () {
-      play('warp');
+      /* Героическая тема перед финальной партией */
+      play('heroic');
       state.step = 0;
       state.answered = false;
       state.chosen = null;
@@ -3216,7 +3232,17 @@
     state.battle = null;
     var q = state.quest;
     var duel = q.duels[state.duelIdx];
-    if (!duel) { finishStage(); return; }
+    if (!duel) { finishStage(3); return; }
+
+    /* Коронный ход соперника: название и эффект из HERO_STATS_DATA.
+       Для теневых соперников приёмы уже раздали в applyRivalSkills(). */
+    var oppCard = (typeof HERO_STATS_DATA !== 'undefined' && HERO_STATS_DATA)
+      ? (HERO_STATS_DATA[duel.enemyId] || null)
+      : null;
+    var oppSkill = {
+      name: oppCard ? (oppCard.skillName || '') : '',
+      tip: oppCard ? (oppCard.tip || '') : ''
+    };
 
     setBody(
       chapter(CONFIG.route[3].num, CONFIG.route[3].title, (state.duelIdx + 1) + ' / ' + q.duels.length) +
@@ -3235,6 +3261,13 @@
           ? '<div class="tmq-opp-fact">' +
               '<span class="tmq-opp-fact-label">Интересный факт</span>' +
               '<p>' + esc(duel.fact) + '</p>' +
+            '</div>'
+          : '') +
+        (oppSkill.name
+          ? '<div class="tmq-opp-skill">' +
+              '<span class="tmq-opp-skill-label">Коронный ход</span>' +
+              '<span class="tmq-opp-skill-name">' + esc(oppSkill.name) + '</span>' +
+              (oppSkill.tip ? '<span class="tmq-opp-skill-tip">' + esc(oppSkill.tip) + '</span>' : '') +
             '</div>'
           : '') +
         (duel.style ? '<div class="tmq-opp-style">' + esc(duel.style) + '</div>' : '') +
@@ -3785,7 +3818,7 @@
     } else {
       kicker = 'Поединок ' + ((o.idx || 0) + 1) + ' из ' + (o.total || 5);
       title = esc(o.name || 'Соперник') + ' повержен';
-      line = 'Соперник отступил. Следующий уже ждёт за доской.';
+      line = '';
     }
 
     state.pending = o.next || null;
@@ -3798,7 +3831,7 @@
         '<div class="tmq-done-badge"><i class="tmq-check" aria-hidden="true"></i></div>' +
         '<div class="tmq-kicker">' + kicker + '</div>' +
         '<h2 class="tmq-title">' + title + '</h2>' +
-        '<p class="tmq-done-text">' + line + '</p>' +
+        (line ? '<p class="tmq-done-text">' + line + '</p>' : '') +
         (!isStage && o.duel
           ? '<blockquote class="tmq-concede">' + esc(lossLineFor(o.duel)) +
             '<cite>' + esc(o.duel.name || 'Соперник') + '</cite></blockquote>'
@@ -4278,7 +4311,9 @@
     state.chosen = null;
     state.battle = null;
     saveProgress();
-    play('playFanfare');
+    /* IV уровень — корона возвращена: звучит мощная тема, не короткий сигнал */
+    if (passed === 3) play('fanfareBig');
+    else play('playFanfare');
     if (STAGE_LINES[passed]) say(STAGE_LINES[passed]);
 
     /* После IV уровня — особое поздравление: чемпион восстановлен,
