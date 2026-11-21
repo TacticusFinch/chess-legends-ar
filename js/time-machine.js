@@ -33,8 +33,8 @@
 
   var CONFIG = {
     dates: '21–22 ноября',
-    botName: 'Watson-bot',
-    botUrl: 'https://lichess.org/@/Watson-bot',
+    botName: 'Zero-dot',
+    botUrl: 'https://lichess.org/@/ZERO-DOT',
     maxLives: 10,
     quizCount: 10,
     puzzleCount: 5,
